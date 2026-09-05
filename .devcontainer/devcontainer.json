@@ -1,0 +1,48 @@
+{
+  "name": "piano-tutor",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      // Match the host user so bind-mounted files are not root-owned on the host.
+      "USER_UID": "1001",
+      "USER_GID": "1001"
+    }
+  },
+
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+
+  "remoteUser": "node",
+  // Safety net if the host user's ids ever differ from the build args above.
+  "updateRemoteUserUID": true,
+
+  // Vite listens on 0.0.0.0 inside the container; VS Code forwards it so the host
+  // reaches it at http://localhost:5173. Localhost is a secure context, which Web MIDI
+  // requires — reaching the dev server by LAN or tailnet IP is not, and the API is
+  // blocked there. Always use the forwarded localhost URL.
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite dev server",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // Browsers are baked into the image, so this only has to restore node_modules.
+  "postCreateCommand": "npm ci",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+      }
+    }
+  }
+}
