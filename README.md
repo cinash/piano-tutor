@@ -69,11 +69,18 @@ guarantee.
 
 Every dependency is pinned to an exact version, and the base image is pinned by digest.
 
-The Playwright package version and the browser build baked into the image must match.
-`scripts/check-playwright-lockstep.mjs` compares `package.json`, the `PLAYWRIGHT_VERSION`
-build argument in `.devcontainer/Dockerfile`, the installed package and the running
-image, and fails `npm run ci` if they have drifted. When bumping Playwright, change both
-files and rebuild the container.
+Two versions have to be written in more than one place, and `npm run ci` starts by
+running `scripts/check-version-lockstep.mjs`, which fails if either has drifted.
+
+The Playwright package version and the browser build baked into the image must match, so
+the check compares `package.json`, the `PLAYWRIGHT_VERSION` build argument in
+`.devcontainer/Dockerfile`, the installed package and the running image.
+
+Claude Code is installed into the image and its VS Code extension is pinned to the same
+version, so the check compares `CLAUDE_CODE_VERSION` in `.devcontainer/Dockerfile`
+against the pinned `anthropic.claude-code` extension in `.devcontainer/devcontainer.json`.
+
+Bumping either means changing every file that names it and rebuilding the container.
 
 TypeScript is held at the 6.x line rather than 7.x: TypeScript 7 is the native compiler
 rewrite, and the current `typescript-eslint` release declares support for

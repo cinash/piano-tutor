@@ -69,7 +69,7 @@ which check establishes that.
 
 ## Every change goes through `npm run ci`
 
-`npm run ci` is the single gate: Playwright lockstep check, ESLint, Prettier in check mode,
+`npm run ci` is the single gate: version lockstep check, ESLint, Prettier in check mode,
 `tsc -b` and build, Vitest, Playwright — stopping at the first failure. Run it before you call work
 finished. Anything a CI service would eventually run belongs in it, so pointing one at this
 repository later stays a small change.
@@ -155,8 +155,10 @@ the last one concluded stops looking.
 
 - **Exact versions everywhere.** Dependencies are pinned exactly, the base image by digest. When
   bumping Playwright, change both `package.json` and `PLAYWRIGHT_VERSION` in
-  `.devcontainer/Dockerfile` — `scripts/check-playwright-lockstep.mjs` fails the build otherwise.
-  TypeScript stays on the 6.x line until `typescript-eslint` supports 7.
+  `.devcontainer/Dockerfile`; when bumping Claude Code, change both `CLAUDE_CODE_VERSION` in
+  `.devcontainer/Dockerfile` and the pinned extension in `.devcontainer/devcontainer.json` —
+  `scripts/check-version-lockstep.mjs` fails the build otherwise. TypeScript stays on the 6.x
+  line until `typescript-eslint` supports 7.
 - **Prefer tests that exercise real wiring** over unit tests built from heavy mocking. Where a
   behaviour can be pinned down through the rendered component or the running app, do that instead
   of asserting on a mock.

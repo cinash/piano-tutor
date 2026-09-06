@@ -13,6 +13,12 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
 
+  // Claude Code keeps its login and history in ~/.claude. A named volume keeps those
+  // across a rebuild, including a rebuild without cache, so the CLI does not have to be
+  // re-authenticated every time the image changes. Deliberately not the host's ~/.claude:
+  // the container gets its own, rather than sharing the host user's sessions.
+  "mounts": ["source=piano-tutor-claude-config,target=/home/node/.claude,type=volume"],
+
   "remoteUser": "node",
   // Safety net if the host user's ids ever differ from the build args above.
   "updateRemoteUserUID": true,
@@ -35,6 +41,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        // Kept at the CLAUDE_CODE_VERSION pinned in the Dockerfile — see the note there.
+        "anthropic.claude-code@2.1.261",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "ms-playwright.playwright"
