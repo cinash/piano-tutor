@@ -56,6 +56,18 @@ Apply `.claude/skills/clean-code/SKILL.md`:
 Each finding should name the specific simplification and sketch its shape — the smaller code, not
 just the assertion that something is complex. Rank most severe first.
 
+Label every finding **blocking** or **non-blocking**, and be honest about it — the caller uses that
+label to decide whether to fix now and whether to review again, so inflating it costs a whole extra
+round. Blocking is a simplification that changes the shape of the code: a structure a senior
+developer would call overcomplicated, and the structural items from the bias section above — an
+abstraction with one implementation, a knob nobody sets, a layer for a case that does not exist.
+Those are the findings this reviewer exists to make, and labelling them polish would leave it with
+nothing it can insist on. Everything whose fix leaves the shape alone is non-blocking, however
+confident you are about it: a clearer name, a comment worth extending, a lone unnecessary
+`useMemo`, a shape that is fine as it stands.
+
+End with a one-line verdict: **ship** if nothing is blocking, **fix first** otherwise.
+
 Correctness bugs are out of scope; the functionality reviewer owns those. So is reformatting code
 the diff did not touch.
 

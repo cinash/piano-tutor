@@ -49,6 +49,20 @@ Findings must be concrete: the inputs or state, and the wrong output, crash or u
 that follows. Rank them most severe first. Separate what you verified by running something from
 what you inferred by reading, and say which is which.
 
+Label every finding **blocking** or **non-blocking**, and be honest about it — the caller uses that
+label to decide whether to fix now and whether to review again, so inflating it costs a whole extra
+round. A finding is blocking when any of these is true:
+
+- the change does not do what was requested, or does something it was not asked to do;
+- it breaks one of the constraints above even though it does what was asked — a change that moves
+  the app off `localhost` does exactly what "let me reach it from my phone" asked for and still
+  silently removes `navigator.requestMIDIAccess`, and the request does not get to authorise that;
+- `npm run ci` does not pass, or a new test would also pass without the change.
+
+Everything else is non-blocking, including anything that is merely worth knowing.
+
+End with a one-line verdict: **ship** if nothing is blocking, **fix first** otherwise.
+
 No style opinions — the clean-code reviewer owns those.
 
 If you find nothing, say so plainly. An empty review is a real result and is more useful than an
