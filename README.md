@@ -28,6 +28,7 @@ Run these inside the container.
 | `npm test`             | Vitest, once, no watch                                         |
 | `npm run test:e2e`     | Playwright; starts the dev server itself if one is not running |
 | `npm run lint`         | ESLint                                                         |
+| `npm run lint:chart`   | `helm lint` over the deployment chart in `chart/`              |
 | `npm run format:check` | Prettier in check mode — reports, never rewrites               |
 | `npm run format`       | Prettier, applying the changes                                 |
 | `npm run ci`           | All of the above in sequence, stopping at the first failure    |
@@ -64,6 +65,39 @@ Vite is therefore configured to listen on `0.0.0.0` inside the container, with V
 port forwarding presenting it to the host as `localhost:5173`. The port is `strictPort`,
 so a collision fails the server rather than quietly moving to 5174 and breaking that
 guarantee.
+
+## Deploying to k3s
+
+`chart/` is a Helm chart that puts the built app on the k3s cluster, behind the tailscale
+operator. It is installed with `helm` directly — there is no GitOps controller watching
+this repository, so a deploy happens when someone runs the command below.
+
+The cluster has no registry, so the image is imported into the node's containerd the way
+personal-orchestrator's services are. Run this on the **host** — it needs root for
+`k3s ctr`, which the dev container deliberately cannot have:
+
+```sh
+./build_image.sh
+helm upgrade --install piano-tutor ./chart --namespace piano-tutor --create-namespace
+```
+
+That leaves the app at `https://piano-tutor.<tailnet>.ts.net`, reachable from any device
+on the tailnet and from nowhere else.
+
+Re-importing a newer build changes nothing on its own; restart the deployment to pick it
+up:
+
+```sh
+kubectl -n piano-tutor rollout restart deployment/piano-tutor
+```
+
+### The deployed copy can talk to a piano; the dev server still cannot
+
+The constraint above — open the dev server at `localhost:5173`, never at a LAN or tailnet
+address — is about **http**. The tailscale ingress serves the deployed app over **https**,
+and any https origin is a secure context, so Web MIDI is available there. Whichever
+machine's browser opens that URL is the one whose USB piano the app sees; the cluster
+never touches the hardware.
 
 ## Version pinning
 

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: piano-tutor
+description: The piano-tutor web app, served as a static bundle by nginx.
+type: application
+version: 0.1.0

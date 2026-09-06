@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: piano-tutor
+spec:
+  # The operator terminates TLS with a certificate for the tailnet name, and HTTPS is what
+  # makes the deployed app a secure context. Web MIDI needs one: over plain HTTP the page
+  # has no navigator.requestMIDIAccess at all, and the app is a keyboard nobody can play.
+  # No funnel annotation, so it stays inside the tailnet.
+  ingressClassName: tailscale
+  tls:
+    # Names the device the tailscale operator creates, so the app answers at
+    # https://piano-tutor.<tailnet>.ts.net and nowhere else.
+    - hosts:
+        - piano-tutor
+  rules:
+    - host: piano-tutor
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: piano-tutor
+                port:
+                  number: 80
