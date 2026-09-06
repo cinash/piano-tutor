@@ -10,8 +10,31 @@
     }
   },
 
+  // sysbox-runc gives the container its own user namespace, so it needs neither
+  // --privileged nor the host's docker socket. po-devnet is the dev-container network
+  // personal-orchestrator's host-setup.sh creates and fences; there is one of it on this
+  // laptop and this container joins it rather than standing up a second. DNS is pinned
+  // because the host resolves through a systemd-resolved stub on 127.0.0.53, which means
+  // nothing inside the container — rather than leave that to docker's fallback, name
+  // resolution here does not depend on how the host's resolver is configured.
+  "runArgs": [
+    "--runtime=sysbox-runc",
+    "--network=po-devnet",
+    "--dns=1.1.1.1",
+    "--dns=8.8.8.8",
+    "--hostname=piano-tutor-dev"
+  ],
+
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
+
+  // The one host touchpoint: the kubeconfig scripts/init-host.sh renders, pointed at the
+  // k3s API server on the po-devnet gateway. Read-only, so nothing in the container can
+  // rewrite the credentials it was handed — `kubectl config use-context` will refuse
+  // rather than edit the file.
+  "mounts": [
+    "source=${localEnv:HOME}/.kube/piano-tutor-devcontainer.yaml,target=/home/node/.kube/config,type=bind,readonly"
+  ],
 
   "remoteUser": "node",
   // Safety net if the host user's ids ever differ from the build args above.
@@ -21,6 +44,9 @@
   // reaches it at http://localhost:5173. Localhost is a secure context, which Web MIDI
   // requires — reaching the dev server by LAN or tailnet IP is not, and the API is
   // blocked there. Always use the forwarded localhost URL.
+  //
+  // The forward runs over the docker exec channel rather than over the po-devnet bridge,
+  // so joining that network does not disturb it.
   "forwardPorts": [5173],
   "portsAttributes": {
     "5173": {
@@ -29,6 +55,9 @@
     }
   },
 
+  // Checks the host prerequisites and renders the kubeconfig mounted above, before the
+  // container is built or started.
+  "initializeCommand": "bash .devcontainer/scripts/init-host.sh",
   // Browsers are baked into the image, so this only has to restore node_modules.
   "postCreateCommand": "npm ci",
 
