@@ -67,6 +67,8 @@
   "initializeCommand": "bash .devcontainer/scripts/init-host.sh",
   // Browsers are baked into the image, so this only has to restore node_modules.
   "postCreateCommand": "npm ci",
+  // Every attach, not just create — see the script header.
+  "postAttachCommand": "bash /workspace/.devcontainer/scripts/github-identity.sh",
 
   "customizations": {
     "vscode": {
@@ -79,7 +81,11 @@
       ],
       "settings": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        // Aimed at the window before postAttachCommand runs — best-effort only, and it
+        // does nothing about the injected credential.helper, which is the other half of
+        // that window.
+        "git.useIntegratedAskPass": false
       }
     }
   }
