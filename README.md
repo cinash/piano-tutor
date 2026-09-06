@@ -28,7 +28,6 @@ Run these inside the container.
 | `npm test`             | Vitest, once, no watch                                         |
 | `npm run test:e2e`     | Playwright; starts the dev server itself if one is not running |
 | `npm run lint`         | ESLint                                                         |
-| `npm run lint:chart`   | `helm lint` over the deployment chart in `chart/`              |
 | `npm run format:check` | Prettier in check mode — reports, never rewrites               |
 | `npm run format`       | Prettier, applying the changes                                 |
 | `npm run ci`           | All of the above in sequence, stopping at the first failure    |
@@ -101,7 +100,8 @@ never touches the hardware.
 
 ## Version pinning
 
-Every dependency is pinned to an exact version, and the base image is pinned by digest.
+Every dependency is pinned to an exact version, and every base image is pinned by digest —
+the dev container's, and the two the production `Dockerfile` builds from.
 
 Two versions have to be written in more than one place, and `npm run ci` starts by
 running `scripts/check-version-lockstep.mjs`, which fails if either has drifted.
