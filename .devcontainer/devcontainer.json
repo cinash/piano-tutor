@@ -13,6 +13,15 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
 
+  // Claude Code and Antigravity CLI keep login and state in ~/.claude and ~/.gemini. Named
+  // volumes keep those across rebuilds, including rebuilds without cache, so neither CLI
+  // has to be re-authenticated every time the image changes. Deliberately not the host's
+  // directories: the container gets its own, rather than sharing the host user's sessions.
+  "mounts": [
+    "source=piano-tutor-claude-config,target=/home/node/.claude,type=volume",
+    "source=piano-tutor-gemini-config,target=/home/node/.gemini,type=volume"
+  ],
+
   "remoteUser": "node",
   // Safety net if the host user's ids ever differ from the build args above.
   "updateRemoteUserUID": true,
@@ -35,6 +44,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        // Kept at the CLAUDE_CODE_VERSION pinned in the Dockerfile — see the note there.
+        "anthropic.claude-code@2.1.261",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "ms-playwright.playwright"

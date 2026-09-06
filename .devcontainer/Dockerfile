@@ -10,6 +10,15 @@ FROM node:24.20.0-bookworm@sha256:be23f54a88d34e8824c741b19b91064094f92c1c97b194
 # apart — otherwise Playwright silently re-downloads browsers at test time.
 ARG PLAYWRIGHT_VERSION=1.63.0
 
+# Claude Code, pinned exactly like everything else. The VS Code extension in
+# devcontainer.json is pinned to the same version: the extension shells out to whichever
+# `claude` is on PATH, and keeping the two in step avoids debugging a mismatch that the
+# marketplace introduced on its own. Bump both together.
+ARG CLAUDE_CODE_VERSION=2.1.261
+
+# Antigravity CLI, pinned to an exact release build like everything else.
+ARG ANTIGRAVITY_CLI_VERSION=1.1.27-5211191891591168
+
 # The host user's identity, so files written through the bind mount are owned by
 # the host user rather than by root.
 ARG USER_UID=1001
@@ -31,6 +40,32 @@ RUN groupmod -g "${USER_GID}" node \
 RUN npx --yes playwright@${PLAYWRIGHT_VERSION} install --with-deps chromium \
  && chmod -R a+rX "${PLAYWRIGHT_BROWSERS_PATH}" \
  && rm -rf /root/.npm /var/lib/apt/lists/*
+
+# Claude Code, installed globally as root so it lands in the image rather than in the
+# bind-mounted workspace. `~/.claude` is created here, owned by node, so that the named
+# volume devcontainer.json mounts over it inherits that ownership and the login survives
+# a rebuild.
+RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+ && mkdir -p /home/node/.claude \
+ && chown "${USER_UID}:${USER_GID}" /home/node/.claude \
+ && rm -rf /root/.npm
+
+# Antigravity CLI, installed globally as root so it lands in the image rather than in the
+# bind-mounted workspace. `~/.gemini` is created here, owned by node, so that the named
+# volume devcontainer.json mounts over it inherits that ownership and the login survives
+# a rebuild.
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) ARCH_PATH="linux-x64/cli_linux_x64.tar.gz" ;; \
+      arm64) ARCH_PATH="linux-arm/cli_linux_arm64.tar.gz" ;; \
+      *) echo "Unsupported architecture: $(dpkg --print-architecture)" >&2 && exit 1 ;; \
+    esac \
+ && curl -fsSL "https://storage.googleapis.com/antigravity-public/antigravity-cli/${ANTIGRAVITY_CLI_VERSION}/${ARCH_PATH}" -o /tmp/agy.tar.gz \
+ && tar -xzf /tmp/agy.tar.gz -C /usr/local/bin antigravity \
+ && mv /usr/local/bin/antigravity /usr/local/bin/agy \
+ && chmod +x /usr/local/bin/agy \
+ && rm -f /tmp/agy.tar.gz \
+ && mkdir -p /home/node/.gemini \
+ && chown "${USER_UID}:${USER_GID}" /home/node/.gemini
 
 WORKDIR /workspace
 USER node
