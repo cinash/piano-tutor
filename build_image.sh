@@ -8,8 +8,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-podman build -t local/piano-tutor:latest .
-podman save local/piano-tutor:latest | sudo k3s ctr images import -
+podman build -t localhost/local/piano-tutor:latest .
+podman save localhost/local/piano-tutor:latest | sudo k3s ctr images import -
 
 echo
 echo "Imported localhost/local/piano-tutor:latest. The tag does not change, so a running"

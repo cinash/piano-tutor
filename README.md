@@ -83,6 +83,11 @@ helm upgrade --install piano-tutor ./chart --namespace piano-tutor --create-name
 That leaves the app at `https://piano-tutor.<tailnet>.ts.net`, reachable from any device
 on the tailnet and from nowhere else.
 
+`npm run ci` does not check the chart — helm is a host tool and the gate is documented to
+run inside the container — so the chart's checks live here instead: `helm lint chart`, and
+the same `helm upgrade` line with `--dry-run=server` to put the manifests past the API
+server before anything is applied.
+
 Re-importing a newer build changes nothing on its own; restart the deployment to pick it
 up:
 

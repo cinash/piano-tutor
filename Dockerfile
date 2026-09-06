@@ -1,9 +1,5 @@
-# syntax=docker/dockerfile:1
-
-# Node 24, pinned to an exact patch and by digest, so a rebuild resolves to the same image
-# even after the tag is re-pushed upstream. Both images are named by their registry as
-# well, because build_image.sh builds with podman, and podman resolves no unqualified name
-# unless the host configures a search registry.
+# Both images are named by their registry, because build_image.sh builds with podman, and
+# podman resolves no unqualified FROM unless the host configures a search registry.
 FROM docker.io/library/node:24.20.0-bookworm@sha256:be23f54a88d34e8824c741b19b91064094f92c1c97b194144bfc8b50d67258e2 AS build
 
 WORKDIR /app
