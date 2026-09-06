@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: piano-tutor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: piano-tutor
+  template:
+    metadata:
+      labels:
+        app: piano-tutor
+    spec:
+      containers:
+        - name: piano-tutor
+          # build_image.sh imports this straight into the node's containerd. Nothing hosts
+          # it, so the pull policy can only be IfNotPresent.
+          image: localhost/local/piano-tutor:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80

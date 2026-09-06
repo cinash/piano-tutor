@@ -67,9 +67,48 @@ port forwarding presenting it to the host as `localhost:5173`. The port is `stri
 so a collision fails the server rather than quietly moving to 5174 and breaking that
 guarantee.
 
+## Deploying to k3s
+
+`chart/` is a Helm chart that puts the built app on the k3s cluster, behind the tailscale
+operator. It is installed with `helm` directly — there is no GitOps controller watching
+this repository, so a deploy happens when someone runs the command below.
+
+The cluster has no registry, so the image is imported into the node's containerd the way
+personal-orchestrator's services are. Run this on the **host** — it needs root for
+`k3s ctr`, which the dev container deliberately cannot have:
+
+```sh
+./build_image.sh
+helm upgrade --install piano-tutor ./chart --namespace piano-tutor --create-namespace
+```
+
+That leaves the app at `https://piano-tutor.<tailnet>.ts.net`, reachable from any device
+on the tailnet and from nowhere else.
+
+`npm run ci` does not check the chart — helm is a host tool and the gate is documented to
+run inside the container — so the chart's checks live here instead: `helm lint chart`, and
+the same `helm upgrade` line with `--dry-run=server` to put the manifests past the API
+server before anything is applied.
+
+Re-importing a newer build changes nothing on its own; restart the deployment to pick it
+up:
+
+```sh
+kubectl -n piano-tutor rollout restart deployment/piano-tutor
+```
+
+### The deployed copy can talk to a piano; the dev server still cannot
+
+The constraint above — open the dev server at `localhost:5173`, never at a LAN or tailnet
+address — is about **http**. The tailscale ingress serves the deployed app over **https**,
+and any https origin is a secure context, so Web MIDI is available there. Whichever
+machine's browser opens that URL is the one whose USB piano the app sees; the cluster
+never touches the hardware.
+
 ## Version pinning
 
-Every dependency is pinned to an exact version, and the base image is pinned by digest.
+Every dependency is pinned to an exact version, and every base image is pinned by digest —
+the dev container's, and the two the production `Dockerfile` builds from.
 
 Two versions have to be written in more than one place, and `npm run ci` starts by
 running `scripts/check-version-lockstep.mjs`, which fails if either has drifted.
