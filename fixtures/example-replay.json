@@ -1,0 +1,6 @@
+[
+  { "type": "noteOn", "note": 60, "velocity": 100, "time": 0 },
+  { "type": "noteOff", "note": 60, "time": 1500 },
+  { "type": "noteOn", "note": 64, "velocity": 90, "time": 3000 },
+  { "type": "noteOff", "note": 64, "time": 4500 }
+]

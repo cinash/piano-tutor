@@ -3,9 +3,11 @@
 A TypeScript / React / Vite web app, developed inside a VS Code dev container and tested
 with Vitest and Playwright.
 
-This repository currently contains the toolchain only: a page that reads `OK`, one unit
-test and one end-to-end test, wired so that the whole check suite runs from a single
-command.
+It will eventually turn a MusicXML file into a wait-mode falling-note practice view
+driven by a USB piano over the Web MIDI API. So far (step 1) it has the MIDI input
+plumbing: a device picker, an on-screen keyboard reflecting held notes, and a dev-only
+recording mode. See `DECISIONS.md` for non-obvious choices and `MANUAL-CHECKS.md` for
+what to verify by hand with the real piano.
 
 ## Opening the container
 

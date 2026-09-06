@@ -1,0 +1,35 @@
+.piano-keyboard {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: #222;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.piano-key {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  border: 1px solid #000;
+}
+
+.piano-key--white {
+  height: 100%;
+  background: #fff;
+  z-index: 1;
+}
+
+.piano-key--black {
+  height: 60%;
+  background: #111;
+  z-index: 2;
+}
+
+.piano-key--held.piano-key--white {
+  background: #7dd3fc;
+}
+
+.piano-key--held.piano-key--black {
+  background: #0284c7;
+}
