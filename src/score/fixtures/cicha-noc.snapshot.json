@@ -1,0 +1,672 @@
+{
+  "title": "Cicha Noc",
+  "divisions": 2,
+  "timeSignatures": [
+    {
+      "beats": 6,
+      "beatType": 8,
+      "measure": 1
+    }
+  ],
+  "events": [
+    {
+      "id": "m1-b1-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        },
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        },
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 1
+        }
+      ],
+      "measure": 1,
+      "beat": 1,
+      "startTime": 0,
+      "durationBeats": 3
+    },
+    {
+      "id": "m1-b4-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 1,
+      "beat": 4,
+      "startTime": 1.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m1-b5-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 1,
+      "beat": 5,
+      "startTime": 2,
+      "durationBeats": 1
+    },
+    {
+      "id": "m2-b1-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        },
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        },
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 1
+        }
+      ],
+      "measure": 2,
+      "beat": 1,
+      "startTime": 3,
+      "durationBeats": 3
+    },
+    {
+      "id": "m2-b4-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 2,
+      "beat": 4,
+      "startTime": 4.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m2-b5-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 2,
+      "beat": 5,
+      "startTime": 5,
+      "durationBeats": 1
+    },
+    {
+      "id": "m3-b1-e1",
+      "notes": [
+        {
+          "pitch": 60,
+          "hand": "right",
+          "finger": 1
+        },
+        {
+          "pitch": 53,
+          "hand": "left",
+          "finger": 4
+        }
+      ],
+      "measure": 3,
+      "beat": 1,
+      "startTime": 6,
+      "durationBeats": 3
+    },
+    {
+      "id": "m3-b4-e1",
+      "notes": [
+        {
+          "pitch": 60,
+          "hand": "right",
+          "finger": 1
+        }
+      ],
+      "measure": 3,
+      "beat": 4,
+      "startTime": 7.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m3-b5-e1",
+      "notes": [
+        {
+          "pitch": 60,
+          "hand": "right",
+          "finger": 1
+        }
+      ],
+      "measure": 3,
+      "beat": 5,
+      "startTime": 8,
+      "durationBeats": 1
+    },
+    {
+      "id": "m4-b1-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        },
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 5
+        }
+      ],
+      "measure": 4,
+      "beat": 1,
+      "startTime": 9,
+      "durationBeats": 3
+    },
+    {
+      "id": "m4-b2-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 4,
+      "beat": 2,
+      "startTime": 9.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m4-b3-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 4,
+      "beat": 3,
+      "startTime": 10,
+      "durationBeats": 1.5
+    },
+    {
+      "id": "m5-b1-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        },
+        {
+          "pitch": 53,
+          "hand": "left",
+          "finger": 4
+        },
+        {
+          "pitch": 57,
+          "hand": "left",
+          "finger": 2
+        }
+      ],
+      "measure": 5,
+      "beat": 1,
+      "startTime": 12,
+      "durationBeats": 3
+    },
+    {
+      "id": "m5-b2-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        }
+      ],
+      "measure": 5,
+      "beat": 2,
+      "startTime": 12.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m5-b3-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 5,
+      "beat": 3,
+      "startTime": 13,
+      "durationBeats": 1
+    },
+    {
+      "id": "m5-b5-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 5,
+      "beat": 5,
+      "startTime": 14,
+      "durationBeats": 1
+    },
+    {
+      "id": "m6-b1-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        },
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        },
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 1
+        }
+      ],
+      "measure": 6,
+      "beat": 1,
+      "startTime": 15,
+      "durationBeats": 3
+    },
+    {
+      "id": "m6-b3-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        }
+      ],
+      "measure": 6,
+      "beat": 3,
+      "startTime": 16,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m6-b4-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 6,
+      "beat": 4,
+      "startTime": 16.5,
+      "durationBeats": 1
+    },
+    {
+      "id": "m6-b6-e1",
+      "notes": [
+        {
+          "pitch": 62,
+          "hand": "right"
+        }
+      ],
+      "measure": 6,
+      "beat": 6,
+      "startTime": 17.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m7-b1-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        },
+        {
+          "pitch": 53,
+          "hand": "left",
+          "finger": 4
+        },
+        {
+          "pitch": 57,
+          "hand": "left",
+          "finger": 2
+        }
+      ],
+      "measure": 7,
+      "beat": 1,
+      "startTime": 18,
+      "durationBeats": 3
+    },
+    {
+      "id": "m7-b2-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        }
+      ],
+      "measure": 7,
+      "beat": 2,
+      "startTime": 18.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m7-b3-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 7,
+      "beat": 3,
+      "startTime": 19,
+      "durationBeats": 1
+    },
+    {
+      "id": "m7-b5-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 7,
+      "beat": 5,
+      "startTime": 20,
+      "durationBeats": 1
+    },
+    {
+      "id": "m8-b1-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        },
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        },
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 1
+        }
+      ],
+      "measure": 8,
+      "beat": 1,
+      "startTime": 21,
+      "durationBeats": 3
+    },
+    {
+      "id": "m8-b3-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        }
+      ],
+      "measure": 8,
+      "beat": 3,
+      "startTime": 22,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m8-b4-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 8,
+      "beat": 4,
+      "startTime": 22.5,
+      "durationBeats": 1
+    },
+    {
+      "id": "m8-b6-e1",
+      "notes": [
+        {
+          "pitch": 62,
+          "hand": "right",
+          "finger": 2
+        }
+      ],
+      "measure": 8,
+      "beat": 6,
+      "startTime": 23.5,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m9-b1-e1",
+      "notes": [
+        {
+          "pitch": 60,
+          "hand": "right",
+          "finger": 1
+        },
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        }
+      ],
+      "measure": 9,
+      "beat": 1,
+      "startTime": 24,
+      "durationBeats": 3
+    },
+    {
+      "id": "m9-b3-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 9,
+      "beat": 3,
+      "startTime": 25,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m9-b4-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 9,
+      "beat": 4,
+      "startTime": 25.5,
+      "durationBeats": 2
+    },
+    {
+      "id": "m10-b1-e1",
+      "notes": [
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 1
+        }
+      ],
+      "measure": 10,
+      "beat": 1,
+      "startTime": 27,
+      "durationBeats": 3
+    },
+    {
+      "id": "m10-b2-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        }
+      ],
+      "measure": 10,
+      "beat": 2,
+      "startTime": 27.5,
+      "durationBeats": 1
+    },
+    {
+      "id": "m10-b4-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 10,
+      "beat": 4,
+      "startTime": 28.5,
+      "durationBeats": 1.5
+    },
+    {
+      "id": "m11-b1-e1",
+      "notes": [
+        {
+          "pitch": 60,
+          "hand": "right",
+          "finger": 1
+        },
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        }
+      ],
+      "measure": 11,
+      "beat": 1,
+      "startTime": 30,
+      "durationBeats": 3
+    },
+    {
+      "id": "m11-b3-e1",
+      "notes": [
+        {
+          "pitch": 64,
+          "hand": "right",
+          "finger": 3
+        }
+      ],
+      "measure": 11,
+      "beat": 3,
+      "startTime": 31,
+      "durationBeats": 0.5
+    },
+    {
+      "id": "m11-b4-e1",
+      "notes": [
+        {
+          "pitch": 67,
+          "hand": "right",
+          "finger": 5
+        }
+      ],
+      "measure": 11,
+      "beat": 4,
+      "startTime": 31.5,
+      "durationBeats": 2
+    },
+    {
+      "id": "m12-b1-e1",
+      "notes": [
+        {
+          "pitch": 48,
+          "hand": "left",
+          "finger": 5
+        },
+        {
+          "pitch": 55,
+          "hand": "left",
+          "finger": 1
+        }
+      ],
+      "measure": 12,
+      "beat": 1,
+      "startTime": 33,
+      "durationBeats": 3
+    },
+    {
+      "id": "m12-b2-e1",
+      "notes": [
+        {
+          "pitch": 65,
+          "hand": "right",
+          "finger": 4
+        }
+      ],
+      "measure": 12,
+      "beat": 2,
+      "startTime": 33.5,
+      "durationBeats": 1
+    },
+    {
+      "id": "m12-b4-e1",
+      "notes": [
+        {
+          "pitch": 62,
+          "hand": "right",
+          "finger": 2
+        }
+      ],
+      "measure": 12,
+      "beat": 4,
+      "startTime": 34.5,
+      "durationBeats": 1
+    },
+    {
+      "id": "m12-b6-e1",
+      "notes": [
+        {
+          "pitch": 60,
+          "hand": "right",
+          "finger": 1
+        }
+      ],
+      "measure": 12,
+      "beat": 6,
+      "startTime": 35.5,
+      "durationBeats": 0.5
+    }
+  ],
+  "measureCount": 12
+}
