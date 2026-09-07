@@ -174,26 +174,36 @@ contradicts the invariants above, since it never un-satisfies an already-satisfi
 note — it only decides whether an _extra_ note gets credited toward what comes next, or
 is discarded and has to be replayed once the engine catches up to it.
 
-## Falling-note view: "wrong note" is derived in the UI, not tracked by the engine
+## Falling-note view: "wrong note" is tracked event-by-event, not re-derived from `heldNotes`
 
 `EngineState.status` is only `'waiting'` or `'complete'` — the practice engine (step 3)
 deliberately has no third "wrong" status, since a wrong note doesn't change what the
 engine is waiting for. The falling-note view still needs to show a wrong note visibly
-not advancing, so `FallingNotes` (`src/practice/FallingNotes.tsx`) derives it itself: a
-held pitch that's neither part of the current event's expected pitches nor the next
-event's — the same two sets `advance()` itself checks (`src/engine/advance.ts`) — is a
-wrong note. This mirrors the engine's own definition rather than inventing a different
-one, and keeps the engine free of a display concept it doesn't need for its own
-semantics.
+not advancing.
+
+The first version of this derived "wrong" on every render, straight from
+`EngineState.heldNotes`: a held pitch neither in the current event's expected pitches
+nor the next event's. That's wrong — `heldNotes` accumulates across events, and a note
+correctly played for an earlier event routinely stays held into a later one (e.g.
+`cicha-noc.musicxml` m. 1's LH dotted-half chord, sustained under three RH melody
+events). Re-testing it against a _later_ current/next pair flagged it wrong the moment
+the engine advanced past it, so playing the piece exactly as written painted most of
+every bar red.
+
+`src/practice/practiceView.ts` fixes this by tracking wrongness as a fact decided once,
+at the moment a `noteOn` arrives — mirroring `advance()`'s own current-vs-next check
+(`src/engine/advance.ts`) against the state _before_ that call — and cleared on that
+same pitch's `noteOff`, independent of how far the engine moves on afterwards.
+`FallingNotes` just renders whatever `wrongNotes` set it's handed; it no longer computes
+wrongness itself. `src/practice/practiceView.test.ts` pins both the genuine-wrong-note
+case and the sustained-correct-note regression this replaced.
 
 ## `window.__practiceState` only carries what a Layer 3 test needs
 
-The snapshot (`src/practice/practiceState.ts`) is `status`, `nextEventIndex`,
-`satisfiedNoteIds` and `heldNotes` — not `loop` (unwired until step 5) or
-`pendingEarlyNotes` (internal bookkeeping `advance()` consumes and clears itself; no UI
-renders it). Add a field here when a test actually needs to assert on it, rather than
-mirroring `EngineState` wholesale. The e2e project (`tsconfig.node.json`) doesn't
-include `src`, so `e2e/window.d.ts` duplicates the shape rather than importing it — the
-two type surfaces are independent by the existing project split, and DOM lib was added
-to that config so `page.evaluate()` callbacks (which run as browser-side code) can
-reference `window` at all.
+The snapshot (`src/practice/practiceState.ts`) is `nextEventIndex` and `heldNotes` —
+the only two fields the Playwright suite asserts on. Add a field here when a test
+actually needs to assert on it, rather than mirroring `EngineState` wholesale. The e2e
+project (`tsconfig.node.json`) doesn't include `src`, so `e2e/window.d.ts` duplicates
+the shape rather than importing it — the two type surfaces are independent by the
+existing project split, and DOM lib was added to that config so `page.evaluate()`
+callbacks (which run as browser-side code) can reference `window` at all.

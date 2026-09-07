@@ -35,7 +35,25 @@ describe('App', () => {
     const current = screen.getAllByTestId('falling-note-event')[0];
     expect(current.dataset.eventId).toBe('m1-b1-e1');
     expect(current.className).toContain('falling-note--wrong');
+  });
 
-    fireEvent.keyUp(window, { code: 'KeyE' });
+  it('does not flag a sustained correct chord note as wrong once the engine advances past it', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
+    await screen.findByText('Connected: computer keyboard');
+
+    // m1 b1: RH G4 (KeyT) + LH C3+G3 chord (KeyZ, KeyB)
+    fireEvent.keyDown(window, { code: 'KeyT' });
+    fireEvent.keyDown(window, { code: 'KeyZ' });
+    fireEvent.keyDown(window, { code: 'KeyB' });
+    fireEvent.keyUp(window, { code: 'KeyT' });
+
+    // LH stays held while the RH moves on to m1 b4's repeated G4, which completes
+    // that event outright and advances straight through to m1 b5
+    fireEvent.keyDown(window, { code: 'KeyT' });
+
+    const current = screen.getAllByTestId('falling-note-event')[0];
+    expect(current.dataset.eventId).toBe('m1-b5-e1');
+    expect(current.className).not.toContain('falling-note--wrong');
   });
 });

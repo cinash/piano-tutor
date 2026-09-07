@@ -3,8 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { KEYBOARD_RANGE } from './config';
 import type { ActiveSource } from './devices/DevicePicker';
 import { DevicePicker } from './devices/DevicePicker';
-import { advance, createInitialState } from './engine/advance';
-import type { EngineState } from './engine/types';
 import { PianoKeyboard } from './keyboard/PianoKeyboard';
 import { ReplayMidiSource } from './midi/ReplayMidiSource';
 import { VirtualKeyboardSource } from './midi/VirtualKeyboardSource';
@@ -19,6 +17,11 @@ import { downloadRecording } from './midi/recording';
 import type { MidiEvent, MidiSource } from './midi/types';
 import { FallingNotes } from './practice/FallingNotes';
 import { toPracticeStateSnapshot } from './practice/practiceState';
+import {
+  advancePracticeView,
+  createInitialPracticeViewState,
+  type PracticeViewState,
+} from './practice/practiceView';
 import { cichaNocScore } from './score/cichaNoc';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
@@ -44,7 +47,7 @@ function describeError(err: unknown): string {
 const webMidiSupported = isWebMidiSupported();
 
 export function App() {
-  const [engineState, setEngineState] = useState<EngineState>(() => createInitialState());
+  const [view, setView] = useState<PracticeViewState>(createInitialPracticeViewState);
   const [active, setActive] = useState<ActiveSource>({ kind: 'none' });
   const [webMidiInputs, setWebMidiInputs] = useState<MidiInputDescriptor[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +60,13 @@ export function App() {
 
   function handleEvent(event: MidiEvent) {
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
-    setEngineState((prev) => advance(prev, cichaNocScore, event, event.time));
+    setView((prev) => advancePracticeView(prev, cichaNocScore, event, event.time));
   }
 
   useEffect(() => {
     if (import.meta.env.DEV)
-      window.__practiceState = toPracticeStateSnapshot(engineState);
-  }, [engineState]);
+      window.__practiceState = toPracticeStateSnapshot(view.engine);
+  }, [view]);
 
   function attach(
     source: MidiSource,
@@ -74,7 +77,7 @@ export function App() {
     sourceRef.current = source;
     connectedDeviceIdRef.current = deviceId;
     source.onEvent(handleEvent);
-    setEngineState(createInitialState());
+    setView(createInitialPracticeViewState());
     setError(null);
     setActive(nextStatus);
     source.start().catch((err: unknown) => {
@@ -90,7 +93,7 @@ export function App() {
     sourceRef.current?.stop();
     sourceRef.current = null;
     connectedDeviceIdRef.current = null;
-    setEngineState(createInitialState());
+    setView(createInitialPracticeViewState());
     setActive({ kind: 'none' });
   }, []);
 
@@ -188,16 +191,16 @@ export function App() {
         </button>
       )}
       <FallingNotes
-        score={cichaNocScore}
-        status={engineState.status}
-        nextEventIndex={engineState.nextEventIndex}
-        satisfiedNoteIds={engineState.satisfiedNoteIds}
-        heldNotes={engineState.heldNotes}
+        events={cichaNocScore.events}
+        status={view.engine.status}
+        nextEventIndex={view.engine.nextEventIndex}
+        satisfiedNoteIds={view.engine.satisfiedNoteIds}
+        wrongNotes={view.wrongNotes}
       />
       <PianoKeyboard
         lowNote={KEYBOARD_RANGE.low}
         highNote={KEYBOARD_RANGE.high}
-        heldNotes={engineState.heldNotes}
+        heldNotes={view.engine.heldNotes}
       />
     </div>
   );
