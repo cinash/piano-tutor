@@ -148,3 +148,28 @@ If the currently connected input disappears from the enumerated device list (unp
 the app stops the source and clears held notes rather than trying to keep the UI in a
 "waiting to reconnect" state. Reconnecting is just picking the device again once it
 reappears in the dropdown.
+
+## Practice engine: the roll window and note-off debounce don't gate `advance()`, but early-note grace does
+
+Step 3's spec lists `chordRollWindowMs`, `earlyNoteGraceMs` and `noteOffDebounceMs` as
+tolerances that live in one config object (`ENGINE_TIMING`) so they can be tuned later.
+The first and third don't change `advance()`'s control flow, and that's deliberate
+rather than an oversight: the spec is also explicit that waiting has no time limit,
+ever, and that a chord's already-satisfied notes stay satisfied indefinitely while the
+rest is missing — so there is no room for a "too spread out" rejection without
+contradicting that. Concretely: a design where a chord's already-played notes expire
+after `chordRollWindowMs` (so a slow arpeggiated chord attempt would need re-playing)
+would make the "missing note" Layer 2 case fail, since that case expects the notes that
+did sound to stay satisfied no matter how long the last one takes to arrive.
+`noteOffDebounceMs` would need a real timer to do anything, which a pure, timer-free
+`advance()` can't run. Both values are exported anyway, for a later step's UI
+(rolled-chord feedback, held-note debounce on the falling-note view) to read from the
+same place `advance()`'s tests were written against.
+
+`earlyNoteGraceMs` is different: `advance()` credits a note played for the _next_ event
+while the current one is still open, provided it arrives within `earlyNoteGraceMs` of
+the current event's completion — tracked via `EngineState.pendingEarlyNotes`, a
+pitch→clock map consumed (and cleared) the moment the engine advances. Nothing here
+contradicts the invariants above, since it never un-satisfies an already-satisfied
+note — it only decides whether an _extra_ note gets credited toward what comes next, or
+is discarded and has to be replayed once the engine catches up to it.
