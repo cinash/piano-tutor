@@ -15,6 +15,14 @@ import {
 } from './midi/WebMidiSource';
 import { downloadRecording } from './midi/recording';
 import type { MidiEvent, MidiSource } from './midi/types';
+import { FallingNotes } from './practice/FallingNotes';
+import { toPracticeStateSnapshot } from './practice/practiceState';
+import {
+  advancePracticeView,
+  createInitialPracticeViewState,
+  type PracticeViewState,
+} from './practice/practiceView';
+import { cichaNocScore } from './score/cichaNoc';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
   return (
@@ -39,7 +47,7 @@ function describeError(err: unknown): string {
 const webMidiSupported = isWebMidiSupported();
 
 export function App() {
-  const [heldNotes, setHeldNotes] = useState<ReadonlySet<number>>(new Set());
+  const [view, setView] = useState<PracticeViewState>(createInitialPracticeViewState);
   const [active, setActive] = useState<ActiveSource>({ kind: 'none' });
   const [webMidiInputs, setWebMidiInputs] = useState<MidiInputDescriptor[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +60,13 @@ export function App() {
 
   function handleEvent(event: MidiEvent) {
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
-    setHeldNotes((prev) => {
-      const next = new Set(prev);
-      if (event.type === 'noteOn') next.add(event.note);
-      else next.delete(event.note);
-      return next;
-    });
+    setView((prev) => advancePracticeView(prev, cichaNocScore, event, event.time));
   }
+
+  useEffect(() => {
+    if (import.meta.env.DEV)
+      window.__practiceState = toPracticeStateSnapshot(view.engine);
+  }, [view]);
 
   function attach(
     source: MidiSource,
@@ -69,7 +77,7 @@ export function App() {
     sourceRef.current = source;
     connectedDeviceIdRef.current = deviceId;
     source.onEvent(handleEvent);
-    setHeldNotes(new Set());
+    setView(createInitialPracticeViewState());
     setError(null);
     setActive(nextStatus);
     source.start().catch((err: unknown) => {
@@ -85,7 +93,7 @@ export function App() {
     sourceRef.current?.stop();
     sourceRef.current = null;
     connectedDeviceIdRef.current = null;
-    setHeldNotes(new Set());
+    setView(createInitialPracticeViewState());
     setActive({ kind: 'none' });
   }, []);
 
@@ -182,10 +190,17 @@ export function App() {
           {isRecording ? 'Stop recording & download' : 'Start recording'}
         </button>
       )}
+      <FallingNotes
+        events={cichaNocScore.events}
+        status={view.engine.status}
+        nextEventIndex={view.engine.nextEventIndex}
+        satisfiedNoteIds={view.engine.satisfiedNoteIds}
+        hasWrongNote={view.wrongNotes.size > 0}
+      />
       <PianoKeyboard
         lowNote={KEYBOARD_RANGE.low}
         highNote={KEYBOARD_RANGE.high}
-        heldNotes={heldNotes}
+        heldNotes={view.engine.heldNotes}
       />
     </div>
   );

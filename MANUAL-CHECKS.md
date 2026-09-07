@@ -20,3 +20,6 @@ update it at the end of each step.
    above, Q W E R T Y U) light up the correct on-screen keys.
 8. Click "Start recording", play a short phrase, click "Stop recording & download", and
    confirm a `recording-*.json` file downloads containing the notes you played.
+9. Play Cicha Noc through on the real piano and confirm the falling-note view and
+   wait-mode behavior feel right — in particular, that a wrong note visibly does not
+   advance the queue, and that waiting for the next note has no timeout.
