@@ -24,6 +24,15 @@ export function advancePracticeView(
   event: MidiEvent,
   clock: number,
 ): PracticeViewState {
+  // Mirrors advance()'s own early return: once the piece is complete, there's nothing
+  // left to be wrong about — score.events[nextEventIndex] is out of range from here on.
+  if (state.engine.status === 'complete') {
+    return {
+      engine: advance(state.engine, score, event, clock),
+      wrongNotes: state.wrongNotes,
+    };
+  }
+
   const wrongNotes = new Set(state.wrongNotes);
 
   if (event.type === 'noteOff') {
