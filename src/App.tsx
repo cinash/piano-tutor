@@ -195,7 +195,7 @@ export function App() {
         status={view.engine.status}
         nextEventIndex={view.engine.nextEventIndex}
         satisfiedNoteIds={view.engine.satisfiedNoteIds}
-        wrongNotes={view.wrongNotes}
+        hasWrongNote={view.wrongNotes.size > 0}
       />
       <PianoKeyboard
         lowNote={KEYBOARD_RANGE.low}

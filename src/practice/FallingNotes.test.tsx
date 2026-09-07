@@ -42,7 +42,7 @@ describe('FallingNotes', () => {
         status="waiting"
         nextEventIndex={1}
         satisfiedNoteIds={new Set()}
-        wrongNotes={new Set()}
+        hasWrongNote={false}
       />,
     );
 
@@ -58,7 +58,7 @@ describe('FallingNotes', () => {
         status="waiting"
         nextEventIndex={0}
         satisfiedNoteIds={new Set()}
-        wrongNotes={new Set()}
+        hasWrongNote={false}
       />,
     );
 
@@ -74,7 +74,7 @@ describe('FallingNotes', () => {
         status="waiting"
         nextEventIndex={0}
         satisfiedNoteIds={new Set([60])}
-        wrongNotes={new Set()}
+        hasWrongNote={false}
       />,
     );
 
@@ -92,7 +92,7 @@ describe('FallingNotes', () => {
         status="waiting"
         nextEventIndex={0}
         satisfiedNoteIds={new Set()}
-        wrongNotes={new Set([99])}
+        hasWrongNote={true}
       />,
     );
     expect(screen.getAllByTestId('falling-note-event')[0].className).toContain(
@@ -105,7 +105,7 @@ describe('FallingNotes', () => {
         status="waiting"
         nextEventIndex={0}
         satisfiedNoteIds={new Set()}
-        wrongNotes={new Set()}
+        hasWrongNote={false}
       />,
     );
     expect(screen.getAllByTestId('falling-note-event')[0].className).not.toContain(
@@ -120,7 +120,7 @@ describe('FallingNotes', () => {
         status="complete"
         nextEventIndex={3}
         satisfiedNoteIds={new Set()}
-        wrongNotes={new Set()}
+        hasWrongNote={false}
       />,
     );
 

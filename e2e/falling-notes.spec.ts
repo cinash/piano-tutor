@@ -9,7 +9,6 @@ import { expect, test, type Page } from '@playwright/test';
 const KEY_FOR_PITCH: Record<number, string> = {
   48: 'z', // C3
   55: 'b', // G3
-  60: ',', // C4
   64: 'e', // E4
   67: 't', // G4
 };
@@ -71,7 +70,5 @@ test.describe('falling-note view', () => {
     await expect(page.getByTestId('falling-notes')).toHaveScreenshot(
       'falling-notes-waiting-for-wrong-note.png',
     );
-
-    await page.keyboard.up('e');
   });
 });

@@ -194,7 +194,7 @@ every bar red.
 at the moment a `noteOn` arrives — mirroring `advance()`'s own current-vs-next check
 (`src/engine/advance.ts`) against the state _before_ that call — and cleared on that
 same pitch's `noteOff`, independent of how far the engine moves on afterwards.
-`FallingNotes` just renders whatever `wrongNotes` set it's handed; it no longer computes
+`FallingNotes` just renders the resulting `hasWrongNote` boolean; it no longer computes
 wrongness itself. `src/practice/practiceView.test.ts` pins both the genuine-wrong-note
 case and the sustained-correct-note regression this replaced.
 

@@ -13,15 +13,10 @@ export function createInitialPracticeViewState(): PracticeViewState {
 }
 
 /**
- * advance() has no "wrong" status of its own (see DECISIONS.md) — a wrong note simply
- * doesn't change what it's waiting for. The falling-note view still needs one for
- * display, so this tracks it separately: a pitch is wrong if, at the moment it
- * sounded, it matched neither the event advance() was waiting for nor the one it
- * credits early (src/engine/advance.ts) — checked against the state *before* advance()
- * runs, not against the accumulated heldNotes afterwards. A correctly-played note is
- * routinely still held once the engine has advanced past it (e.g. a sustained chord
- * under a moving melody line), and re-testing heldNotes against the new current/next
- * pitches would wrongly flag it the moment the engine moves on.
+ * A pitch is wrong if, when it sounds, it matches neither the event advance() is
+ * waiting for nor the one after — checked against the state *before* advance() runs,
+ * not against the accumulated heldNotes afterwards. See DECISIONS.md for why (a
+ * sustained correct note must not be flagged once the engine has advanced past it).
  */
 export function advancePracticeView(
   state: PracticeViewState,

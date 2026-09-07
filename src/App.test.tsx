@@ -3,6 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 import { App } from './App';
 
+async function renderConnectedApp() {
+  const result = render(<App />);
+  fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
+  await screen.findByText('Connected: computer keyboard');
+  return result;
+}
+
 describe('App', () => {
   it('renders the on-screen keyboard, not connected to any source initially', () => {
     render(<App />);
@@ -10,9 +17,7 @@ describe('App', () => {
   });
 
   it('highlights the on-screen key when a computer-keyboard key is pressed', async () => {
-    const { container } = render(<App />);
-    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
-    await screen.findByText('Connected: computer keyboard');
+    const { container } = await renderConnectedApp();
 
     fireEvent.keyDown(window, { code: 'KeyZ' });
     expect(container.querySelector('[data-note="48"]')?.getAttribute('data-held')).toBe(
@@ -26,9 +31,7 @@ describe('App', () => {
   });
 
   it('flags a wrong note in the falling-note queue without advancing it', async () => {
-    render(<App />);
-    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
-    await screen.findByText('Connected: computer keyboard');
+    await renderConnectedApp();
 
     fireEvent.keyDown(window, { code: 'KeyE' }); // E4 (64) — not expected yet
 
@@ -38,9 +41,7 @@ describe('App', () => {
   });
 
   it('does not flag a sustained correct chord note as wrong once the engine advances past it', async () => {
-    render(<App />);
-    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
-    await screen.findByText('Connected: computer keyboard');
+    await renderConnectedApp();
 
     // m1 b1: RH G4 (KeyT) + LH C3+G3 chord (KeyZ, KeyB)
     fireEvent.keyDown(window, { code: 'KeyT' });

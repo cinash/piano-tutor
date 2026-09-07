@@ -18,7 +18,7 @@ export interface FallingNotesProps {
   status: EngineState['status'];
   nextEventIndex: number;
   satisfiedNoteIds: ReadonlySet<number>;
-  wrongNotes: ReadonlySet<number>;
+  hasWrongNote: boolean;
 }
 
 export function FallingNotes({
@@ -26,7 +26,7 @@ export function FallingNotes({
   status,
   nextEventIndex,
   satisfiedNoteIds,
-  wrongNotes,
+  hasWrongNote,
 }: FallingNotesProps) {
   if (status === 'complete') {
     return (
@@ -37,7 +37,6 @@ export function FallingNotes({
   }
 
   const upcoming = events.slice(nextEventIndex, nextEventIndex + QUEUE_LENGTH);
-  const hasWrongNote = wrongNotes.size > 0;
 
   return (
     <div
