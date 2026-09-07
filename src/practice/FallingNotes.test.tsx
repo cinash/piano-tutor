@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { ScoreEvent } from '../score/types';
-import { FallingNotes } from './FallingNotes';
+import { FallingNotes, type FallingNotesProps } from './FallingNotes';
 
 const EVENTS: ScoreEvent[] = [
   {
@@ -34,17 +34,22 @@ const EVENTS: ScoreEvent[] = [
   },
 ];
 
+function renderQueue(props: Partial<FallingNotesProps> = {}) {
+  return render(
+    <FallingNotes
+      events={EVENTS}
+      status="waiting"
+      nextEventIndex={0}
+      satisfiedNoteIds={new Set()}
+      hasWrongNote={false}
+      {...props}
+    />,
+  );
+}
+
 describe('FallingNotes', () => {
   it('renders the upcoming events starting at the current one, blank when no fingering was authored', () => {
-    render(
-      <FallingNotes
-        events={EVENTS}
-        status="waiting"
-        nextEventIndex={1}
-        satisfiedNoteIds={new Set()}
-        hasWrongNote={false}
-      />,
-    );
+    renderQueue({ nextEventIndex: 1 });
 
     const events = screen.getAllByTestId('falling-note-event');
     expect(events.map((el) => el.dataset.eventId)).toEqual(['e1', 'e2']);
@@ -52,15 +57,7 @@ describe('FallingNotes', () => {
   });
 
   it('marks the current block distinctly from the rest of the queue', () => {
-    render(
-      <FallingNotes
-        events={EVENTS}
-        status="waiting"
-        nextEventIndex={0}
-        satisfiedNoteIds={new Set()}
-        hasWrongNote={false}
-      />,
-    );
+    renderQueue();
 
     const events = screen.getAllByTestId('falling-note-event');
     expect(events[0].className).toContain('falling-note--current');
@@ -68,15 +65,7 @@ describe('FallingNotes', () => {
   });
 
   it('dims a chord note once it has sounded, while the chord is still waiting on the rest', () => {
-    render(
-      <FallingNotes
-        events={EVENTS}
-        status="waiting"
-        nextEventIndex={0}
-        satisfiedNoteIds={new Set([60])}
-        hasWrongNote={false}
-      />,
-    );
+    renderQueue({ satisfiedNoteIds: new Set([60]) });
 
     const chips = screen
       .getAllByTestId('falling-note-event')[0]
@@ -86,15 +75,7 @@ describe('FallingNotes', () => {
   });
 
   it('flags the current block as wrong while a wrong note is held, and not otherwise', () => {
-    const { rerender } = render(
-      <FallingNotes
-        events={EVENTS}
-        status="waiting"
-        nextEventIndex={0}
-        satisfiedNoteIds={new Set()}
-        hasWrongNote={true}
-      />,
-    );
+    const { rerender } = renderQueue({ hasWrongNote: true });
     expect(screen.getAllByTestId('falling-note-event')[0].className).toContain(
       'falling-note--wrong',
     );
@@ -114,15 +95,7 @@ describe('FallingNotes', () => {
   });
 
   it('shows a completion message once the engine has finished the piece', () => {
-    render(
-      <FallingNotes
-        events={EVENTS}
-        status="complete"
-        nextEventIndex={3}
-        satisfiedNoteIds={new Set()}
-        hasWrongNote={false}
-      />,
-    );
+    renderQueue({ status: 'complete', nextEventIndex: 3 });
 
     expect(screen.getByTestId('falling-notes').textContent).toBe('Piece complete');
   });

@@ -196,14 +196,10 @@ at the moment a `noteOn` arrives — mirroring `advance()`'s own current-vs-next
 same pitch's `noteOff`, independent of how far the engine moves on afterwards.
 `FallingNotes` just renders the resulting `hasWrongNote` boolean; it no longer computes
 wrongness itself. `src/practice/practiceView.test.ts` pins both the genuine-wrong-note
-case and the sustained-correct-note regression this replaced.
-
-`src/App.test.tsx`'s version of the same regression test has to stop right at m1 b4,
-not play on to m1 b5 or beyond: m2 b1 repeats m1 b1's exact chord, so a test that
-checked the LH pair any later would pass under the old buggy derivation too, purely
-because the piece happens to repeat those pitches — not because the fix is doing
-anything. The stopping point is chosen so the assertion only holds if wrongness is
-decided per-event rather than re-derived from whatever's still held.
+case and the sustained-correct-note regression this replaced; `src/App.test.tsx`'s
+version of the same regression test carries, in its own comment, the one fact that
+makes it discriminating rather than accidentally passing either way (m2 b1 repeats
+m1 b1's exact chord).
 
 ## `window.__practiceState` only carries what a Layer 3 test needs
 

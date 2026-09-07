@@ -46,7 +46,9 @@ describe('App', () => {
     // Completing m1 b1's chord (RH G4 + LH C3+G3) advances straight to m1 b4, which
     // wants G4 again — not C3 or G3, so a naive "is this held pitch still current or
     // next" check on the accumulated held notes would wrongly flag the LH pair the
-    // instant this chord completes, even though nothing wrong was played.
+    // instant this chord completes, even though nothing wrong was played. Assert here
+    // and not a beat later: m2 b1 repeats m1 b1's exact chord, so checking past m1 b5
+    // would pass under that naive check too, for the wrong reason.
     fireEvent.keyDown(window, { code: 'KeyT' });
     fireEvent.keyDown(window, { code: 'KeyZ' });
     fireEvent.keyDown(window, { code: 'KeyB' });

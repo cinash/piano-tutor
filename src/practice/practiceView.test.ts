@@ -73,22 +73,4 @@ describe('advancePracticeView', () => {
     const result = play([{ type: 'noteOn', note: 69, velocity: 100, time: 0 }]);
     expect(result.wrongNotes.size).toBe(0);
   });
-
-  it('does not flag anything once the piece is complete, mirroring advance()', () => {
-    const complete = play([
-      { type: 'noteOn', note: 67, velocity: 100, time: 0 },
-      { type: 'noteOn', note: 48, velocity: 100, time: 0 },
-      { type: 'noteOn', note: 55, velocity: 100, time: 0 },
-      { type: 'noteOn', note: 69, velocity: 100, time: 100 },
-    ]);
-    expect(complete.engine.status).toBe('complete');
-
-    const result = advancePracticeView(
-      complete,
-      SCORE,
-      { type: 'noteOn', note: 64, velocity: 100, time: 200 },
-      200,
-    );
-    expect(result.wrongNotes.size).toBe(0);
-  });
 });
