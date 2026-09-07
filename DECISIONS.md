@@ -173,3 +173,27 @@ pitch→clock map consumed (and cleared) the moment the engine advances. Nothing
 contradicts the invariants above, since it never un-satisfies an already-satisfied
 note — it only decides whether an _extra_ note gets credited toward what comes next, or
 is discarded and has to be replayed once the engine catches up to it.
+
+## Falling-note view: "wrong note" is derived in the UI, not tracked by the engine
+
+`EngineState.status` is only `'waiting'` or `'complete'` — the practice engine (step 3)
+deliberately has no third "wrong" status, since a wrong note doesn't change what the
+engine is waiting for. The falling-note view still needs to show a wrong note visibly
+not advancing, so `FallingNotes` (`src/practice/FallingNotes.tsx`) derives it itself: a
+held pitch that's neither part of the current event's expected pitches nor the next
+event's — the same two sets `advance()` itself checks (`src/engine/advance.ts`) — is a
+wrong note. This mirrors the engine's own definition rather than inventing a different
+one, and keeps the engine free of a display concept it doesn't need for its own
+semantics.
+
+## `window.__practiceState` only carries what a Layer 3 test needs
+
+The snapshot (`src/practice/practiceState.ts`) is `status`, `nextEventIndex`,
+`satisfiedNoteIds` and `heldNotes` — not `loop` (unwired until step 5) or
+`pendingEarlyNotes` (internal bookkeeping `advance()` consumes and clears itself; no UI
+renders it). Add a field here when a test actually needs to assert on it, rather than
+mirroring `EngineState` wholesale. The e2e project (`tsconfig.node.json`) doesn't
+include `src`, so `e2e/window.d.ts` duplicates the shape rather than importing it — the
+two type surfaces are independent by the existing project split, and DOM lib was added
+to that config so `page.evaluate()` callbacks (which run as browser-side code) can
+reference `window` at all.

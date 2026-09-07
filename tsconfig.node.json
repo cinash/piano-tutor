@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    // DOM is here for e2e/*.spec.ts: page.evaluate() callbacks type-check as browser-side
+    // code (e.g. `window`), even though this project also covers the two node-side configs.
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "types": ["node"],
