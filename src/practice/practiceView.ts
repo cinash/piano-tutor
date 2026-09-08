@@ -1,5 +1,5 @@
-import { advance, createInitialState } from '../engine/advance';
-import type { EngineState } from '../engine/types';
+import { advance, createInitialState, setLoop } from '../engine/advance';
+import type { EngineState, Loop } from '../engine/types';
 import type { MidiEvent } from '../midi/types';
 import type { Score } from '../score/types';
 
@@ -10,6 +10,13 @@ export interface PracticeViewState {
 
 export function createInitialPracticeViewState(): PracticeViewState {
   return { engine: createInitialState(), wrongNotes: new Set() };
+}
+
+export function setPracticeLoop(
+  state: PracticeViewState,
+  loop: Loop | undefined,
+): PracticeViewState {
+  return { ...state, engine: setLoop(state.engine, loop) };
 }
 
 /**
@@ -30,6 +37,7 @@ export function advancePracticeView(
     wrongNotes.delete(event.note);
   } else if (state.engine.status === 'waiting') {
     const expected = score.events[state.engine.nextEventIndex]?.notes ?? [];
+    // Deliberately linear, not loop-aware — see DECISIONS.md.
     const upNext = score.events[state.engine.nextEventIndex + 1]?.notes ?? [];
     const isExpected =
       expected.some((note) => note.pitch === event.note) ||

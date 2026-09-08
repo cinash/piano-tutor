@@ -22,4 +22,7 @@ update it at the end of each step.
    confirm a `recording-*.json` file downloads containing the notes you played.
 9. Play Cicha Noc through on the real piano and confirm the falling-note view and
    wait-mode behavior feel right — in particular, that a wrong note visibly does not
-   advance the queue, and that waiting for the next note has no timeout.
+   advance the queue, and that waiting for the next note has no timeout. Then select a
+   short loop range, play through it several times, and confirm it wraps back to the
+   range's start correctly each time without losing that same "no timeout" behavior at
+   the wrap point.

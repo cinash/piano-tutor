@@ -1,9 +1,14 @@
+export interface Loop {
+  startMeasure: number;
+  endMeasure: number;
+}
+
 export interface EngineState {
   status: 'waiting' | 'complete';
   nextEventIndex: number; // index into Score.events
   satisfiedNoteIds: Set<number>; // which pitches of the current chord have sounded
   heldNotes: Set<number>; // currently-down pitches, for keyboard rendering
-  loop?: { startMeasure: number; endMeasure: number }; // wired up properly in step 5
+  loop?: Loop;
   // Pitches of the *next* event played early, each with the clock time they
   // sounded — consumed by early-note grace when the current event completes.
   pendingEarlyNotes: Map<number, number>;

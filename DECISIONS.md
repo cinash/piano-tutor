@@ -210,3 +210,74 @@ project (`tsconfig.node.json`) doesn't include `src`, so `e2e/window.d.ts` dupli
 the shape rather than importing it — the two type surfaces are independent by the
 existing project split, and DOM lib was added to that config so `page.evaluate()`
 callbacks (which run as browser-side code) can reference `window` at all.
+
+## Loop selection: setting a loop doesn't jump playback, only changes where it wraps
+
+`LoopPicker` (step 5) lets the user pick a start/end measure, but `setLoop()`
+(`src/engine/advance.ts`) only stores the range on `EngineState.loop` — it never moves
+`nextEventIndex`. Picking a loop range before playing anything therefore doesn't skip
+straight to `startMeasure`; the piece still plays forward from wherever it already was,
+and only wraps back to the loop's first event once `advance()` would otherwise move past
+`endMeasure` (`nextIndexAfter`, also in `advance.ts`). This matches the step 5 spec
+literally (it only describes the wraparound trigger, not a jump-on-select), and it means
+a loop selected mid-piece still lets the notes before `startMeasure` play once, normally,
+before the range starts repeating — rather than requiring a special "reset to start"
+transition alongside the wrap one. `nextIndexAfter` also wraps rather than completing
+when the linear next event would run past the end of the piece entirely, so a loop whose
+`endMeasure` is the piece's last measure loops forever instead of finishing.
+
+The wrap needs no separate reset: `completeCurrentEvent` already rebuilds
+`satisfiedNoteIds` from `pendingEarlyNotes` for whichever index comes next, so the loop's
+first event starts from a clean slate the same way any other event does. The main
+`advance()`'s own early-note lookahead (crediting a note played for "whatever comes next"
+while the current event is still open) is deliberately left reading the _linear_ next
+event rather than the loop-aware one `nextIndexAfter` computes — it's asking a different
+question ("is this pitch plausibly what the player meant next", not "where does the
+cursor actually go"), and the two known edges this leaves at a loop boundary are a real
+but narrow tradeoff rather than an oversight:
+
+- Anticipating the event just past the loop (within `earlyNoteGraceMs`) can auto-complete
+  the loop's own first event, if the two happen to share a pitch — true for
+  `cicha-noc.musicxml`'s m2 b1, which repeats m1 b1's chord, so anticipating m2 while
+  about to wrap a 1–1 loop credits the loop's first event (m1 b1) rather than making it
+  wait; nothing past that one event is affected.
+- The mirror case: anticipating the loop's own restart note while still finishing the
+  loop's last event is _not_ granted the early-note grace anywhere else in the piece gets
+  (the lookahead's "next" is the linear one, past the loop, not the wrap target), so it's
+  flagged as a wrong note in the falling-note view even though it's exactly what's coming.
+
+Both are consequences of one lookahead intentionally not being loop-aware, not two
+separate bugs — fixing one by wiring in `nextIndexAfter` would need a real decision about
+what "anticipating" should mean at a boundary the piece can cross repeatedly, not a
+mechanical swap, so it's left as a known edge case rather than guessed at.
+
+## `VirtualKeyboardSource` ignores note keys typed into the loop's number inputs
+
+`VirtualKeyboardSource` listens for `keydown` on `window`, which still fires while
+`LoopPicker`'s measure inputs have keyboard focus, so a key that's also a note (a digit,
+or `e`) would otherwise both edit the field and play a note. `isTypingTarget` guards
+`handleKeyDown` for exactly `type="number"` inputs — not every `<input>` (a checkbox
+doesn't consume typed characters, so guarding it too would have silently killed the
+virtual keyboard the moment the "Loop" checkbox was clicked). The guard only suppresses
+the note; it doesn't call `preventDefault()`, so the keystroke still reaches the field
+normally — `LoopPicker`'s clamp (below) is what keeps that edit from ever landing on
+something unrecoverable, so there's no need to also fight the browser over whether the
+character gets typed. `handleKeyUp` keeps no such guard — releasing whatever's actually
+held must never depend on where focus happens to be, or a key could get stuck in
+`heldNotes`.
+
+## `LoopPicker`'s measure inputs clamp to `[1, measureCount]`
+
+The HTML `min`/`max` attributes only constrain the spinner buttons, not typed input, so
+without an explicit clamp a stray edit could set a `startMeasure` with no matching
+`ScoreEvent` — `nextIndexAfter`'s `findIndex` would return `-1`, and the engine would
+latch an unrecoverable `status: 'complete'`, `nextEventIndex: -1` with no way back short
+of a reload. `handleStartChange`/`handleEndChange` clamp before calling `onChange`, so
+every value the engine ever sees is valid for the current score — valid meaning
+`measureCount` itself has an event at or after it, true for every measure of
+`cicha-noc.musicxml` but not guaranteed for a piece ending in rests; revisit if one
+replaces it. One rough edge the clamp doesn't smooth over: it runs on every keystroke, so
+typing a two-digit end measure can clamp the start measure down through an intermediate
+one-digit value and leave it there (e.g. start 4, end 4, typing "10" into end leaves
+start at 1, not 4) — a real but minor UX rough edge in the mutual-clamp design, not a
+correctness issue, and left as-is rather than adding input-level state to smooth out.

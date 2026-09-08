@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { KEYBOARD_RANGE } from './config';
 import type { ActiveSource } from './devices/DevicePicker';
 import { DevicePicker } from './devices/DevicePicker';
+import type { Loop } from './engine/types';
 import { PianoKeyboard } from './keyboard/PianoKeyboard';
 import { ReplayMidiSource } from './midi/ReplayMidiSource';
 import { VirtualKeyboardSource } from './midi/VirtualKeyboardSource';
@@ -16,10 +17,12 @@ import {
 import { downloadRecording } from './midi/recording';
 import type { MidiEvent, MidiSource } from './midi/types';
 import { FallingNotes } from './practice/FallingNotes';
+import { LoopPicker } from './practice/LoopPicker';
 import { toPracticeStateSnapshot } from './practice/practiceState';
 import {
   advancePracticeView,
   createInitialPracticeViewState,
+  setPracticeLoop,
   type PracticeViewState,
 } from './practice/practiceView';
 import { cichaNocScore } from './score/cichaNoc';
@@ -61,6 +64,10 @@ export function App() {
   function handleEvent(event: MidiEvent) {
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
     setView((prev) => advancePracticeView(prev, cichaNocScore, event, event.time));
+  }
+
+  function handleLoopChange(loop: Loop | undefined) {
+    setView((prev) => setPracticeLoop(prev, loop));
   }
 
   useEffect(() => {
@@ -190,6 +197,11 @@ export function App() {
           {isRecording ? 'Stop recording & download' : 'Start recording'}
         </button>
       )}
+      <LoopPicker
+        measureCount={cichaNocScore.measureCount}
+        loop={view.engine.loop}
+        onChange={handleLoopChange}
+      />
       <FallingNotes
         events={cichaNocScore.events}
         status={view.engine.status}

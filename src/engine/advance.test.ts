@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { MidiEvent } from '../midi/types';
 import type { Score } from '../score/types';
-import { advance, createInitialState } from './advance';
+import { advance, createInitialState, setLoop } from './advance';
 import {
   dropNote,
   dropNoteOn,
@@ -230,5 +230,121 @@ describe('advance', () => {
 
     expect(result.status).toBe('complete');
     expect(result.heldNotes.has(48)).toBe(false);
+  });
+});
+
+describe('advance — loop wraparound (step 5)', () => {
+  /**
+   * Three single-measure events, the middle one a two-note chord spanning both
+   * hands — enough to exercise a chord at the loop boundary without needing the
+   * full three-note SCORE above.
+   */
+  const LOOP_SCORE: Score = {
+    title: 'loop fixture',
+    divisions: 4,
+    timeSignatures: [{ beats: 4, beatType: 4, measure: 1 }],
+    measureCount: 3,
+    events: [
+      {
+        id: 'm1',
+        notes: [{ pitch: 60, hand: 'right' }],
+        measure: 1,
+        beat: 1,
+        startTime: 0,
+        durationBeats: 1,
+      },
+      {
+        id: 'm2',
+        notes: [
+          { pitch: 62, hand: 'right' },
+          { pitch: 65, hand: 'left' },
+        ],
+        measure: 2,
+        beat: 1,
+        startTime: 1,
+        durationBeats: 1,
+      },
+      {
+        id: 'm3',
+        notes: [{ pitch: 67, hand: 'right' }],
+        measure: 3,
+        beat: 1,
+        startTime: 2,
+        durationBeats: 1,
+      },
+    ],
+  };
+
+  /** Feeds a MidiEvent stream through advance() against LOOP_SCORE, from a given state. */
+  function playLoopScore(events: MidiEvent[], initial: EngineState): EngineState {
+    return events.reduce(
+      (state, event) => advance(state, LOOP_SCORE, event, event.time),
+      initial,
+    );
+  }
+
+  /** m1 as a lead-in, then m2's chord — the lap of a { startMeasure: 2, endMeasure: 2 } loop. */
+  const LEAD_IN_THEN_ONE_LAP: MidiEvent[] = [
+    { type: 'noteOn', note: 60, velocity: 100, time: 0 },
+    { type: 'noteOff', note: 60, time: 400 },
+    { type: 'noteOn', note: 62, velocity: 100, time: 500 },
+    { type: 'noteOn', note: 65, velocity: 100, time: 510 },
+    { type: 'noteOff', note: 62, time: 900 },
+    { type: 'noteOff', note: 65, time: 900 },
+  ];
+
+  /** m1, m2, m3 in full — a straight run through the whole piece, once. */
+  const WHOLE_PIECE: MidiEvent[] = [
+    { type: 'noteOn', note: 60, velocity: 100, time: 0 },
+    { type: 'noteOn', note: 62, velocity: 100, time: 500 },
+    { type: 'noteOn', note: 65, velocity: 100, time: 510 },
+    { type: 'noteOn', note: 67, velocity: 100, time: 1000 },
+  ];
+
+  it("wraps back to the loop's first event once completing the last one would move past endMeasure", () => {
+    const result = playLoopScore(
+      LEAD_IN_THEN_ONE_LAP,
+      setLoop(createInitialState(), { startMeasure: 2, endMeasure: 2 }),
+    );
+
+    expect(result.status).toBe('waiting');
+    expect(result.nextEventIndex).toBe(1); // back at m2, not m3 (index 2)
+    // A fresh wait, not m2's own notes carried over from the lap that just finished.
+    expect(result.satisfiedNoteIds.size).toBe(0);
+    // heldNotes mirrors physical keys regardless of the index — released, so empty.
+    expect(result.heldNotes.size).toBe(0);
+  });
+
+  it('loops indefinitely: a second pass through the range wraps the same way', () => {
+    const firstLap = playLoopScore(
+      LEAD_IN_THEN_ONE_LAP,
+      setLoop(createInitialState(), { startMeasure: 2, endMeasure: 2 }),
+    );
+    const secondLap = playLoopScore(
+      [
+        { type: 'noteOn', note: 62, velocity: 100, time: 1000 },
+        { type: 'noteOn', note: 65, velocity: 100, time: 1010 },
+      ],
+      firstLap,
+    );
+
+    expect(secondLap.status).toBe('waiting');
+    expect(secondLap.nextEventIndex).toBe(1);
+  });
+
+  it('wraps rather than completing even when the loop reaches all the way to the end of the piece', () => {
+    const result = playLoopScore(
+      WHOLE_PIECE,
+      setLoop(createInitialState(), { startMeasure: 1, endMeasure: 3 }),
+    );
+
+    expect(result.status).toBe('waiting');
+    expect(result.nextEventIndex).toBe(0); // wrapped to m1, not completed
+  });
+
+  it('without a loop, the same performance completes normally at the end of the piece', () => {
+    const result = playLoopScore(WHOLE_PIECE, createInitialState());
+
+    expect(result.status).toBe('complete');
   });
 });
