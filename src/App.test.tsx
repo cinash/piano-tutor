@@ -5,31 +5,20 @@ import { App } from './App';
 import { cichaNocScore } from './score/cichaNoc';
 
 /**
- * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts) inverted, over
- * the semitones cicha-noc.musicxml uses, so a test can play the piece as written.
+ * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the nine
+ * pitches cicha-noc.musicxml uses, so a test can play the piece as written.
  */
-const CODE_FOR_SEMITONE = [
-  'KeyZ',
-  'KeyS',
-  'KeyX',
-  'KeyD',
-  'KeyC',
-  'KeyV',
-  'KeyG',
-  'KeyB',
-  'KeyH',
-  'KeyN',
-  'KeyJ',
-  'KeyM',
-  'KeyQ',
-  'Digit2',
-  'KeyW',
-  'Digit3',
-  'KeyE',
-  'KeyR',
-  'Digit5',
-  'KeyT',
-];
+const CODE_FOR_PITCH: Record<number, string> = {
+  48: 'KeyZ',
+  53: 'KeyV',
+  55: 'KeyB',
+  57: 'KeyN',
+  60: 'KeyQ',
+  62: 'KeyW',
+  64: 'KeyE',
+  65: 'KeyR',
+  67: 'KeyT',
+};
 
 async function renderConnectedApp() {
   const result = render(<App />);
@@ -40,7 +29,7 @@ async function renderConnectedApp() {
 
 function playPerfectly() {
   for (const event of cichaNocScore.events) {
-    const codes = event.notes.map((note) => CODE_FOR_SEMITONE[note.pitch - 48]);
+    const codes = event.notes.map((note) => CODE_FOR_PITCH[note.pitch]);
     for (const code of codes) fireEvent.keyDown(window, { code });
     for (const code of codes) fireEvent.keyUp(window, { code });
   }
@@ -105,11 +94,13 @@ describe('App', () => {
       (total, event) => total + event.notes.length,
       0,
     );
-    const [row] = screen.getAllByTestId('attempt-history-row');
+    // One row, rewritten note by note, rather than one per note.
+    const rows = screen.getAllByTestId('attempt-history-row');
+    expect(rows).toHaveLength(1);
     // The first cell is the wall-clock time this attempt started; the rest is what it
     // contained. reachedEnd is the last column.
     expect(
-      within(row)
+      within(rows[0])
         .getAllByRole('cell')
         .slice(1)
         .map((cell) => cell.textContent),

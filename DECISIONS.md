@@ -318,7 +318,7 @@ second source of truth.
 
 The wall clock lives in `App`'s effect rather than in `advancePracticeView`, which is
 deliberately clock-free (see the `MidiEvent.time` entry above). That effect rewrites the
-open record on every change to the counters instead of waiting for an end-of-attempt
+open record on every change to the practice view instead of waiting for an end-of-attempt
 moment, because there is no reliable hook for one: closing the tab, unplugging the piano
 and pressing Restart all leave the record already written, so no `beforeunload` handler
 is needed. It recognises the boundary by `notesPlayed` returning to 0 — Restart,
@@ -337,8 +337,9 @@ imported files.
 ## A record keeps the loop range in effect at its last write
 
 Changing the loop mid-attempt leaves the attempt running, and the record simply picks up
-whichever range was set when it was last written. The alternative — treating a loop
-change as a restart — would silently discard what had been played up to that point.
+whichever range was set when it was last written — the effect watches the whole practice
+view, so a loop change alone is such a write. The alternative — treating a loop change as
+a restart — would silently discard what had been played up to that point.
 
 ## `reachedEnd` is false for every looped attempt
 

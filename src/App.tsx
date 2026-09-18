@@ -84,10 +84,8 @@ export function App() {
     if (import.meta.env.DEV) window.__practiceState = toPracticeStateSnapshot(view);
   }, [view]);
 
-  // The wall clock lives here rather than in the clock-free reducer, so this effect owns
-  // both the attempt boundary and the record. It rewrites the open record on every note
-  // rather than waiting for an end-of-attempt moment there is no reliable hook for:
-  // closing the tab, unplugging the piano and pressing Restart all leave it written.
+  // The wall clock lives here, not in the clock-free reducer; the open record is written
+  // through on every change rather than at an end of attempt — see DECISIONS.md.
   useEffect(() => {
     const { notesPlayed, wrongNoteCount } = view.attempt;
     // Restart, attach() and disconnect() all zero the counters, so this catches every
