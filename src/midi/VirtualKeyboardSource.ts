@@ -43,6 +43,10 @@ const SEMITONE_OFFSET_BY_CODE: Readonly<Record<string, number>> = {
 const BASE_NOTE = 48; // C3
 const VIRTUAL_VELOCITY = 100;
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLInputElement && target.type === 'number';
+}
+
 export class VirtualKeyboardSource implements MidiSource {
   private readonly emitter = createEventEmitter();
   private readonly heldCodes = new Set<string>();
@@ -66,6 +70,9 @@ export class VirtualKeyboardSource implements MidiSource {
     if (event.repeat) return;
     const note = this.noteForCode(event.code);
     if (note === undefined || this.heldCodes.has(event.code)) return;
+
+    // See DECISIONS.md: don't play a note for a key typed into the loop's own fields.
+    if (isTypingTarget(event.target)) return;
 
     this.heldCodes.add(event.code);
     this.emitter.emit({

@@ -72,6 +72,30 @@ describe('VirtualKeyboardSource', () => {
     expect(received).toHaveLength(0);
   });
 
+  it('ignores a keydown targeting a number input, rather than playing a note', () => {
+    const input = document.createElement('input');
+    input.type = 'number';
+    document.body.appendChild(input);
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyZ', bubbles: true }));
+    input.remove();
+
+    expect(received).toHaveLength(0);
+  });
+
+  it('still plays a note for a keydown targeting a checkbox (not a typing field)', () => {
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    document.body.appendChild(checkbox);
+
+    checkbox.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', bubbles: true }));
+    checkbox.remove();
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toMatchObject({ type: 'noteOn', note: 48 });
+  });
+
   it('lets a key be pressed again after it was released', () => {
     keydown('KeyZ');
     keyup('KeyZ');

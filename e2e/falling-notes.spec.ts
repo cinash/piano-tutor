@@ -27,6 +27,22 @@ async function connectVirtualKeyboard(page: Page) {
   );
 }
 
+async function selectLoopRange(page: Page, startMeasure: number, endMeasure: number) {
+  await page.getByTestId('loop-enabled-checkbox').check();
+  await page.getByTestId('loop-start-input').fill(String(startMeasure));
+  await page.getByTestId('loop-end-input').fill(String(endMeasure));
+  // A focused number input would swallow the virtual keyboard's note keys — see
+  // VirtualKeyboardSource's isTypingTarget guard.
+  await page.getByTestId('loop-end-input').blur();
+}
+
+/** b1, b4, b5 of cicha-noc.musicxml's opening measure — m1 and m2 share this shape. */
+async function playOpeningMeasure(page: Page) {
+  await playChord(page, [67, 48, 55]);
+  await playChord(page, [67]);
+  await playChord(page, [64]);
+}
+
 test.describe('falling-note view', () => {
   test('shows the upcoming queue at the start of the piece', async ({ page }) => {
     await page.goto('/');
@@ -39,13 +55,8 @@ test.describe('falling-note view', () => {
     page,
   }) => {
     await connectVirtualKeyboard(page);
-
-    await playChord(page, [67, 48, 55]); // m1 b1: RH melody note + LH chord
-    await playChord(page, [67]); // m1 b4
-    await playChord(page, [64]); // m1 b5
-    await playChord(page, [67, 48, 55]); // m2 b1
-    await playChord(page, [67]); // m2 b4
-    await playChord(page, [64]); // m2 b5
+    await playOpeningMeasure(page); // m1
+    await playOpeningMeasure(page); // m2
 
     await expect
       .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
@@ -69,6 +80,29 @@ test.describe('falling-note view', () => {
 
     await expect(page.getByTestId('falling-notes')).toHaveScreenshot(
       'falling-notes-waiting-for-wrong-note.png',
+    );
+  });
+
+  test('a loop wraps the queue back to its start once the range is played through', async ({
+    page,
+  }) => {
+    await connectVirtualKeyboard(page);
+    await selectLoopRange(page, 1, 2);
+
+    // Confirms playback actually moved off the start before the second measure wraps it
+    // back, rather than the queue never having advanced at all.
+    await playOpeningMeasure(page); // m1
+    await expect
+      .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
+      .toBe(3);
+
+    await playOpeningMeasure(page); // m2: reaching m3 b1 would move past endMeasure 2
+    await expect
+      .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
+      .toBe(0); // wrapped back to m1 b1, not advanced to m3
+
+    await expect(page.getByTestId('falling-notes')).toHaveScreenshot(
+      'falling-notes-loop-boundary.png',
     );
   });
 });

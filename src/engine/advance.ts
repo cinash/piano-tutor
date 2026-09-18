@@ -1,8 +1,8 @@
 import type { Score } from '../score/types';
 import type { MidiEvent } from '../midi/types';
-import { ENGINE_TIMING, type EngineState } from './types';
+import { ENGINE_TIMING, type EngineState, type Loop } from './types';
 
-/** A fresh EngineState for the start of a piece (or a loop's first event). */
+/** A fresh EngineState for the start of a piece. */
 export function createInitialState(): EngineState {
   return {
     status: 'waiting',
@@ -11,6 +11,11 @@ export function createInitialState(): EngineState {
     heldNotes: new Set(),
     pendingEarlyNotes: new Map(),
   };
+}
+
+/** Sets or clears the loop range without otherwise touching playback. */
+export function setLoop(state: EngineState, loop: Loop | undefined): EngineState {
+  return { ...state, loop };
 }
 
 export function advance(
@@ -32,6 +37,7 @@ export function advance(
   );
 
   if (!expectedPitches.includes(event.note)) {
+    // Deliberately linear, not loop-aware — see DECISIONS.md.
     const nextExpectedPitches = score.events[state.nextEventIndex + 1]?.notes.map(
       (note) => note.pitch,
     );
@@ -60,7 +66,7 @@ function completeCurrentEvent(
   score: Score,
   clock: number,
 ): EngineState {
-  const nextEventIndex = state.nextEventIndex + 1;
+  const nextEventIndex = nextIndexAfter(state, score);
   const nextEvent = score.events[nextEventIndex];
 
   if (!nextEvent) {
@@ -91,4 +97,21 @@ function completeCurrentEvent(
   return expectedPitches.every((pitch) => satisfiedNoteIds.has(pitch))
     ? completeCurrentEvent(advanced, score, clock)
     : advanced;
+}
+
+/**
+ * Where the just-completed event's chord sends us next: linearly forward, unless a
+ * loop is set and that would move past its end measure — then wrap back to the
+ * loop's first event instead, including when the linear move would otherwise have
+ * reached the end of the piece.
+ */
+function nextIndexAfter({ nextEventIndex, loop }: EngineState, score: Score): number {
+  const linearIndex = nextEventIndex + 1;
+  const linearEvent = score.events[linearIndex];
+
+  if (loop && (!linearEvent || linearEvent.measure > loop.endMeasure)) {
+    return score.events.findIndex((event) => event.measure >= loop.startMeasure);
+  }
+
+  return linearIndex;
 }
