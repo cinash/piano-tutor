@@ -306,3 +306,43 @@ the end of the piece can't inflate `notesPlayed`. Each counts per `noteOn`, not 
 pitch: pressing the same wrong key twice is two wrong notes out of two played, which is
 what keeps the ratio meaningful — unlike `wrongNotes`, which is a set of what's
 currently sounding wrong.
+
+## Attempt history lives in `localStorage` and is written through on every note
+
+Progress is kept in the browser under `piano-tutor.attempts.v1` — no server, no API,
+with step 8's JSON export/import as the way to keep a durable copy or move it between
+machines. Each browser therefore keeps its own record, which is fine for one player on
+one piano. `App` holds the list as state with the open attempt first and persists the
+whole array whenever it changes; the key is a serialisation of that state rather than a
+second source of truth.
+
+The wall clock lives in `App`'s effect rather than in `advancePracticeView`, which is
+deliberately clock-free (see the `MidiEvent.time` entry above). That effect rewrites the
+open record on every change to the counters instead of waiting for an end-of-attempt
+moment, because there is no reliable hook for one: closing the tab, unplugging the piano
+and pressing Restart all leave the record already written, so no `beforeunload` handler
+is needed. It recognises the boundary by `notesPlayed` returning to 0 — Restart,
+`attach()` and `disconnect()` all zero the counters, so that one condition catches every
+reset path without touching any of their call sites — and it matches the open record by
+`startedAt` rather than by position, since step 8's merge can put an imported record at
+the head. An attempt with no notes is never written: this is a history of practice, not
+of page loads.
+
+`loadAttempts` reads anything that isn't a stored `AttemptRecord[]` — absent key,
+malformed JSON, or a well-formed value of the wrong shape — as an empty history rather
+than throwing, because a corrupted key must not brick the app on load.
+`isAttemptRecordArray` is the one definition of that shape, which step 8 reuses for
+imported files.
+
+## A record keeps the loop range in effect at its last write
+
+Changing the loop mid-attempt leaves the attempt running, and the record simply picks up
+whichever range was set when it was last written. The alternative — treating a loop
+change as a restart — would silently discard what had been played up to that point.
+
+## `reachedEnd` is false for every looped attempt
+
+`nextIndexAfter` wraps rather than completing (see the loop-selection entry above), so a
+looped attempt never reaches `status: 'complete'` and its `reachedEnd` column always
+reads "no". The column means something only for whole-piece attempts. That is the
+existing loop behaviour surfacing in a new place, not a bug introduced here.

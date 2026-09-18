@@ -1,6 +1,6 @@
 # Manual checks
 
-Things to verify by hand with the real Yamaha P-145. Keep this list under ten items;
+Things to verify by hand with the real Yamaha P-145. Keep this list to about ten items;
 update it at the end of each step.
 
 1. Plug the piano in via USB, open `http://localhost:5173` in Chrome **on the host**
@@ -27,3 +27,7 @@ update it at the end of each step.
    range's start correctly each time without losing that same "no timeout" behavior at
    the wrap point. Finally, mid-piece, press "Restart" and confirm playback returns to
    the first note with the piano still connected and the loop range unchanged.
+10. After a real practice session, close the tab and reopen
+    `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
+    its notes, wrong notes, accuracy and range read as a fair account of what was
+    played.

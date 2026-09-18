@@ -1,7 +1,35 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
+import { cichaNocScore } from './score/cichaNoc';
+
+/**
+ * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts) inverted, over
+ * the semitones cicha-noc.musicxml uses, so a test can play the piece as written.
+ */
+const CODE_FOR_SEMITONE = [
+  'KeyZ',
+  'KeyS',
+  'KeyX',
+  'KeyD',
+  'KeyC',
+  'KeyV',
+  'KeyG',
+  'KeyB',
+  'KeyH',
+  'KeyN',
+  'KeyJ',
+  'KeyM',
+  'KeyQ',
+  'Digit2',
+  'KeyW',
+  'Digit3',
+  'KeyE',
+  'KeyR',
+  'Digit5',
+  'KeyT',
+];
 
 async function renderConnectedApp() {
   const result = render(<App />);
@@ -10,7 +38,17 @@ async function renderConnectedApp() {
   return result;
 }
 
+function playPerfectly() {
+  for (const event of cichaNocScore.events) {
+    const codes = event.notes.map((note) => CODE_FOR_SEMITONE[note.pitch - 48]);
+    for (const code of codes) fireEvent.keyDown(window, { code });
+    for (const code of codes) fireEvent.keyUp(window, { code });
+  }
+}
+
 describe('App', () => {
+  beforeEach(() => localStorage.clear());
+
   it('renders the on-screen keyboard, not connected to any source initially', () => {
     render(<App />);
     expect(screen.getByText('Not connected')).toBeDefined();
@@ -56,5 +94,25 @@ describe('App', () => {
     const current = screen.getAllByTestId('falling-note-event')[0];
     expect(current.dataset.eventId).toBe('m1-b4-e1');
     expect(current.className).not.toContain('falling-note--wrong');
+  });
+
+  it('records an attempt that played the piece to the end', async () => {
+    await renderConnectedApp();
+
+    playPerfectly();
+
+    const notesPlayed = cichaNocScore.events.reduce(
+      (total, event) => total + event.notes.length,
+      0,
+    );
+    const [row] = screen.getAllByTestId('attempt-history-row');
+    // The first cell is the wall-clock time this attempt started; the rest is what it
+    // contained. reachedEnd is the last column.
+    expect(
+      within(row)
+        .getAllByRole('cell')
+        .slice(1)
+        .map((cell) => cell.textContent),
+    ).toEqual(['whole piece', String(notesPlayed), '0', '100%', 'yes']);
   });
 });

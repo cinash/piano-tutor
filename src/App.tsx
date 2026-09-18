@@ -26,6 +26,9 @@ import {
   setPracticeLoop,
   type PracticeViewState,
 } from './practice/practiceView';
+import { AttemptHistory } from './progress/AttemptHistory';
+import { loadAttempts, saveAttempts } from './progress/attemptStore';
+import type { AttemptRecord } from './progress/types';
 import { cichaNocScore } from './score/cichaNoc';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
@@ -56,7 +59,9 @@ export function App() {
   const [webMidiInputs, setWebMidiInputs] = useState<MidiInputDescriptor[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [attempts, setAttempts] = useState<AttemptRecord[]>(loadAttempts);
 
+  const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);
   const connectedDeviceIdRef = useRef<string | null>(null);
   const recordedEventsRef = useRef<MidiEvent[]>([]);
@@ -78,6 +83,46 @@ export function App() {
   useEffect(() => {
     if (import.meta.env.DEV) window.__practiceState = toPracticeStateSnapshot(view);
   }, [view]);
+
+  // The wall clock lives here rather than in the clock-free reducer, so this effect owns
+  // both the attempt boundary and the record. It rewrites the open record on every note
+  // rather than waiting for an end-of-attempt moment there is no reliable hook for:
+  // closing the tab, unplugging the piano and pressing Restart all leave it written.
+  useEffect(() => {
+    const { notesPlayed, wrongNoteCount } = view.attempt;
+    // Restart, attach() and disconnect() all zero the counters, so this catches every
+    // path that ends an attempt. An attempt with no notes is never written down.
+    if (notesPlayed === 0) {
+      openAttemptRef.current = null;
+      return;
+    }
+
+    const now = Date.now();
+    const summary = {
+      endedAt: now,
+      notesPlayed,
+      wrongNoteCount,
+      reachedEnd: view.engine.status === 'complete',
+      loop: view.engine.loop,
+    };
+    const openStartedAt = openAttemptRef.current;
+
+    if (openStartedAt === null) {
+      openAttemptRef.current = now;
+      setAttempts((prev) => [{ startedAt: now, ...summary }, ...prev]);
+      return;
+    }
+
+    // Matched by startedAt rather than by position: step 8's import can put another
+    // record at the head while this one is still open.
+    setAttempts((prev) =>
+      prev.map((record) =>
+        record.startedAt === openStartedAt ? { ...record, ...summary } : record,
+      ),
+    );
+  }, [view]);
+
+  useEffect(() => saveAttempts(attempts), [attempts]);
 
   function attach(
     source: MidiSource,
@@ -223,6 +268,7 @@ export function App() {
         highNote={KEYBOARD_RANGE.high}
         heldNotes={view.engine.heldNotes}
       />
+      <AttemptHistory records={attempts} />
     </div>
   );
 }
