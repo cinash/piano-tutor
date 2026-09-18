@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { LoopPicker } from './LoopPicker';
@@ -19,7 +19,7 @@ describe('LoopPicker', () => {
 
   it('disables the loop via the checkbox', () => {
     const onChange = vi.fn();
-    const { container } = render(
+    render(
       <LoopPicker
         measureCount={MEASURE_COUNT}
         loop={{ startMeasure: 1, endMeasure: 2 }}
@@ -27,7 +27,7 @@ describe('LoopPicker', () => {
       />,
     );
 
-    fireEvent.click(within(container).getByTestId('loop-enabled-checkbox'));
+    fireEvent.click(screen.getByTestId('loop-enabled-checkbox'));
 
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
