@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
 import { KEYBOARD_RANGE } from './config';
 import type { ActiveSource } from './devices/DevicePicker';
 import { DevicePicker } from './devices/DevicePicker';
+import { downloadJson } from './downloadJson';
 import type { Loop } from './engine/types';
 import { PianoKeyboard } from './keyboard/PianoKeyboard';
 import { ReplayMidiSource } from './midi/ReplayMidiSource';
@@ -27,7 +28,12 @@ import {
   type PracticeViewState,
 } from './practice/practiceView';
 import { AttemptHistory } from './progress/AttemptHistory';
-import { loadAttempts, saveAttempts } from './progress/attemptStore';
+import {
+  isAttemptRecordArray,
+  loadAttempts,
+  saveAttempts,
+} from './progress/attemptStore';
+import { mergeAttempts } from './progress/mergeAttempts';
 import type { AttemptRecord } from './progress/types';
 import { cichaNocScore } from './score/cichaNoc';
 
@@ -178,6 +184,25 @@ export function App() {
     }
   }
 
+  async function importProgress(file: File) {
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!isAttemptRecordArray(parsed)) {
+        throw new Error('That file is not a piano-tutor progress export.');
+      }
+      setAttempts((prev) => mergeAttempts(prev, parsed));
+      setError(null);
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
+  function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void importProgress(file);
+    event.target.value = '';
+  }
+
   useEffect(() => {
     if (!webMidiSupported) return;
 
@@ -269,6 +294,23 @@ export function App() {
         heldNotes={view.engine.heldNotes}
       />
       <AttemptHistory records={attempts} />
+      <div>
+        <button
+          type="button"
+          onClick={() => downloadJson(attempts, `progress-${Date.now()}.json`)}
+          data-testid="export-progress"
+        >
+          Download progress
+        </button>{' '}
+        <label htmlFor="import-progress-input">Import progress</label>{' '}
+        <input
+          id="import-progress-input"
+          type="file"
+          accept="application/json"
+          data-testid="import-progress-input"
+          onChange={handleImportFile}
+        />
+      </div>
     </div>
   );
 }

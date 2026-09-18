@@ -350,3 +350,14 @@ that can read both a range and "yes" is a piece completed first and given a loop
 afterwards without a Restart: `setLoop` preserves `status`, and the open record is
 rewritten with the range then in effect, per the last-write rule above. Both are the
 existing loop behaviour surfacing in a new place, not a bug introduced here.
+
+## Exported progress is a bare `AttemptRecord[]`, and importing merges rather than replaces
+
+The download is the same array `localStorage` holds, with no wrapper object and no version
+field — the convention the recorded fixtures above already follow, and the reason
+`isAttemptRecordArray` validates both a stored key and an imported file. Import adds the
+records the history doesn't already hold, matched on `startedAt`, leaves the ones it does
+alone, and re-sorts newest first so an imported record can't land out of the order
+`AttemptHistory` promises. Merging is what makes carrying a file between the host Chrome and
+the tailnet deploy non-destructive: neither side loses what the other never saw, and
+importing the same file twice changes nothing.
