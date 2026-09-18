@@ -209,8 +209,9 @@ here when a test actually needs to assert on it, rather than mirroring the pract
 state wholesale. It is built from the whole `PracticeViewState` rather than from
 `EngineState` alone, because the counters live on the view state (step 6) while the
 first two fields live on the engine. The e2e project (`tsconfig.node.json`) doesn't
-include `src`, so `e2e/window.d.ts` duplicates the shape rather than importing it — the two type surfaces are independent by the
-existing project split, and DOM lib was added to that config so `page.evaluate()`
+include `src`, so `e2e/window.d.ts` duplicates the shape rather than importing it — the
+two type surfaces are independent by the existing project split, and DOM lib was added
+to that config so `page.evaluate()`
 callbacks (which run as browser-side code) can reference `window` at all.
 
 ## Loop selection: setting a loop doesn't jump playback, only changes where it wraps
@@ -292,19 +293,16 @@ again — "play that bit again" is the normal reason to press it, and having to 
 the range every time would make the button useless for the case it's most wanted in.
 `attach()` and `disconnect()` in `App.tsx` deliberately differ: they call
 `createInitialPracticeViewState()` outright, dropping the loop, because connecting or
-unplugging a device is a fresh start rather than another go at the same passage. The two
-paths now overlap without being the same thing, and that difference is the point —
-they're left as separate code rather than folded together.
+unplugging a device is a fresh start rather than another go at the same passage.
 
 ## An attempt's counters are stored; its accuracy is derived
 
 `AttemptStats` is `notesPlayed` and `wrongNoteCount` and nothing else. Accuracy is
-`1 - wrongNoteCount / notesPlayed`, computed where it's displayed: a stored ratio is a
-second copy of the same fact, and the copy can disagree with its inputs. The counters
-carry no timestamp either, because `advancePracticeView` is a pure reducer whose only
-time input is the source-relative `MidiEvent.time` (above), which is meaningless as a
-date — when an attempt happened is for whoever records it to stamp. Both counters sit
-behind the existing `status === 'waiting'` guard in `advancePracticeView`, so playing on
-past the end of the piece can't inflate `notesPlayed` against a `wrongNoteCount` that has
-stopped moving, and `wrongNoteCount` reuses that function's existing wrong-note decision
-rather than re-deriving wrongness a second way.
+`1 - wrongNoteCount / notesPlayed`, computed where it's displayed rather than stored — a
+stored ratio is a second copy of the same fact that can disagree with its inputs. It
+carries no timestamp either, for the `MidiEvent.time` reason above. Both counters sit
+behind `advancePracticeView`'s existing `status === 'waiting'` guard, so playing on past
+the end of the piece can't inflate `notesPlayed`. Each counts per `noteOn`, not per
+pitch: pressing the same wrong key twice is two wrong notes out of two played, which is
+what keeps the ratio meaningful — unlike `wrongNotes`, which is a set of what's
+currently sounding wrong.

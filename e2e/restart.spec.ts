@@ -7,7 +7,7 @@ import {
   selectLoopRange,
 } from './virtualKeyboard';
 
-function attemptState(page: Page) {
+function practiceSnapshot(page: Page) {
   return page.evaluate(() => {
     const state = window.__practiceState;
     return (
@@ -30,7 +30,7 @@ test('Restart returns to the first note and starts a fresh attempt, keeping the 
   await playOpeningMeasure(page); // m1: five more notes, all of them right
 
   await expect
-    .poll(() => attemptState(page))
+    .poll(() => practiceSnapshot(page))
     .toEqual({
       nextEventIndex: 3,
       notesPlayed: 6,
@@ -40,7 +40,7 @@ test('Restart returns to the first note and starts a fresh attempt, keeping the 
   await page.getByTestId('restart-practice').click();
 
   await expect
-    .poll(() => attemptState(page))
+    .poll(() => practiceSnapshot(page))
     .toEqual({
       nextEventIndex: 0,
       notesPlayed: 0,

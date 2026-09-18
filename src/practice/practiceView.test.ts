@@ -98,15 +98,19 @@ describe('advancePracticeView', () => {
 describe('restartPractice', () => {
   it('starts the piece over with a fresh attempt, keeping the loop range', () => {
     const loop = { startMeasure: 1, endMeasure: 1 };
-    // Leaves every field the restart has to clear non-empty: one note of e0's chord
-    // satisfied and held, plus a wrong note held alongside it.
+    // e0's chord completed, so nextEventIndex is genuinely off 0 before the restart,
+    // with the chord still held and a wrong note sounding alongside it.
     const played = setPracticeLoop(
       play([
         { type: 'noteOn', note: 67, velocity: 100, time: 0 },
-        { type: 'noteOn', note: 64, velocity: 100, time: 10 },
+        { type: 'noteOn', note: 48, velocity: 100, time: 0 },
+        { type: 'noteOn', note: 55, velocity: 100, time: 0 },
+        { type: 'noteOn', note: 62, velocity: 100, time: 10 },
       ]),
       loop,
     );
+
+    expect(played.engine.nextEventIndex).toBe(1);
 
     const restarted = restartPractice(played);
 
