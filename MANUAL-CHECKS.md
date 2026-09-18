@@ -30,4 +30,5 @@ update it at the end of each step.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was
-    played.
+    played. Then click "Download progress", open the deployed tailnet copy, import the
+    downloaded file there, and confirm the history arrives intact.
