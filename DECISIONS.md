@@ -307,7 +307,7 @@ pitch: pressing the same wrong key twice is two wrong notes out of two played, w
 what keeps the ratio meaningful — unlike `wrongNotes`, which is a set of what's
 currently sounding wrong.
 
-## Attempt history lives in `localStorage` and is written through on every note
+## Attempt history lives in `localStorage` and is written through on every change
 
 Progress is kept in the browser under `piano-tutor.attempts.v1` — no server, no API,
 with step 8's JSON export/import as the way to keep a durable copy or move it between
@@ -343,7 +343,10 @@ a restart — would silently discard what had been played up to that point.
 
 ## `reachedEnd` is false for every looped attempt
 
-`nextIndexAfter` wraps rather than completing (see the loop-selection entry above), so a
-looped attempt never reaches `status: 'complete'` and its `reachedEnd` column always
-reads "no". The column means something only for whole-piece attempts. That is the
+`nextIndexAfter` wraps rather than completing (see the loop-selection entry above), so
+playing a range never reaches `status: 'complete'` and such a record's `reachedEnd`
+column reads "no". The column means something only for whole-piece attempts. The one row
+that can read both a range and "yes" is a piece completed first and given a loop
+afterwards without a Restart: `setLoop` preserves `status`, and the open record is
+rewritten with the range then in effect, per the last-write rule above. Both are the
 existing loop behaviour surfacing in a new place, not a bug introduced here.

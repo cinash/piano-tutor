@@ -115,7 +115,9 @@ export function App() {
     // record at the head while this one is still open.
     setAttempts((prev) =>
       prev.map((record) =>
-        record.startedAt === openStartedAt ? { ...record, ...summary } : record,
+        record.startedAt === openStartedAt
+          ? { startedAt: openStartedAt, ...summary }
+          : record,
       ),
     );
   }, [view]);
