@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { MidiEvent } from '../midi/types';
 import type { Score } from '../score/types';
-import { advancePracticeView, createInitialPracticeViewState } from './practiceView';
+import {
+  advancePracticeView,
+  createInitialPracticeViewState,
+  restartPractice,
+  setPracticeLoop,
+} from './practiceView';
 
 /** Mirrors cicha-noc m1 b1-b2: a RH+LH chord, then a distinct RH-only event while the LH sustains. */
 const SCORE: Score = {
@@ -72,5 +77,48 @@ describe('advancePracticeView', () => {
   it('an early note for the next event is not flagged wrong while the current one is still open', () => {
     const result = play([{ type: 'noteOn', note: 69, velocity: 100, time: 0 }]);
     expect(result.wrongNotes.size).toBe(0);
+  });
+
+  it('counts each note played once, and nothing played after the piece is complete', () => {
+    const result = play([
+      { type: 'noteOn', note: 64, velocity: 100, time: 0 }, // wrong
+      { type: 'noteOff', note: 64, time: 10 }, // a release is not a note played
+      { type: 'noteOn', note: 67, velocity: 100, time: 20 },
+      { type: 'noteOn', note: 48, velocity: 100, time: 20 },
+      { type: 'noteOn', note: 55, velocity: 100, time: 20 }, // e0 satisfied
+      { type: 'noteOn', note: 69, velocity: 100, time: 30 }, // e1 — piece complete
+      { type: 'noteOn', note: 62, velocity: 100, time: 40 }, // played on past the end
+    ]);
+
+    expect(result.engine.status).toBe('complete');
+    expect(result.attempt).toEqual({ notesPlayed: 5, wrongNoteCount: 1 });
+  });
+});
+
+describe('restartPractice', () => {
+  it('starts the piece over with a fresh attempt, keeping the loop range', () => {
+    const loop = { startMeasure: 1, endMeasure: 1 };
+    // e0's chord completed, so nextEventIndex is genuinely off 0 before the restart,
+    // with the chord still held and a wrong note sounding alongside it.
+    const played = setPracticeLoop(
+      play([
+        { type: 'noteOn', note: 67, velocity: 100, time: 0 },
+        { type: 'noteOn', note: 48, velocity: 100, time: 0 },
+        { type: 'noteOn', note: 55, velocity: 100, time: 0 },
+        { type: 'noteOn', note: 62, velocity: 100, time: 10 },
+      ]),
+      loop,
+    );
+
+    expect(played.engine.nextEventIndex).toBe(1);
+
+    const restarted = restartPractice(played);
+
+    expect(restarted.engine.nextEventIndex).toBe(0);
+    expect(restarted.engine.satisfiedNoteIds.size).toBe(0);
+    expect(restarted.engine.heldNotes.size).toBe(0);
+    expect(restarted.wrongNotes.size).toBe(0);
+    expect(restarted.attempt).toEqual({ notesPlayed: 0, wrongNoteCount: 0 });
+    expect(restarted.engine.loop).toEqual(loop);
   });
 });

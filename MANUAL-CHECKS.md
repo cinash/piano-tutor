@@ -25,4 +25,5 @@ update it at the end of each step.
    advance the queue, and that waiting for the next note has no timeout. Then select a
    short loop range, play through it several times, and confirm it wraps back to the
    range's start correctly each time without losing that same "no timeout" behavior at
-   the wrap point.
+   the wrap point. Finally, mid-piece, press "Restart" and confirm playback returns to
+   the first note with the piano still connected and the loop range unchanged.

@@ -3,13 +3,24 @@ import type { EngineState, Loop } from '../engine/types';
 import type { MidiEvent } from '../midi/types';
 import type { Score } from '../score/types';
 
+/** What one run through the piece — one restart to the next — contained. */
+export interface AttemptStats {
+  notesPlayed: number;
+  wrongNoteCount: number;
+}
+
 export interface PracticeViewState {
   engine: EngineState;
   wrongNotes: ReadonlySet<number>;
+  attempt: AttemptStats;
 }
 
 export function createInitialPracticeViewState(): PracticeViewState {
-  return { engine: createInitialState(), wrongNotes: new Set() };
+  return {
+    engine: createInitialState(),
+    wrongNotes: new Set(),
+    attempt: { notesPlayed: 0, wrongNoteCount: 0 },
+  };
 }
 
 export function setPracticeLoop(
@@ -17,6 +28,11 @@ export function setPracticeLoop(
   loop: Loop | undefined,
 ): PracticeViewState {
   return { ...state, engine: setLoop(state.engine, loop) };
+}
+
+/** Starts the piece again, keeping the loop range — see DECISIONS.md. */
+export function restartPractice(state: PracticeViewState): PracticeViewState {
+  return setPracticeLoop(createInitialPracticeViewState(), state.engine.loop);
 }
 
 /**
@@ -32,6 +48,7 @@ export function advancePracticeView(
   clock: number,
 ): PracticeViewState {
   const wrongNotes = new Set(state.wrongNotes);
+  let attempt = state.attempt;
 
   if (event.type === 'noteOff') {
     wrongNotes.delete(event.note);
@@ -43,7 +60,11 @@ export function advancePracticeView(
       expected.some((note) => note.pitch === event.note) ||
       upNext.some((note) => note.pitch === event.note);
     if (!isExpected) wrongNotes.add(event.note);
+    attempt = {
+      notesPlayed: attempt.notesPlayed + 1,
+      wrongNoteCount: attempt.wrongNoteCount + (isExpected ? 0 : 1),
+    };
   }
 
-  return { engine: advance(state.engine, score, event, clock), wrongNotes };
+  return { engine: advance(state.engine, score, event, clock), wrongNotes, attempt };
 }

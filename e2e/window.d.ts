@@ -7,6 +7,8 @@ declare global {
     __practiceState?: {
       nextEventIndex: number;
       heldNotes: number[];
+      notesPlayed: number;
+      wrongNoteCount: number;
     };
   }
 }
