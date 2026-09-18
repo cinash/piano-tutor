@@ -203,11 +203,13 @@ m1 b1's exact chord).
 
 ## `window.__practiceState` only carries what a Layer 3 test needs
 
-The snapshot (`src/practice/practiceState.ts`) is `nextEventIndex` and `heldNotes` —
-the only two fields the Playwright suite asserts on. Add a field here when a test
-actually needs to assert on it, rather than mirroring `EngineState` wholesale. The e2e
-project (`tsconfig.node.json`) doesn't include `src`, so `e2e/window.d.ts` duplicates
-the shape rather than importing it — the two type surfaces are independent by the
+The snapshot (`src/practice/practiceState.ts`) is `nextEventIndex`, `heldNotes` and the
+attempt's two counters — the only fields the Playwright suite asserts on. Add a field
+here when a test actually needs to assert on it, rather than mirroring the practice
+state wholesale. It is built from the whole `PracticeViewState` rather than from
+`EngineState` alone, because the counters live on the view state (step 6) while the
+first two fields live on the engine. The e2e project (`tsconfig.node.json`) doesn't
+include `src`, so `e2e/window.d.ts` duplicates the shape rather than importing it — the two type surfaces are independent by the
 existing project split, and DOM lib was added to that config so `page.evaluate()`
 callbacks (which run as browser-side code) can reference `window` at all.
 
@@ -281,3 +283,28 @@ typing a two-digit end measure can clamp the start measure down through an inter
 one-digit value and leave it there (e.g. start 4, end 4, typing "10" into end leaves
 start at 1, not 4) — a real but minor UX rough edge in the mutual-clamp design, not a
 correctness issue, and left as-is rather than adding input-level state to smooth out.
+
+## Restart keeps the loop range; connecting a device drops it
+
+`restartPractice` (`src/practice/practiceView.ts`) composes a fresh view state with the
+loop it was given, so pressing Restart while a range is selected plays that same range
+again — "play that bit again" is the normal reason to press it, and having to re-enter
+the range every time would make the button useless for the case it's most wanted in.
+`attach()` and `disconnect()` in `App.tsx` deliberately differ: they call
+`createInitialPracticeViewState()` outright, dropping the loop, because connecting or
+unplugging a device is a fresh start rather than another go at the same passage. The two
+paths now overlap without being the same thing, and that difference is the point —
+they're left as separate code rather than folded together.
+
+## An attempt's counters are stored; its accuracy is derived
+
+`AttemptStats` is `notesPlayed` and `wrongNoteCount` and nothing else. Accuracy is
+`1 - wrongNoteCount / notesPlayed`, computed where it's displayed: a stored ratio is a
+second copy of the same fact, and the copy can disagree with its inputs. The counters
+carry no timestamp either, because `advancePracticeView` is a pure reducer whose only
+time input is the source-relative `MidiEvent.time` (above), which is meaningless as a
+date — when an attempt happened is for whoever records it to stamp. Both counters sit
+behind the existing `status === 'waiting'` guard in `advancePracticeView`, so playing on
+past the end of the piece can't inflate `notesPlayed` against a `wrongNoteCount` that has
+stopped moving, and `wrongNoteCount` reuses that function's existing wrong-note decision
+rather than re-deriving wrongness a second way.

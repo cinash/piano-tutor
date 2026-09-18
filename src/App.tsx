@@ -22,6 +22,7 @@ import { toPracticeStateSnapshot } from './practice/practiceState';
 import {
   advancePracticeView,
   createInitialPracticeViewState,
+  restartPractice,
   setPracticeLoop,
   type PracticeViewState,
 } from './practice/practiceView';
@@ -70,9 +71,12 @@ export function App() {
     setView((prev) => setPracticeLoop(prev, loop));
   }
 
+  function handleRestart() {
+    setView(restartPractice);
+  }
+
   useEffect(() => {
-    if (import.meta.env.DEV)
-      window.__practiceState = toPracticeStateSnapshot(view.engine);
+    if (import.meta.env.DEV) window.__practiceState = toPracticeStateSnapshot(view);
   }, [view]);
 
   function attach(
@@ -195,6 +199,11 @@ export function App() {
       {import.meta.env.DEV && active.kind !== 'none' && (
         <button type="button" onClick={toggleRecording} data-testid="toggle-recording">
           {isRecording ? 'Stop recording & download' : 'Start recording'}
+        </button>
+      )}
+      {active.kind !== 'none' && (
+        <button type="button" onClick={handleRestart} data-testid="restart-practice">
+          Restart
         </button>
       )}
       <LoopPicker
