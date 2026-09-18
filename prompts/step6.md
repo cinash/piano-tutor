@@ -56,11 +56,15 @@ stored; a stored ratio is a second copy of the same fact that can disagree with 
   them alone even though restart now overlaps them, and note the overlap in the report rather
   than refactoring the two together.
 
-## Decision to record in `DECISIONS.md`
+## Decisions to record in `DECISIONS.md`
 
 Restart preserves the loop range, on the grounds that "play that range again" is the normal
 reason to press it — whereas connecting a device is a fresh start and keeps dropping the loop.
 Say it explicitly, because the two paths now differ.
+
+The existing `window.__practiceState` entry names the snapshot's two fields and its
+`EngineState` parameter literally, so it goes stale the moment this step lands — update it in
+the same commit rather than leaving the next reader to discover the drift.
 
 ## Gate
 
@@ -69,7 +73,9 @@ Say it explicitly, because the two paths now differ.
   event sequence count each wrong note once and ignore notes played after completion.
 - Layer 3: with the virtual keyboard, play the opening measure including one wrong note, and
   assert the counters and `nextEventIndex` on `window.__practiceState`; press Restart and
-  assert both are back to zero with the loop inputs still holding their range.
+  assert all three are back to zero — `nextEventIndex` included, since returning to the first
+  note is the user-visible point of the button — with the loop inputs still holding their
+  range.
 
 ## Manual
 

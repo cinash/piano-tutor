@@ -15,15 +15,13 @@ site data. This is the half of the storage answer that localStorage alone doesn'
   two-line change to make.
 - A download control producing `progress-<timestamp>.json`: a bare `AttemptRecord[]`, no
   wrapper object, matching the convention `DECISIONS.md` already records for fixtures.
-- `isAttemptRecordArray` in `src/progress/`, validating a parsed file field by field the way
-  `App.tsx`'s `isMidiEventArray` validates a replay fixture. `loadAttempts` uses the same
-  predicate, so "is this an `AttemptRecord[]`" has one definition and step 7's leniency about
-  malformed stored data shrinks to a `JSON.parse` guard.
-- A file picker that reads such a file back, reporting a bad file through the existing error
-  line rather than throwing.
+- A file picker that reads such a file back, validating it with step 7's
+  `isAttemptRecordArray` and reporting a bad file through the existing error line rather than
+  throwing.
 - Import **merges** on `startedAt`: records not already present are added, existing ones left
-  alone. Merging rather than replacing is what makes moving between two machines
-  non-destructive.
+  alone, and the merged list is sorted newest first so an imported record can't land out of
+  order in a table that promises that order. Merging rather than replacing is what makes
+  moving between two machines non-destructive.
 
 ## Out of scope
 
@@ -32,12 +30,16 @@ site data. This is the half of the storage answer that localStorage alone doesn'
 
 ## Gate
 
-- Layer 2: the validator accepts a well-formed export and rejects a truncated record, a wrong
-  field type, and a non-array; the merge adds new records and leaves existing ones untouched.
+- Layer 2: the merge adds new records, leaves existing ones untouched, and returns them newest
+  first given inputs that interleave.
 - Layer 3: play an attempt, download the file through Playwright's download event, and assert
   its contents; then clear `localStorage`, **reload**, confirm the table is empty, import the
   file and assert the row is back. Without the reload the rows are still in React state and
   the assertion would pass even if import did nothing.
+- This is the first automated exercise of the download mechanism, which calls
+  `revokeObjectURL` synchronously after `anchor.click()`. If that races Playwright's download
+  capture, fix the mechanism rather than adding a timeout — step 1's flake is the standing
+  lesson about waiting out a race.
 
 ## Manual
 

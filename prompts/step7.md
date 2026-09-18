@@ -29,30 +29,41 @@ Chrome and the tailnet deploy are separate records, which is fine for one player
   }
   ```
 
-  `startedAt` is unique per attempt and is the value the list is keyed and merged on, so there
-  is no separate `id` field to mint or to disagree with it.
+  `startedAt` is unique per attempt and is the value rows are keyed and merged on, so there is
+  no separate `id` field to mint or to disagree with it.
 
 - `src/progress/attemptStore.ts`: `loadAttempts()` and `saveAttempts(records)` over a
-  versioned key (`piano-tutor.attempts.v1`). Unreadable or malformed stored data reads as an
-  empty history rather than throwing — a corrupted key must not brick the app on load.
+  versioned key (`piano-tutor.attempts.v1`), with `isAttemptRecordArray` validating what comes
+  back field by field, the way `App.tsx`'s `isMidiEventArray` validates a replay fixture.
+  Anything else reads as an empty history rather than throwing — a corrupted key must not
+  brick the app on load — and step 8 reuses the same predicate for imported files, so "is this
+  an `AttemptRecord[]`" has one definition.
 - `App` holds the history as `AttemptRecord[]` state with the open attempt first, and persists
   the whole list. One array is the source of truth, the key is its serialisation, and the
   table re-renders because the state changed — no separate table state to keep in step.
 - One effect watching `view.attempt` owns the wall clock and the attempt boundary: when
-  `notesPlayed` is 0 it clears the open-attempt ref (every reset path — Restart, `attach()`,
-  `disconnect()`, a reload — zeroes the counters, so this catches all of them without touching
-  any of their call sites); on the first note after that it stamps `Date.now()`, prepends a
-  record and remembers it; on every later change it rewrites that head record, with `endedAt`
-  the time of the write and `reachedEnd` read from `engine.status === 'complete'`.
-- That write-through is why there is no "end of attempt" moment to catch: closing the tab,
-  unplugging the piano and pressing Restart all leave the record already written, and none of
-  them needs a `beforeunload` handler — the part of this that would otherwise be unreliable.
-  An attempt with no notes is never written, which is the difference between a history of
-  practice and a history of page loads.
+  `notesPlayed` is 0 it clears the open-attempt ref (Restart, `attach()` and `disconnect()`
+  all zero the counters, so this catches every reset path without touching any of their call
+  sites); on the first note after that it stamps `Date.now()`, prepends a record and remembers
+  its `startedAt`; on every later change it rewrites the record with that `startedAt` — by
+  value, not by position, since step 8's merge can put an imported record at the head —
+  setting `endedAt` to the time of the write and `reachedEnd` from `engine.status ===
+'complete'`. That write-through is what removes the "end of attempt" moment: closing the
+  tab, unplugging the piano and pressing Restart all leave the record already written, so no
+  `beforeunload` handler is needed — the part of this that would otherwise be unreliable.
+- An attempt with no notes is never written: a history of practice, not of page loads.
 - `src/progress/AttemptHistory.tsx`: a plain `<table>`, newest first, one row per attempt —
   date and time, loop range (or "whole piece"), notes played, wrong notes, accuracy as a
   percentage (a dash when `notesPlayed` is 0 rather than `NaN%`), and whether it reached the
   end. Plus an empty state for the first ever visit.
+
+## Watch out for `react-hooks/set-state-in-effect`
+
+`eslint-plugin-react-hooks@7.1.1`'s recommended config makes that rule an **error**, and this
+step's effect calls `setRecords`. Written as explicit branches that each return, it lints
+clean; collapsed into a single trailing `setRecords((prev) => [record, ...prev])` it does not,
+and `npm run ci` fails at its second step. Either shape is a faithful reading of the bullet
+above, so know this before writing it rather than after.
 
 ## Out of scope
 
@@ -75,17 +86,25 @@ Chrome and the tailnet deploy are separate records, which is fine for one player
 
 ## Gate
 
-- Layer 2: the store round-trips records; malformed JSON and an absent key both read as an
-  empty list. Component test over a fixed set of records — ordering, the percentage, the dash
-  for a zero-note record, the loop column for both a set and an unset loop, and the empty
-  state.
+- Layer 2: the store round-trips records, and malformed JSON, an absent key and a
+  well-formed-but-wrong shape all read as an empty list. Component test over a fixed set of
+  records — ordering, the percentage, the dash for a zero-note record, the loop column for
+  both a set and an unset loop, and the empty state.
 - Layer 3: play a short attempt, restart, play another, and assert both rows appear with the
-  newer first; reload the page and assert they are still there. The committed screenshot masks
-  the date column — it holds a real wall-clock time, so an unmasked snapshot would pass once
-  and fail every run after it.
+  newer first; reload the page and assert they are still there. Connect a source and reload
+  without playing anything, and assert the table is still empty — the one cheap check that the
+  "no notes, no record" rule is real rather than assumed.
+- No committed screenshot. The existing ones exist for the falling-note view, where layout is
+  the thing under test; a text table's correctness is fully expressible as the assertions
+  above, and a snapshot of a column holding a real wall-clock time would pass once and fail
+  every run after it.
+- `reachedEnd` is deliberately left to Layer 2 on whatever builds the record: reaching it in
+  Layer 3 means playing Cicha Noc to the end through the virtual keyboard, which is a long
+  test for one boolean.
 
 ## Manual
 
-Add as `MANUAL-CHECKS.md` item 10, which keeps the file at its stated ten: after a real
-session, close the tab, reopen it, and confirm the attempt is listed and reads as a fair
-account of what was played.
+Add as `MANUAL-CHECKS.md` item 10, and change that file's opening "under ten items" to "about
+ten" in the same commit — a bump someone decided on, rather than a limit that quietly drifted.
+The check: after a real session, close the tab, reopen it, and confirm the attempt is listed
+and reads as a fair account of what was played.
