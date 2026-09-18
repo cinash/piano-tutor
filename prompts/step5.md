@@ -5,7 +5,7 @@ Status: **not started**. Depends on step 4. One branch, `step-5-loop-selection`,
 ## Scope change from the original milestone brief
 
 The original plan for this step was "loop and tempo." The user explicitly descoped the tempo
-slider for this milestone during step 1 planning: no tempo control, and (per `PROMPT-step4.md`)
+slider for this milestone during step 1 planning: no tempo control, and (per `step4.md`)
 no clock-driven animation for the falling-note view either. This step is **loop selection only**.
 If tempo comes back in a future milestone, it's a separate piece of work, not a resumption of
 this step.
@@ -29,7 +29,7 @@ or stopping.
 
 Layer 2 tests for the wraparound logic itself (pure, in the engine — no UI needed to test the
 state transition). Layer 3 Playwright tests covering loop wraparound in the actual rendered view,
-with a screenshot at the loop boundary (per `PROMPT-step4.md`'s screenshot list).
+with a screenshot at the loop boundary (per `step4.md`'s screenshot list).
 
 ## Manual
 

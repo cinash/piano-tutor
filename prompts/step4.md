@@ -11,7 +11,7 @@ wire wait-mode's hold-and-advance behavior into the display.
 
 ## Confirmed decision — no clock-driven animation
 
-Tempo is out of scope for this milestone (see `PROMPT-step5.md`), and wait-mode has no time
+Tempo is out of scope for this milestone (see `step5.md`), and wait-mode has no time
 limit, so **this view does not animate on a clock**: no `requestAnimationFrame`, no continuous
 scroll, no fixed fall speed. Show the current/next expected note(s) (a small queue is fine) and
 shift the display forward only when the engine's `advance()` actually advances. This is a pure
