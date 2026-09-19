@@ -1,7 +1,7 @@
 # Step 16 — The staff follows you
 
-Depends on step 15, on step 3 for the engine state it reads, and on step 10 for the prop shape
-it copies. One branch, `step-16-staff-cursor`, off `main`.
+Depends on step 15, and on step 3 for the engine state it reads. It copies step 10's prop
+shape, so it reads best after it. One branch, `step-16-staff-cursor`, off `main`.
 
 ## Goal
 
@@ -24,7 +24,7 @@ have drifted apart by twenty positions.
 So `view.engine.nextEventIndex` is a number that means nothing to OSMD, and this step's whole
 content is the translation.
 
-## Confirmed decision — join on `startTime`, not on counting noteheads
+## Confirmed decision — join on `startTime`, not on counting positions
 
 `ScoreEvent.startTime` is already "quarter-note beats from piece start, independent of time
 signature", and every event in the piece has a distinct one. OSMD's cursor steps through the
@@ -33,10 +33,9 @@ so the two sides already describe position the same way, in units that convert b
 four. The mapping is: advance the cursor from the start until its timestamp reaches the event's
 `startTime`.
 
-Do not map by counting noteheads or cursor steps. A step count has to know about every rest,
-tie and stave the engine discarded, is wrong the moment the arrangement changes, and fails
-silently by drifting one note at a time — the worst failure available here, because the app
-keeps working and quietly teaches the wrong thing.
+Counting noteheads or cursor steps instead would have to account for every rest, tie and stave
+the parser discarded, and fails by drifting a note at a time rather than by breaking — which is
+why drift is what the manual check below looks for.
 
 **This choice also survives step 14 for free.** The one-hand filter drops events from the score
 but leaves the survivors' `startTime` untouched, so a filtered score still points at the right
@@ -46,10 +45,10 @@ place on a staff that is still drawing both hands.
 
 OSMD's cursor moves forward from the start, so seeking backwards — which Restart does, and
 which step 5's loop does every time it wraps — means resetting and stepping forward again. Do
-exactly that whenever the target moves backwards, rather than keeping a "cursor is at index N"
-variable in sync with the engine. The piece is 41 events long, so re-scanning costs nothing
-measurable, and the alternative is two mutable positions that have to agree forever across
-restart, loop wrap and hand switching.
+that on every target change, unconditionally, rather than keeping a "cursor is at index N"
+variable in sync with the engine: knowing the target had moved backwards would itself mean
+remembering where it was, which is the variable this decision exists to avoid. The piece is 41
+events long, so re-scanning costs nothing measurable.
 
 ## Watch out — the cursor does not exist until the first render
 
@@ -60,13 +59,12 @@ completed and name the guard, rather than finding it as a crash on the first pag
 
 ## In scope
 
-- **A one-line `seekBeats(score, index)` exported beside step 10's `notesAt` in
-  `src/practice/practiceView.ts`** — the event's `startTime`, or `undefined` past the end. It is
-  an index into the score, exactly as `notesAt` is, and it does not need a file of its own.
-- The seek itself in `StaffView.tsx`: an effect keyed on the target that resets the cursor,
-  steps it forward to the timestamp and shows it. `nextEventIndex` is allowed past the last
-  event when `status` is `complete` — the same case `step12.md` handles for the position
-  readout — and `undefined` from `seekBeats` is what marks it.
+- The seek in `StaffView.tsx`: an effect keyed on the target timestamp that resets the cursor,
+  steps it forward and shows it. `App.tsx` passes the target as
+  `cichaNocScore.events[view.engine.nextEventIndex]?.startTime` — one expression at one call
+  site, so it stays inline rather than becoming a helper. `nextEventIndex` is allowed past the
+  last event when `status` is `complete` — the case `step12.md` handles for the position
+  readout — and `undefined` is what marks it.
 - `StaffView` gains the props it needs to know the target, in the shape step 10 established for
   `PianoKeyboard`: derived state computed in `App.tsx` and passed down, no engine types reaching
   into the view.
@@ -94,14 +92,16 @@ completed and name the guard, rather than finding it as a crash on the first pag
 
 ## Gate
 
-- Layer 1/2: one case — `seekBeats` past the end, which is the branch `status === 'complete'`
-  reaches. Do not also assert what the rest and the tie do to the timeline;
-  `parseScore.test.ts` already pins both, and restating them through a lookup tests the parser
-  a second time and pins nothing about this step.
-- Layer 3, in a real browser, and this is what establishes the requested behaviour: assert the
-  cursor is visible at the start, play the opening chord through the virtual keyboard, and
-  assert it has moved. Then press Restart and assert it is back at the beginning. A green suite
-  without this proves only that step 15 still renders.
+- **No Layer 1/2 case, deliberately.** Once the target is a single optional-chained index
+  expression there is nothing pure left to test — this step's logic is the cursor scan, which
+  needs a real browser and a laid-out score. Do not manufacture a unit test for the index
+  expression, and do not restate what the rest and the tie do to the timeline:
+  `parseScore.test.ts` already pins both.
+- Layer 3, in a real browser: assert the cursor is visible at the start, play the opening chord
+  through the virtual keyboard and assert it has moved, then press Restart and assert it is back
+  at the beginning. That pins movement and reset — **not** absolute position. Drift over a run
+  of bars is what the manual check catches, because reading a marker against a printed score is
+  the one thing no assertion here can do.
 - No committed screenshot, for the reason `step15.md` gives.
 
 ## Manual

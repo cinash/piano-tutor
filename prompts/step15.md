@@ -31,30 +31,35 @@ directly means writing a second MusicXML parser — one that keeps everything `p
 deliberately throws away — and then a layout pass on top. OSMD is that parser and that layout
 pass, over VexFlow. Take it.
 
-## The bundle question, which this step exists to answer
+## The bundle question
 
 The built bundle is **227 KB** today (`dist/assets/index-*.js`). `opensheetmusicdisplay@2.1.3`
 ships a single prebuilt `build/opensheetmusicdisplay.min.js` of **1.33 MB** as its only entry,
 with no `module` field, so there is nothing for Vite to tree-shake. Expect the bundle to grow
 several times over.
 
-Record `dist/assets/*.js` before and after, in the report and in `DECISIONS.md`. If the growth
-is unacceptable, say so and stop rather than reaching for a lazy boundary unasked — that number
-belongs to whoever is looking at it.
+Record `dist/assets/*.js` before and after, in the report and in `DECISIONS.md`. Do not reach
+for a lazy boundary or any other mitigation — the number is for whoever reads the report to
+react to.
 
 ## In scope
 
 - `opensheetmusicdisplay` pinned exactly at `2.1.3` in `dependencies`, per the house rule.
+- `src/score/cichaNoc.ts` imports the raw XML but keeps it module-local; export it, since the
+  renderer needs the string and the parsed score is no use to it.
 - `src/score/StaffView.tsx`: a `<div>` and a `useRef`/`useEffect` pair that constructs
-  `OpenSheetMusicDisplay` against it, loads `cichaNocXml` and renders.
-- **One effect, two lifecycle traps, both the cleanup function's job.** `main.tsx` wraps
-  `<App />` in `<StrictMode>`, so in development the effect runs, cleans up and runs again:
-  without a cleanup that empties the container, the second run appends a second copy of the
-  score. And `osmd.load()` is a promise that `render()` must follow, so a continuation
-  resolving after unmount must not render into a detached container.
+  `OpenSheetMusicDisplay` against it, loads that string and renders.
+- **One effect, three lifecycle traps, all the cleanup function's job.** `main.tsx` wraps
+  `<App />` in `<StrictMode>`, so in development the effect runs, cleans up and runs again.
+  Without a cleanup that empties the container, the second run appends a second copy of the
+  score. `osmd.load()` is a promise that `render()` must follow, so a continuation resolving
+  after unmount must not render into a detached container. And OSMD's `autoResize` default
+  attaches a window `resize` listener that **2.1.3 never removes** — there is no
+  `removeEventListener("resize"` anywhere in the shipped bundle and no public dispose — so a
+  discarded instance re-renders into the container the cleanup just emptied, on the next
+  resize. Construct with `autoResize: false` and own the lifecycle, or leave it on knowingly;
+  either way decide it rather than inheriting it.
 - Placement in `App.tsx` above the queue, and sizing that holds up next to the existing layout.
-  OSMD lays out to its container's width, so a resize needs a re-render; take the simplest thing
-  that works and say in the report what you chose.
 - One `data-testid` on the wrapper, which is all Layer 3 needs to count what is inside it.
 
 ## Out of scope
@@ -83,9 +88,9 @@ belongs to whoever is looking at it.
   either fails or needs the kind of heavy mocking `CLAUDE.md` asks to avoid. Assert in jsdom only
   that the wrapper renders; put the real check in a real browser.
 - Layer 3 is where this step is actually proved: assert the staff container holds an `<svg>`,
-  that the rendered output contains more than one staff system, and that the piece's title text
-  appears. Count elements by a stable handle, not by VexFlow's internal class names — those are
-  a private API and will move under a version bump.
+  that it contains more than one staff line, and that the piece's title text appears. OSMD tags
+  each staff line group `class="staffline"`, which is its own handle — count by that, not by
+  VexFlow's `vf-`-prefixed classes, which are a private API and will move under a version bump.
 - No committed screenshot: OSMD's SVG shifts with its version, its fonts and the platform, so a
   snapshot would fail for reasons that have nothing to do with this app. Step 13's keyboard
   snapshot stands; do not add a second one here.

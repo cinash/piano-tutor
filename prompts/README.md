@@ -58,8 +58,7 @@ these two make it show what is written.
 **Split on purpose, and in this order.** Step 15 carries the dependency and the bundle
 measurement, so a renderer that proves too heavy is found before step 16's mapping is written
 rather than after. Step 16 carries the only hard problem in the pair, which `step16.md`
-explains: the XML and the parsed score hold different numbers of positions, so the two are
-joined on `startTime` rather than by counting.
+explains.
 
 Both are worth doing after step 10, which answers the same complaint for a fraction of the
 cost.
