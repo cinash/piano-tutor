@@ -1,7 +1,7 @@
 # Step 1 — Skeleton + MIDI plumbing
 
-Status: **done, merged into `main`** (branch `step-1-midi-plumbing`). This file records what
-was actually asked and delivered, for the historical record alongside `DECISIONS.md`.
+Branch `step-1-midi-plumbing`. This file records what was actually asked and delivered,
+for the historical record alongside `DECISIONS.md`.
 
 ## Goal
 

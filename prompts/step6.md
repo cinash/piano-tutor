@@ -1,7 +1,6 @@
 # Step 6 — Restart, and what an attempt contains
 
-Status: **not started**. Depends on step 5. One branch, `step-6-restart-and-attempt-stats`,
-off `main`.
+Depends on step 5. One branch, `step-6-restart-and-attempt-stats`, off `main`.
 
 ## Goal
 

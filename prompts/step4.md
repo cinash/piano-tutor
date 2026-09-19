@@ -1,7 +1,6 @@
 # Step 4 — Falling-note view
 
-Status: **not started**. Depends on steps 2 and 3. One branch, `step-4-falling-note-view`, off
-`main`.
+Depends on steps 2 and 3. One branch, `step-4-falling-note-view`, off `main`.
 
 ## Goal
 

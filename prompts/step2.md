@@ -1,7 +1,7 @@
 # Step 2 — Score parsing
 
-Status: **not started**. Do not begin until step 1's manual checks are confirmed and this
-prompt itself is confirmed. One branch, `step-2-score-parsing`, off `main`.
+Was not to begin until step 1's manual checks and this prompt itself were confirmed. One
+branch, `step-2-score-parsing`, off `main`.
 
 ## Goal
 

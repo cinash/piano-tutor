@@ -1,6 +1,6 @@
 # Step 5 — Loop selection
 
-Status: **not started**. Depends on step 4. One branch, `step-5-loop-selection`, off `main`.
+Depends on step 4. One branch, `step-5-loop-selection`, off `main`.
 
 ## Scope change from the original milestone brief
 
