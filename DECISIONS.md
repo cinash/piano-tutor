@@ -50,6 +50,33 @@ imported by `App.tsx` at compile time with no way to load another, so a
 right answer only once a second score exists. Each preset is chosen wide enough to
 contain this score's C3-G4 range regardless, which is what the Layer 2 gate checks.
 
+## The keyboard says which key, the falling-note queue says which finger
+
+The highlight on the on-screen keyboard is a second cue beside the queue, not a
+replacement for it. The queue keeps answering "which finger, and what is coming" in the
+five finger colours, and the keyboard answers the question it never could — which key
+that finger goes on, which is what a player who does not already know the piece needs
+before they can start at all. Neither cue is redundant, so `FallingNotes` was left
+untouched: colour there stays the primary cue and the numeral the secondary one.
+
+`PianoKeyboard` takes the expected `Note[]` rather than a set of pitches, even though it
+only reads `pitch` today. `Note` already carries `hand`, so the hand colours planned next
+add an attribute and nothing else; a `Set<number>` would have to become a
+`Map<number, Hand>` one step later, rewriting the prop, its tests and the `App`-side
+construction. `heldNotes` stays a `ReadonlySet<number>` because it comes from MIDI and
+has no `Note` behind it.
+
+## A key that is both expected and held renders as held
+
+Playing a key is the more specific fact about it, and it agrees with the queue, whose
+finger circle dims once a note is satisfied — so while you hold one note of an expected
+chord, that key reads as held and the notes still missing stay marked as expected. The
+precedence lives in `PianoKeyboard.tsx`, which picks one of the two class names, rather
+than in two equally specific CSS rules whose order decides the outcome: that order is a
+coincidence anyone could reverse while tidying the stylesheet, not a decision. Both
+`data-` attributes still report the truth independently, which is what the tests assert
+against.
+
 ## `VirtualKeyboardSource` key mapping
 
 Two overlapping octave rows of the QWERTY layout, keyed by `KeyboardEvent.code` so it's

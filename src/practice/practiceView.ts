@@ -1,7 +1,14 @@
 import { advance, createInitialState, setLoop } from '../engine/advance';
 import type { EngineState, Loop } from '../engine/types';
 import type { MidiEvent } from '../midi/types';
-import type { Score } from '../score/types';
+import type { Note, Score } from '../score/types';
+
+/**
+ * The notes of one event, and an empty list for an index past the last event — which is
+ * what the completed state looks like, not a separate case.
+ */
+export const notesAt = (score: Score, index: number): readonly Note[] =>
+  score.events[index]?.notes ?? [];
 
 /** What one run through the piece — one restart to the next — contained. */
 export interface AttemptStats {
@@ -53,9 +60,9 @@ export function advancePracticeView(
   if (event.type === 'noteOff') {
     wrongNotes.delete(event.note);
   } else if (state.engine.status === 'waiting') {
-    const expected = score.events[state.engine.nextEventIndex]?.notes ?? [];
+    const expected = notesAt(score, state.engine.nextEventIndex);
     // Deliberately linear, not loop-aware — see DECISIONS.md.
-    const upNext = score.events[state.engine.nextEventIndex + 1]?.notes ?? [];
+    const upNext = notesAt(score, state.engine.nextEventIndex + 1);
     const isExpected =
       expected.some((note) => note.pitch === event.note) ||
       upNext.some((note) => note.pitch === event.note);
