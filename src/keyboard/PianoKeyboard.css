@@ -26,12 +26,20 @@
   z-index: 2;
 }
 
-.piano-key--expected.piano-key--white {
+.piano-key--expected-right.piano-key--white {
   background: #fcd34d;
 }
 
-.piano-key--expected.piano-key--black {
+.piano-key--expected-right.piano-key--black {
   background: #d97706;
+}
+
+.piano-key--expected-left.piano-key--white {
+  background: #5eead4;
+}
+
+.piano-key--expected-left.piano-key--black {
+  background: #0f766e;
 }
 
 .piano-key--held.piano-key--white {
@@ -40,4 +48,25 @@
 
 .piano-key--held.piano-key--black {
   background: #0284c7;
+}
+
+.hand-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hand-legend__swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #000;
+  border-radius: 3px;
+}
+
+.hand-legend__swatch--left {
+  background: #5eead4;
+}
+
+.hand-legend__swatch--right {
+  background: #fcd34d;
 }

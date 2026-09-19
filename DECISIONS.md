@@ -77,6 +77,25 @@ coincidence anyone could reverse while tidying the stylesheet, not a decision. B
 `data-` attributes still report the truth independently, which is what the tests assert
 against.
 
+## The keyboard is coloured by hand, the queue by finger
+
+Two colour systems share the screen, and each answers a question the other doesn't: the
+keyboard says which hand a key belongs to, the queue says which finger plays it. They are
+never adjacent — the queue sits above, the keyboard below — so a player reads one at a
+time, and step 4's finger colours were left exactly as they were. The queue circles are
+not recoloured by hand and carry no L/R marker.
+
+The hand colours are amber for the right hand and teal for the left, in a white and a
+black variant each, chosen by the player from a set deliberately clear of everything
+already on screen: the five finger colours (violet, orange, green, blue, pink), the
+sky blue of a held key, and the red that marks a wrong note in the queue. Two swatches
+sit under the keyboard labelling them, because the hand system is the newer of the two
+and is the one a cold player would otherwise have to guess at.
+
+Held still wins over both hand colours, for the reason in the entry above. Such a key
+keeps reporting its `data-hand` regardless: the attribute tracks the lookup, the colour
+tracks what you are doing.
+
 ## `VirtualKeyboardSource` key mapping
 
 Two overlapping octave rows of the QWERTY layout, keyed by `KeyboardEvent.code` so it's
