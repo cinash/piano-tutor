@@ -9,18 +9,14 @@ no A or B after it. Next to a real 88-key instrument it reads as stunted rather 
 piano, and it is the first thing on screen a player compares against what is under their hands.
 Make it wider, and let the player choose how wide.
 
-## Confirmed decision — the width is a control, and that was asked for
+## Confirmed decision — the width is a control, and no derivation
 
-This is configurability, which CLAUDE.md is otherwise hostile to, so record why it belongs:
-**the player asked for the width to be configurable** when choosing between a fixed four
-octaves, a fixed five and a fixed 88. It is a requested feature, not a knob invented in case
-someone wants it. A reviewer meeting this cold should read this paragraph before proposing to
-replace the control with a constant.
+The player asked for the width to be configurable, when offered a choice between a fixed four
+octaves, a fixed five and a fixed 88 — so the control is requested rather than invented.
 
-What is _not_ in it: no derivation of the range from the score. There is one score in the app,
-imported by `App.tsx` at compile time, and no way to load another, so a
-`keyboardRangeForScore()` would be branches that cannot run. The presets below are chosen so
-that every one of them already contains the piece.
+The range is not derived from the score. There is one score in the app, imported by `App.tsx`
+at compile time and no way to load another, so a `keyboardRangeForScore()` would be branches
+that cannot run. The presets below are chosen so every one of them already contains the piece.
 
 ## In scope
 
@@ -33,8 +29,17 @@ that every one of them already contains the piece.
   already use. `App.tsx` holds the choice in state and passes the chosen `low`/`high` to
   `PianoKeyboard`, which already takes exactly those two props — `computeKeyboardLayout` needs
   no change at all.
-- `src/config.ts`'s `KEYBOARD_RANGE` becomes the preset list with the four-octave entry marked
-  as the default; the stale "until step 2 derives it from the parsed score" comment goes.
+- `src/config.ts`'s `KEYBOARD_RANGE` becomes `KEYBOARD_PRESETS`, plus a named
+  `DEFAULT_KEYBOARD_PRESET` pointing at the four-octave entry — not a `default: true` flag on
+  one of them. The stale "until step 2 derives it from the parsed score" comment goes with it.
+- `DECISIONS.md` already carries an entry saying the keyboard range is hardcoded to C3–G4 "for
+  now", pending step 2. Revise that entry in the same commit rather than adding two new ones
+  beside it that say the opposite.
+- Re-check `.piano-keyboard`'s fixed `height: 120px` against the new widths. A white key is
+  about 45 px wide at four octaves and about 24 px at 88 keys, against a fixed 120 px of
+  height; at some point that stops looking like a piano. This is the one visual judgement no
+  assertion in the gate can make, and "make it look nice" was half the request — so make it
+  with the rendered page in front of you, and say in the report what you changed and why.
 - Every preset starts on a C or an A and ends on a B or a C. A keyboard that stops on a G is
   most of what makes the current one look wrong, and that stays true whichever one is picked.
 
@@ -70,8 +75,10 @@ narrow preset, or a wider piece arriving.
 
 ## Gate
 
-- Layer 2: every pitch in `cichaNocScore.events` falls inside every preset; each preset starts
-  and ends on the octave boundary it claims. Those are what make the fixed list safe.
+- Layer 2: every pitch in `cichaNocScore.events` falls inside every preset. That is the one
+  assertion making the fixed list safe — it catches a narrow preset added later, or a wider
+  piece arriving. Do not also assert that each preset's bounds sit on the octave boundary it
+  claims: that checks three hand-written constants against arithmetic on the same constants.
 - Layer 3: assert the default renders 48 keys, 28 of them white; switch the select to 88 keys
   and assert 88 keys, 52 white. A count is a sharper assertion than a picture here, and does
   not need updating when a colour changes.

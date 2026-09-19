@@ -17,8 +17,8 @@ for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano ca
 | [7](step7.md) History           | `localStorage` attempts, newest first               |
 | [8](step8.md) Progress transfer | Export and import the history as JSON               |
 
-> **Status lives here and nowhere else.** The step files carry no `Status:` line; a brief
-> records what was asked, and `git log` records what landed.
+> The step files carry no `Status:` line — a brief records what was asked, which does not
+> change once the work is done. This table is where the shipped/planned split is tracked.
 
 ## Planned — making it legible to a player
 
@@ -29,14 +29,14 @@ wait-mode — not a Synthesia-style falling-bar game. The app already matches fl
 wait-mode and on advancing only when you actually play; what is missing is the keyboard's half
 of the conversation.
 
-| Step                               | What it adds                                 | Size |
-| ---------------------------------- | -------------------------------------------- | ---- |
-| [9](step9.md) Keyboard range       | Pick the width: 4 octaves, 5, or all 88 keys | S    |
-| [10](step10.md) Keys to play       | Highlight what the engine is waiting for     | S    |
-| [11](step11.md) Hand colours       | Spend the `hand` field nothing has ever read | S    |
-| [12](step12.md) Position readout   | "Measure 3 of 12"                            | XS   |
-| [13](step13.md) Note names         | Label the white keys, C4 at middle C         | S    |
-| [14](step14.md) One hand at a time | Practise left, right, or both                | M    |
+| Step                               | What it adds                                 |
+| ---------------------------------- | -------------------------------------------- |
+| [9](step9.md) Keyboard range       | Pick the width: 4 octaves, 5, or all 88 keys |
+| [10](step10.md) Keys to play       | Highlight what the engine is waiting for     |
+| [11](step11.md) Hand colours       | Spend the `hand` field nothing has ever read |
+| [12](step12.md) Position readout   | "Measure 3 of 12"                            |
+| [13](step13.md) Note names         | Label the white keys, C4 at middle C         |
+| [14](step14.md) One hand at a time | Practise left, right, or both                |
 
 **Order matters in two places.** Step 9 comes first because it settles the keyboard's width,
 and step 10 commits the first keyboard screenshot — reversed, that snapshot is taken and
@@ -60,8 +60,6 @@ worth doing before step 10, which solves the same problem for a fraction of the 
 is out of scope by decision in `step5.md`. Wanting it back is a decision to reverse in the
 open, not a gap to fill quietly.
 
-**Recording which hand an attempt used.** Step 14 lets you practise one hand, and the history
-then mixes one-hand and two-hand accuracy without labelling it. Adding `hands` to
-`AttemptRecord` is a `localStorage` schema change with a data-destroying failure mode of its
-own, so it is deliberately not part of step 14. Its own step, if the mixing turns out to
-matter in practice.
+**Recording which hand an attempt used.** Step 14 leaves the history mixing one-hand and
+two-hand accuracy without labelling it; its Out of scope says why that schema change is kept
+separate. Its own step, if the mixing turns out to matter in practice.

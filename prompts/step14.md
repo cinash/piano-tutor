@@ -22,31 +22,28 @@ engine. `advance`, `nextIndexAfter`, `setLoop` and `advancePracticeView` all alr
 
 ## Watch out — the stall this decision avoids
 
-If the filter is applied _inside_ the engine rather than to the score, an event whose notes all
-belong to the other hand yields `expectedPitches === []`. In `advance()` the guard
-`if (!expectedPitches.includes(event.note))` is then false for every possible note, so the
-player's notes are all classified as wrong and the queue never moves.
+Filtering inside the engine leaves `expectedPitches` empty for an event belonging entirely to
+the other hand. `advance()`'s `if (!expectedPitches.includes(event.note))` is then true for
+every note, so each one takes the early return and is classified as wrong, and the queue never
+moves.
 
-It does not lock up everywhere, which is what makes it nasty. `completeCurrentEvent` reaches
-its own `expectedPitches.every(...)`, and `.every()` on an empty array is `true`, so it recurses
-straight past an empty event — mid-piece the other hand's events would be skipped and the thing
-would look like it worked. The stall is at index 0: the first event of an attempt, at start or
-after Restart. The bug is therefore reproducible only from a fresh attempt on a piece whose
-first event is single-handed, which is the state a mid-piece unit test never constructs.
-
-Dropping the empty events from the score instead means the state cannot occur anywhere, which
-is the difference between guarding a bug and not having one. If a reviewer proposes moving the
-filter into the engine, this section is the answer — check it against `src/engine/advance.ts`
-rather than quoting it, since the argument turns on which guard runs first.
+It does not stall everywhere, which is what makes it nasty: `completeCurrentEvent` runs its own
+`expectedPitches.every(...)`, which is `true` on an empty array, so it recurses straight past
+empty events mid-piece and the thing looks like it works. Only index 0 — the first event of an
+attempt, at start or after Restart — stalls. Dropping empty events from the score means the
+state cannot occur anywhere.
 
 ## In scope
 
 - `filterScoreByHand(score, hands)` in `src/score/filterScoreByHand.ts`: returns the score
   unchanged for `'both'`; otherwise narrows `notes` per event and drops events left empty.
   `measureCount` is untouched — the piece is still twelve bars long when you practise one hand.
-- A three-way control (`left` / `right` / `both`, defaulting to `both`) in `App.tsx`, with the
-  filtered score memoised on it and threaded to `FallingNotes`, `expectedNotes` and every
-  `advancePracticeView` call, so exactly one score object is in play per render.
+- A three-way control (`left` / `right` / `both`, defaulting to `both`) in `App.tsx`. Derive the
+  filtered score with a plain `const` and thread it to `FallingNotes`, `expectedNotes` and every
+  `advancePracticeView` call. Not `useMemo`: nothing in `src/` is memoised or depends on the
+  score's identity across renders, and filtering 41 events costs nothing worth protecting.
+  Note that `handleEvent` closes over the score and is registered once at `attach()` time —
+  check how the filtered one reaches it rather than assuming the prop threading covers it.
 - **Changing the hand restarts the attempt.** `nextEventIndex` is an index into the event list,
   and the filtered list is a different list — the same number means a different note. Reuse
   `restartPractice`, which already zeroes the counters, which already closes the open attempt
@@ -74,10 +71,6 @@ rather than quoting it, since the argument turns on which guard runs first.
 - **One-hand attempts are recorded in the history indistinguishably from two-hand ones**, so
   the accuracy column now mixes two things it does not label. That is the price of leaving the
   schema alone; record it so the next person reads it as a known trade rather than a bug.
-- Trading away `MANUAL-CHECKS.md` item 9's loop clause (see Manual below) — it is the only
-  hardware check of loop wrap-around with no timeout at the wrap point, which is exactly the
-  class of thing the container cannot demonstrate. Say so, rather than letting it lapse quietly
-  to keep the list at ten.
 
 ## Gate
 
@@ -86,7 +79,8 @@ rather than quoting it, since the argument turns on which guard runs first.
 - Layer 3: **select the left hand**, not the right. Every event in measures 1–2 contains a
   right-hand note, so a right-hand filter drops nothing there and the test would pass against
   an implementation that narrows notes but never drops an empty event — the exact bug this step
-  exists to avoid. Filtering to the left hand drops `m1-b4` and `m1-b5` (right-hand only), so
+  exists to avoid. The left-hand filter drops four of the six events in that range —
+  `m1-b4-e1`, `m1-b5-e1`, `m2-b4-e1`, `m2-b5-e1`, measure 2 being a repeat of measure 1 — so
   playing just the left-hand pitches of measures 1–2 and asserting the queue reaches the end of
   the range proves the dropping is real. Then switch to the right hand and assert the attempt
   restarted and the expected keys changed hand colour.
@@ -95,8 +89,12 @@ rather than quoting it, since the argument turns on which guard runs first.
 
 ## Manual
 
-Replace `MANUAL-CHECKS.md` item 9's loop clause with a hands clause, keeping the list at about
-ten — and record that trade as a decision rather than letting the loop check lapse quietly.
+Extend `MANUAL-CHECKS.md` item 9 with a hands clause, leaving its play-through, loop and
+restart clauses exactly as they are. Item 9 is one numbered item carrying several clauses, so a
+fourth adds nothing to the list's length — there is no ten-item ceiling to buy your way under
+here, and the loop clause is the only hardware check of wrap-around with no timeout at the wrap
+point, which is the class of thing the container cannot demonstrate at all.
+
 The new clause: practise the left hand alone through a short loop, confirm the right hand's
 notes are neither shown nor waited for, switch to both, and confirm the attempt restarted and
 the full texture came back. Left rather than right for the same reason the Layer 3 test uses

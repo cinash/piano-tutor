@@ -17,8 +17,8 @@ Noc is the ideal case: G4 in the right hand over C3 and G3 in the left.
 Two colour systems on one screen is the real risk in this step. The split is: the **keyboard**
 is coloured by hand, the **queue** stays coloured by finger. They are answering different
 questions and are never adjacent, and step 4's finger decision stands. Pick a hand palette
-plainly distinct from `FINGER_COLORS` — not another violet or another pink — and render a
-legend so neither system has to be guessed at.
+plainly distinct from `FINGER_COLORS` — not another violet or another pink — and label the two
+hand colours so the newer of the two systems is not the one left to be guessed at.
 
 ## In scope
 

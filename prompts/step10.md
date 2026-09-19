@@ -21,25 +21,23 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
   `src/practice/practiceView.ts`:
 
   ```ts
-  export function expectedNotes(state: PracticeViewState, score: Score): readonly Note[] {
-    if (state.engine.status === 'complete') return [];
-    return score.events[state.engine.nextEventIndex]?.notes ?? [];
-  }
+  export const expectedNotes = (
+    state: PracticeViewState,
+    score: Score,
+  ): readonly Note[] => score.events[state.engine.nextEventIndex]?.notes ?? [];
   ```
 
-  It has two callers the day it lands, not one: `advancePracticeView` in the same file already
-  computes `score.events[state.engine.nextEventIndex]?.notes ?? []` inline for its wrong-note
-  check, inside a branch that has already established `status === 'waiting'`, so the helper is
-  equivalent there and replaces it. Step 14 later filters it for one-hand practice. Do not
-  justify it by a list of future consumers; the duplicate it removes is present now.
+  No `status === 'complete'` guard: `advance()` sets that status only on the branch where
+  `score.events[nextEventIndex]` is undefined, so `?? []` already covers it. What is left is
+  character for character the expression `advancePracticeView` computes inline for its
+  wrong-note check, so the helper has two callers the day it lands and replaces a duplicate
+  rather than anticipating one.
 
 - `PianoKeyboard` gains `expectedNotes: ReadonlySet<number>` beside `heldNotes`, and renders
   `data-expected` next to the existing `data-held`. That attribute pattern is already the
   component's idiom and gives Layer 3 a handle without growing `window.__practiceState`,
   which `DECISIONS.md` asks to keep to what a test actually needs. Step 11 widens this prop to
-  a map carrying the hand, so it and its tests get rewritten one step later; a set is what this
-  step needs, and guessing at step 11's shape now would be building for a requirement that has
-  not arrived.
+  a map carrying the hand, so expect to rewrite it and its tests one step later.
 - `.piano-key--expected` in white and black variants, in the existing palette's idiom.
 - **State precedence, decided here rather than left to CSS file order:** a key that is both
   expected and held renders as held — you are playing it, which is the more specific fact, and
@@ -63,8 +61,8 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
 
 ## Gate
 
-- Layer 2: `expectedNotes()` returns the current event's notes while waiting, an empty list
-  when `status` is `complete`, and an empty list for an index past the end. Component test over
+- Layer 2: `expectedNotes()` returns the current event's notes while waiting, and an empty list
+  for an index past the end — which is the completed state too, not a second case. Component test over
   `PianoKeyboard` for a key that is expected, one held, one both, one neither — asserting the
   classes and the `data-` attributes.
 - Layer 3: connect the virtual keyboard, then assert that exactly the opening chord's three
