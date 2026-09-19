@@ -25,15 +25,11 @@ total, and the loop when one is set.
 
 ## Watch out for `nextEventIndex` pointing past the end
 
-This is the trap in this step. When the final chord is satisfied, `completeCurrentEvent` in
-`src/engine/advance.ts` sets `status` to `complete` and leaves `nextEventIndex` pointing at an
-index with **no event behind it** — that is the branch it takes when there is no next event.
-
-So `score.events[state.engine.nextEventIndex].measure` throws on the last note of every
-successful run-through — the one path a happy-path test is least likely to reach, because
-reaching it means playing all 41 events. Check `status` first, and cover the completion case at
-Layer 2 where it is one line of setup rather than a long Layer 3 performance. `step7.md` made
-the same call about `reachedEnd` for the same reason.
+`nextEventIndex` can point past the end of `score.events` once `status` is `complete`, so
+`score.events[nextEventIndex].measure` throws on the last note of every successful
+run-through. Branch on the status rather than indexing, and cover completion at Layer 2 — a
+Layer 3 version means playing all 41 events, which is the call `step7.md` made about
+`reachedEnd` for the same reason.
 
 ## Out of scope
 

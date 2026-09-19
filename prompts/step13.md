@@ -51,8 +51,11 @@ smuggled into this one.
   off-by-one this function exists to get right.
 - Layer 2: component test asserting white keys carry labels and black keys carry none.
 - Layer 3: assert a known key reads `C4`.
-- Update the `piano-keyboard` screenshot from steps 10 and 11 — labels change what that element
-  looks like.
+- **The one committed `piano-keyboard` screenshot, taken here.** Steps 9 to 12 deliberately
+  leave it alone: by this point the element has its final width, its expected-key highlight,
+  its hand colours and its labels, so the snapshot is written and reviewed once rather than
+  updated in four consecutive steps. Everything before this stands on attribute and count
+  assertions, which are sharper per-step checks anyway.
 
 ## Manual
 

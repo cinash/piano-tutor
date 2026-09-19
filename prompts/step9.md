@@ -40,8 +40,6 @@ that cannot run. The presets below are chosen so every one of them already conta
   height; at some point that stops looking like a piano. This is the one visual judgement no
   assertion in the gate can make, and "make it look nice" was half the request — so make it
   with the rendered page in front of you, and say in the report what you changed and why.
-- Every preset starts on a C or an A and ends on a B or a C. A keyboard that stops on a G is
-  most of what makes the current one look wrong, and that stays true whichever one is picked.
 
 ## Watch out — the presets must all contain the piece
 
@@ -51,18 +49,15 @@ preset (36–83) already contains Cicha Noc's 48–67 with room either side, so 
 construction** rather than by a runtime check — which is why the presets are a fixed list and
 not a free low/high pair the player can type a bad value into.
 
-Pin it with a test rather than a comment: assert that every pitch in `cichaNocScore` falls
-inside _every_ preset. That is the one assertion that would catch someone later adding a
-narrow preset, or a wider piece arriving.
+The Gate below owns the assertion that keeps it true.
 
 ## Out of scope
 
 - Deriving the range from the score, per the decision above.
 - Free numeric low/high inputs, or a continuous zoom. The fixed list is what keeps the
   containment guarantee free.
-- Remembering the choice across reloads. Consistent with step 13's refusal of a persisted
-  toggle; if a second preference ever appears, persistence becomes its own small decision for
-  both of them at once.
+- Remembering the choice across reloads. Nothing in the app is remembered except the attempt
+  history; if that starts to grate, persistence is its own small decision.
 - Narrowing the keyboard to the selected loop range, or scrolling it.
 - Labelling the keys (step 13) or highlighting them (step 10).
 
@@ -82,9 +77,8 @@ narrow preset, or a wider piece arriving.
 - Layer 3: assert the default renders 48 keys, 28 of them white; switch the select to 88 keys
   and assert 88 keys, 52 white. A count is a sharper assertion than a picture here, and does
   not need updating when a colour changes.
-- **No committed screenshot in this step.** Step 10 introduces the first keyboard screenshot,
-  once the default width is settled — otherwise the snapshot is taken twice and reviewed twice
-  for one feature. Sequencing this step first exists precisely to avoid that.
+- No committed screenshot. Step 13 takes the one keyboard screenshot, once the element is
+  finished; key counts are the sharper check here anyway.
 
 ## Manual
 

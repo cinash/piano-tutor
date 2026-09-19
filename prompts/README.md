@@ -38,10 +38,10 @@ of the conversation.
 | [13](step13.md) Note names         | Label the white keys, C4 at middle C         |
 | [14](step14.md) One hand at a time | Practise left, right, or both                |
 
-**Order matters in two places.** Step 9 comes first because it settles the keyboard's width,
-and step 10 commits the first keyboard screenshot — reversed, that snapshot is taken and
-reviewed twice for one feature. Step 14 comes last because it consumes both the highlight and
-the hand colours.
+**Order matters in two places.** Step 9 comes first because everything after it draws on the
+keyboard, and its width decides what "the keyboard" is. Step 14 comes last because it consumes
+both the highlight and the hand colours. Step 13 owns the single committed screenshot of the
+keyboard, taken once the element is finished rather than updated by each step that touches it.
 
 Step 10 is the one that matters. If only one of these six is ever built, build that one:
 it is what turns the app from a display into a tutor. The rest are refinement.

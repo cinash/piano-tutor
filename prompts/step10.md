@@ -5,9 +5,9 @@ Depends on steps 3, 4 and 9. One branch, `step-10-keys-to-play`, off `main`.
 ## Goal
 
 Make the app usable without a score open beside it. Today the queue shows a finger number per
-note and nothing anywhere says _which key that finger goes on_, so a player who does not
-already know the piece cannot begin. This is the step that turns the app from a display into a
-tutor; everything after it is refinement.
+note and nothing anywhere says _which key that finger goes on_, so a player who does not already
+know the piece cannot begin. This is the step that turns the app from a display into a tutor;
+everything after it is refinement.
 
 ## Confirmed decision — a second cue, not a replacement
 
@@ -30,21 +30,34 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
   No `status === 'complete'` guard: `advance()` sets that status only on the branch where
   `score.events[nextEventIndex]` is undefined, so `?? []` already covers it. What is left is
   character for character the expression `advancePracticeView` computes inline for its
-  wrong-note check, so the helper has two callers the day it lands and replaces a duplicate
+  wrong-note check, so the helper has two callers the day it lands and removes a duplicate
   rather than anticipating one.
 
-- `PianoKeyboard` gains `expectedNotes: ReadonlySet<number>` beside `heldNotes`, and renders
-  `data-expected` next to the existing `data-held`. That attribute pattern is already the
-  component's idiom and gives Layer 3 a handle without growing `window.__practiceState`,
-  which `DECISIONS.md` asks to keep to what a test actually needs. Step 11 widens this prop to
-  a map carrying the hand, so expect to rewrite it and its tests one step later.
+- `PianoKeyboard` gains `expectedNotes: readonly Note[]` beside `heldNotes`, and `App.tsx`
+  passes `expectedNotes(view, cichaNocScore)` straight through. Each key looks its own note up:
+
+  ```tsx
+  const expected = expectedNotes.find((note) => note.pitch === key.note);
+  // renders data-expected={Boolean(expected)}
+  ```
+
+  **Pass the notes, not a set of pitches.** A `Set<number>` would have to be rebuilt as a
+  `Map<number, Hand>` in step 11 to carry the hand — rewriting the prop, its tests and the
+  App-side construction one step later. `Note` already carries `hand`, so step 11 adds one
+  attribute and nothing else. A `find` over the two or three notes of a chord is not a cost
+  worth a collection.
+
+  `heldNotes` stays a `ReadonlySet<number>`: it comes from MIDI and has no `Note` behind it.
+
+- `data-expected` sits next to the existing `data-held` — that attribute pattern is already the
+  component's idiom, and it gives Layer 3 a handle without growing `window.__practiceState`,
+  which `DECISIONS.md` asks to keep to what a test actually needs.
 - `.piano-key--expected` in white and black variants, in the existing palette's idiom.
 - **State precedence, decided here rather than left to CSS file order:** a key that is both
   expected and held renders as held — you are playing it, which is the more specific fact, and
   it agrees with the queue circle that dims when a note is satisfied. Two classes at equal
-  specificity resolving by source order is a coincidence, not a decision; write it so it
-  cannot be reordered by accident.
-- `App.tsx` computes the set once per render and passes it down.
+  specificity resolving by source order is a coincidence, not a decision; write it so it cannot
+  be reordered by accident.
 
 ## Out of scope
 
@@ -62,17 +75,18 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
 ## Gate
 
 - Layer 2: `expectedNotes()` returns the current event's notes while waiting, and an empty list
-  for an index past the end — which is the completed state too, not a second case. Component test over
-  `PianoKeyboard` for a key that is expected, one held, one both, one neither — asserting the
-  classes and the `data-` attributes.
+  for an index past the end — which is the completed state too, not a second case. Component
+  test over `PianoKeyboard` for a key that is expected, one held, one both, one neither,
+  asserting the `data-` attributes rather than the classes, as `PianoKeyboard.test.tsx` already
+  does for `data-held`.
 - Layer 3: connect the virtual keyboard, then assert that exactly the opening chord's three
-  pitches carry `data-expected="true"` and nothing else does. Play the lowest of them; assert
-  it is now held and still expected. Complete the chord; assert the expected set has moved on
-  to the next event's single pitch. This
-  is the check that establishes the requested behaviour exists — a green suite without it
-  proves only that nothing else broke.
-- The first committed screenshot of the `piano-keyboard` element, at the start position. Step 9
-  settled the width first so this is taken once.
+  pitches carry `data-expected="true"` and nothing else does. Play the lowest of them; assert it
+  is now held and still expected. Complete the chord; assert the expected set has moved on to
+  the next event's single pitch. This is the check that establishes the requested behaviour
+  exists — a green suite without it proves only that nothing else broke.
+- No committed screenshot. Step 13 takes the one keyboard screenshot, once the element has its
+  final width, highlight, hand colours and labels; snapshotting it here means updating it in
+  three of the four steps that follow.
 
 ## Manual
 
