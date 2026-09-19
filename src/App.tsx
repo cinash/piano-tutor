@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
-import { KEYBOARD_RANGE } from './config';
+import { DEFAULT_KEYBOARD_PRESET, KEYBOARD_PRESETS, type KeyboardPreset } from './config';
 import type { ActiveSource } from './devices/DevicePicker';
 import { DevicePicker } from './devices/DevicePicker';
 import { downloadJson } from './downloadJson';
 import type { Loop } from './engine/types';
+import { KeyboardRangePicker } from './keyboard/KeyboardRangePicker';
 import { PianoKeyboard } from './keyboard/PianoKeyboard';
 import { ReplayMidiSource } from './midi/ReplayMidiSource';
 import { VirtualKeyboardSource } from './midi/VirtualKeyboardSource';
@@ -66,6 +67,9 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [attempts, setAttempts] = useState<AttemptRecord[]>(loadAttempts);
+  const [keyboardPreset, setKeyboardPreset] = useState<KeyboardPreset>(
+    DEFAULT_KEYBOARD_PRESET,
+  );
 
   const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);
@@ -288,9 +292,14 @@ export function App() {
         satisfiedNoteIds={view.engine.satisfiedNoteIds}
         hasWrongNote={view.wrongNotes.size > 0}
       />
+      <KeyboardRangePicker
+        presets={KEYBOARD_PRESETS}
+        selected={keyboardPreset}
+        onChange={setKeyboardPreset}
+      />
       <PianoKeyboard
-        lowNote={KEYBOARD_RANGE.low}
-        highNote={KEYBOARD_RANGE.high}
+        lowNote={keyboardPreset.low}
+        highNote={keyboardPreset.high}
         heldNotes={view.engine.heldNotes}
       />
       <AttemptHistory records={attempts} />

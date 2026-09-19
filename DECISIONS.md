@@ -35,12 +35,20 @@ note(s) and shift the queue only when the engine advances — no `requestAnimati
 no continuous scroll, no clock dependency. This keeps the view a pure re-render on state
 change rather than introducing timing concerns for a feature that isn't being built yet.
 
-## On-screen keyboard range is hardcoded to C3-G4 for now
+## On-screen keyboard width is a player-configurable preset, not derived from the score
 
-`src/config.ts`'s `KEYBOARD_RANGE` matches `cicha-noc.musicxml`'s actual range. Step 2
-(score parsing) will derive this from the parsed score instead, per the milestone's
-"spanning only the octaves the piece actually uses" requirement — this is a placeholder,
-not the final design.
+Offered a choice between a fixed four octaves, a fixed five and a fixed 88, the player
+asked for the width to be configurable — so `src/config.ts`'s `KEYBOARD_PRESETS` is a
+list of three fixed ranges (4 octaves, 5 octaves, 88 keys) picked via a `<select>`,
+rather than a single hardcoded range, free numeric low/high inputs, or a value computed
+from the score. The fixed list is what lets every preset contain the score by
+construction; free input couldn't offer that guarantee.
+
+It is still not derived from `cicha-noc.musicxml`. There is one score in the app,
+imported by `App.tsx` at compile time with no way to load another, so a
+`keyboardRangeForScore()` would be branches that can never run — that would become the
+right answer only once a second score exists. Each preset is chosen wide enough to
+contain this score's C3-G4 range regardless, which is what the Layer 2 gate checks.
 
 ## `VirtualKeyboardSource` key mapping
 
