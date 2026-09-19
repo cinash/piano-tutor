@@ -1,7 +1,7 @@
 .piano-keyboard {
   position: relative;
   width: 100%;
-  height: 120px;
+  height: 180px;
   background: #222;
   border-radius: 4px;
   overflow: hidden;
