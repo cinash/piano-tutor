@@ -4,10 +4,11 @@ A TypeScript / React / Vite web app, developed inside a VS Code dev container an
 with Vitest and Playwright.
 
 It turns a MusicXML file into a wait-mode falling-note practice view driven by a USB
-piano over the Web MIDI API: MIDI input and a device picker, score parsing, the practice
-engine, loop selection, and a saved practice history that can be exported as JSON. See
-`prompts/README.md` for the plan step by step, `DECISIONS.md` for non-obvious choices,
-and `MANUAL-CHECKS.md` for what to verify by hand with the real piano.
+piano over the Web MIDI API: MIDI input with a device picker and a dev-only recording
+mode, score parsing, the practice engine, loop selection, restart, and a saved practice
+history that can be exported as JSON. See `prompts/README.md` for the plan step by step,
+`DECISIONS.md` for non-obvious choices, and `MANUAL-CHECKS.md` for what to verify by hand
+with the real piano.
 
 ## Opening the container
 

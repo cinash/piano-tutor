@@ -17,8 +17,7 @@ for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano ca
 | [7](step7.md) History           | `localStorage` attempts, newest first               |
 | [8](step8.md) Progress transfer | Export and import the history as JSON               |
 
-> The step files carry no `Status:` line — a brief records what was asked, which does not
-> change once the work is done. This table is where the shipped/planned split is tracked.
+> The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
 ## Planned — making it legible to a player
 
@@ -60,6 +59,5 @@ worth doing before step 10, which solves the same problem for a fraction of the 
 is out of scope by decision in `step5.md`. Wanting it back is a decision to reverse in the
 open, not a gap to fill quietly.
 
-**Recording which hand an attempt used.** Step 14 leaves the history mixing one-hand and
-two-hand accuracy without labelling it; its Out of scope says why that schema change is kept
-separate. Its own step, if the mixing turns out to matter in practice.
+**Recording which hand an attempt used.** Kept out of step 14, which says why. Its own step,
+if the mixing turns out to matter in practice.

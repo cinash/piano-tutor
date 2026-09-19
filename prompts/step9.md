@@ -41,16 +41,6 @@ that cannot run. The presets below are chosen so every one of them already conta
   assertion in the gate can make, and "make it look nice" was half the request — so make it
   with the rendered page in front of you, and say in the report what you changed and why.
 
-## Watch out — the presets must all contain the piece
-
-From step 10 onward the keyboard carries the "which key to play" cue, so a pitch outside the
-rendered range is not a cosmetic problem but a silently missing instruction. The narrowest
-preset (36–83) already contains Cicha Noc's 48–67 with room either side, so this holds **by
-construction** rather than by a runtime check — which is why the presets are a fixed list and
-not a free low/high pair the player can type a bad value into.
-
-The Gate below owns the assertion that keeps it true.
-
 ## Out of scope
 
 - Deriving the range from the score, per the decision above.
@@ -77,8 +67,7 @@ The Gate below owns the assertion that keeps it true.
 - Layer 3: assert the default renders 48 keys, 28 of them white; switch the select to 88 keys
   and assert 88 keys, 52 white. A count is a sharper assertion than a picture here, and does
   not need updating when a colour changes.
-- No committed screenshot. Step 13 takes the one keyboard screenshot, once the element is
-  finished; key counts are the sharper check here anyway.
+- No committed screenshot; step 13 takes the one keyboard snapshot.
 
 ## Manual
 

@@ -1,6 +1,7 @@
 # Step 13 — Note names on the keys
 
-Depends on steps 9 and 10. One branch, `step-13-note-names`, off `main`.
+Depends on steps 9, 10 and 11 — 11 because this step takes the keyboard's one committed
+screenshot, and the hand colours have to be in it. One branch, `step-13-note-names`, off `main`.
 
 ## Goal
 
@@ -23,10 +24,16 @@ smuggled into this one.
 
 - `noteName(pitch)` in `src/keyboard/noteName.ts`, in scientific pitch notation with middle C
   at 60 as `C4` — the convention `config.ts` already used when it called 48 "C3".
-- **White keys are labelled, black keys are not.** A black key is about 27 px wide at this
-  keyboard's four-octave width, which does not hold `C♯4`, and truncating it to `C♯` puts an
+- **White keys are labelled, black keys are not.** A black key is about 27 px wide at the
+  default four-octave preset, which does not hold `C♯4`, and truncating it to `C♯` puts an
   unoctaved label next to octaved ones. A black key's identity is readable from its white
   neighbours, which is how a player finds it on the real instrument too.
+- **The labels stay on at every preset, including 88 keys** — where a white key is about 24 px,
+  narrower than the black keys this step just declined to label. That is deliberate, not an
+  oversight: two characters fit 24 px where four do not, and a player who picks the 88-key view
+  is asking to see the whole instrument, not a subset of its labels. Do not add a width
+  threshold that hides them; if they turn out to be unreadable at 88 keys, that is a real
+  observation to act on, and the fix is the label's size or orientation, not its absence.
 - Labels are orientation, not instruction: every white key is labelled, always, not only the
   expected ones.
 

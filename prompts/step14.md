@@ -43,7 +43,7 @@ occur anywhere.
   across renders, and filtering 41 events costs nothing worth protecting.
 - **Check how the filtered score reaches `handleEvent`.** It currently reads the module-level
   `cichaNocScore` import directly rather than taking it as an argument, and it is registered
-  once, at `attach()` time. Threading props to `FallingNotes` and `expectedNotes` will not
+  once, at `attach()` time. Threading props to `FallingNotes` and `notesAt` will not
   change what that handler advances against; this is the wiring most likely to be missed.
 - **Changing the hand restarts the attempt.** `nextEventIndex` is an index into the event list,
   and the filtered list is a different list — the same number means a different note. Reuse

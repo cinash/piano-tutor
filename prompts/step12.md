@@ -16,12 +16,13 @@ total, and the loop when one is set.
 
 ## In scope
 
-- A pure formatter, unit-testable without a DOM, producing:
-  - `Measure 3 of 12` while playing;
-  - `Measure 2 of 12 · looping 1–2` when a loop is set — the loop range is already on screen in
-    `LoopPicker`, but the current measure is what gives it context;
-  - `Complete` when `status` is `complete`.
-- Rendered near the queue, with a `data-testid` for Layer 3.
+- A pure formatter, unit-testable without a DOM, with two branches: `Measure 3 of 12` while
+  playing, `Complete` when `status` is `complete`. No loop suffix — `LoopPicker` already shows
+  the range on screen, and repeating it here buys a third branch and two more test cases to
+  restate what is two inches away.
+- Rendered near the queue, with a `data-testid` for Layer 3. **Not inside the `falling-notes`
+  element**: four committed screenshots in `e2e/falling-notes.spec.ts` are scoped to it, and
+  putting a line of live text in there invalidates all four — loudly, but for no reason.
 
 ## Watch out for `nextEventIndex` pointing past the end
 
@@ -45,8 +46,7 @@ that `nextEventIndex` is deliberately allowed past the end and `status` is the g
 
 ## Gate
 
-- Layer 2: the formatter over a mid-piece state, a looping state, a completed state, and the
-  initial state.
+- Layer 2: the formatter over a mid-piece state, a completed state, and the initial state.
 - Layer 3: assert it reads `Measure 1 of 12` at the start and changes after the opening measure
   is played.
 - No screenshot. A line of text's correctness is fully expressible as an assertion, which is

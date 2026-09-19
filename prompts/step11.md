@@ -5,9 +5,9 @@ Depends on step 10. One branch, `step-11-hand-colours`, off `main`.
 ## Goal
 
 Say which hand plays each key the app is asking for. `Note.hand` has been parsed since step 2 —
-`parseScore.ts` sets it from the MusicXML `<staff>`, staff 2 meaning left — and nothing in the
-UI has ever read it: outside `src/score/`, every match for `hand` is a `handleSomething` event
-handler. The data is already there, correct, and tested; this step spends it.
+`parseScore.ts` sets it from the MusicXML `<staff>`, staff 2 meaning left — and no code outside
+`src/score/` has ever read it. It appears in test fixtures and nowhere else; the app has been
+carrying the field and ignoring it for six steps. This one spends it.
 
 Left/right colour is the first thing a flowkey user looks for, and the opening chord of Cicha
 Noc is the ideal case: G4 in the right hand over C3 and G3 in the left.

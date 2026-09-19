@@ -17,24 +17,26 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
 
 ## In scope
 
-- One definition of what the engine is waiting for, exported from
-  `src/practice/practiceView.ts`:
+- One definition of an event's notes, exported from `src/practice/practiceView.ts`:
 
   ```ts
-  export const expectedNotes = (
-    state: PracticeViewState,
-    score: Score,
-  ): readonly Note[] => score.events[state.engine.nextEventIndex]?.notes ?? [];
+  export const notesAt = (score: Score, index: number): readonly Note[] =>
+    score.events[index]?.notes ?? [];
   ```
 
-  No `status === 'complete'` guard: `advance()` sets that status only on the branch where
-  `score.events[nextEventIndex]` is undefined, so `?? []` already covers it. What is left is
-  character for character the expression `advancePracticeView` computes inline for its
-  wrong-note check, so the helper has two callers the day it lands and removes a duplicate
-  rather than anticipating one.
+  No `status === 'complete'` guard is needed anywhere it is used: `advance()` sets that status
+  only on the branch where `score.events[nextEventIndex]` is undefined, so `?? []` already
+  covers it.
+
+  Keyed on the index rather than on the whole state, because `advancePracticeView` computes
+  this expression twice — once for the current event and once for the one after, for its
+  wrong-note check — and the pair is symmetric. `notesAt(score, i)` and `notesAt(score, i + 1)`
+  replace both; a helper taking the state could only replace the first and would leave the
+  adjacent line inline. Three callers the day it lands, two duplicates removed.
 
 - `PianoKeyboard` gains `expectedNotes: readonly Note[]` beside `heldNotes`, and `App.tsx`
-  passes `expectedNotes(view, cichaNocScore)` straight through. Each key looks its own note up:
+  passes `notesAt(cichaNocScore, view.engine.nextEventIndex)` straight through — the prop name
+  carries the intent, so the helper does not have to. Each key looks its own note up:
 
   ```tsx
   const expected = expectedNotes.find((note) => note.pitch === key.note);
@@ -74,8 +76,8 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
 
 ## Gate
 
-- Layer 2: `expectedNotes()` returns the current event's notes while waiting, and an empty list
-  for an index past the end — which is the completed state too, not a second case. Component
+- Layer 2: `notesAt()` returns an event's notes, and an empty list for an index past the end —
+  which is the completed state too, not a second case. Component
   test over `PianoKeyboard` for a key that is expected, one held, one both, one neither,
   asserting the `data-` attributes rather than the classes, as `PianoKeyboard.test.tsx` already
   does for `data-held`.
@@ -84,9 +86,7 @@ reopen step 4's "colour is the primary cue, the numeral secondary" decision.
   is now held and still expected. Complete the chord; assert the expected set has moved on to
   the next event's single pitch. This is the check that establishes the requested behaviour
   exists — a green suite without it proves only that nothing else broke.
-- No committed screenshot. Step 13 takes the one keyboard screenshot, once the element has its
-  final width, highlight, hand colours and labels; snapshotting it here means updating it in
-  three of the four steps that follow.
+- No committed screenshot; step 13 takes the one keyboard snapshot.
 
 ## Manual
 
