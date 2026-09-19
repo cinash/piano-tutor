@@ -31,7 +31,7 @@ of the conversation.
 
 | Step                               | What it adds                                 | Size |
 | ---------------------------------- | -------------------------------------------- | ---- |
-| [9](step9.md) Keyboard range       | Derive it from the score: 4 octaves, C to B  | S    |
+| [9](step9.md) Keyboard range       | Pick the width: 4 octaves, 5, or all 88 keys | S    |
 | [10](step10.md) Keys to play       | Highlight what the engine is waiting for     | S    |
 | [11](step11.md) Hand colours       | Spend the `hand` field nothing has ever read | S    |
 | [12](step12.md) Position readout   | "Measure 3 of 12"                            | XS   |
