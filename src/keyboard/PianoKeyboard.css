@@ -26,6 +26,14 @@
   z-index: 2;
 }
 
+.piano-key--expected.piano-key--white {
+  background: #fcd34d;
+}
+
+.piano-key--expected.piano-key--black {
+  background: #d97706;
+}
+
 .piano-key--held.piano-key--white {
   background: #7dd3fc;
 }

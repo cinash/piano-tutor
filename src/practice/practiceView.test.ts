@@ -5,6 +5,7 @@ import type { Score } from '../score/types';
 import {
   advancePracticeView,
   createInitialPracticeViewState,
+  notesAt,
   restartPractice,
   setPracticeLoop,
 } from './practiceView';
@@ -120,5 +121,15 @@ describe('restartPractice', () => {
     expect(restarted.wrongNotes.size).toBe(0);
     expect(restarted.attempt).toEqual({ notesPlayed: 0, wrongNoteCount: 0 });
     expect(restarted.engine.loop).toEqual(loop);
+  });
+});
+
+describe('notesAt', () => {
+  it("returns the event's notes", () => {
+    expect(notesAt(SCORE, 0)).toEqual(SCORE.events[0].notes);
+  });
+
+  it('returns an empty list past the last event, which is the completed state too', () => {
+    expect(notesAt(SCORE, SCORE.events.length)).toEqual([]);
   });
 });

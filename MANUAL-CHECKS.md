@@ -11,6 +11,8 @@ update it at the end of each step.
 3. Play a single note and confirm the matching on-screen key highlights, and un-highlights
    when you release it. Then switch the keyboard to 88 keys and confirm it still tracks
    the right key, and that the on-screen keyboard now matches the P-145 under your hands.
+   With nothing held, confirm the keys the app is waiting for are visibly marked, and that
+   playing one of them leaves it marked until the whole chord is played.
 4. Play a quick run of notes and judge whether the on-screen response feels immediate —
    no perceptible lag between key press and highlight.
 5. Unplug the USB cable while connected; confirm the app doesn't crash and the status

@@ -24,6 +24,7 @@ import { toPracticeStateSnapshot } from './practice/practiceState';
 import {
   advancePracticeView,
   createInitialPracticeViewState,
+  notesAt,
   restartPractice,
   setPracticeLoop,
   type PracticeViewState,
@@ -301,6 +302,7 @@ export function App() {
         lowNote={keyboardPreset.low}
         highNote={keyboardPreset.high}
         heldNotes={view.engine.heldNotes}
+        expectedNotes={notesAt(cichaNocScore, view.engine.nextEventIndex)}
       />
       <AttemptHistory records={attempts} />
       <div>
