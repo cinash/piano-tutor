@@ -1,7 +1,6 @@
 # Step 3 — Practice engine
 
-Status: **not started**. Depends on step 2's `Score` model. One branch, `step-3-practice-engine`,
-off `main`.
+Depends on step 2's `Score` model. One branch, `step-3-practice-engine`, off `main`.
 
 ## Goal
 

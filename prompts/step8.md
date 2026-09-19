@@ -1,6 +1,6 @@
 # Step 8 — Export and import progress JSON
 
-Status: **not started**. Depends on step 7. One branch, `step-8-progress-export`, off `main`.
+Depends on step 7. One branch, `step-8-progress-export`, off `main`.
 
 ## Goal
 

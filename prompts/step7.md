@@ -1,6 +1,6 @@
 # Step 7 — Saving and reviewing attempts
 
-Status: **not started**. Depends on step 6. One branch, `step-7-practice-history`, off `main`.
+Depends on step 6. One branch, `step-7-practice-history`, off `main`.
 
 ## Goal
 
