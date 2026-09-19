@@ -27,17 +27,17 @@ smuggled into this one.
   keyboard's four-octave width, which does not hold `C♯4`, and truncating it to `C♯` puts an
   unoctaved label next to octaved ones. A black key's identity is readable from its white
   neighbours, which is how a player finds it on the real instrument too.
-- A "Show note names" checkbox, defaulting to **on**. The player who most needs the labels is
-  the one least likely to find the switch that reveals them.
-- Labels are orientation, not instruction: every white key is labelled, not only the expected
-  ones.
+- Labels are orientation, not instruction: every white key is labelled, always, not only the
+  expected ones.
 
 ## Out of scope
 
 - Flats, key-signature-aware spelling, or solfège — all blocked on the parser change above.
 - Labelling black keys, per the decision above.
-- Persisting the checkbox across reloads. It is one click, and `localStorage` here would be the
-  first per-viewer preference in the app — worth its own decision if a second one ever appears.
+- A switch to turn the labels off. Nobody asked for one, and the player who most needs labels
+  is the one least likely to find it — so it would ship in its default state for the only user,
+  having cost a control, state in `App.tsx` and two tests. If the labels turn out to be
+  clutter, that is when to ask for the toggle.
 
 ## Decisions to record in `DECISIONS.md`
 
@@ -49,11 +49,10 @@ smuggled into this one.
 - Layer 1/2: `noteName` across a full octave, at both ends of the keyboard's range, and at the
   C boundaries where the octave number increments — 59 is `B3` and 60 is `C4`, which is the
   off-by-one this function exists to get right.
-- Layer 2: component test asserting white keys carry labels, black keys carry none, and that
-  the checkbox removes them.
-- Layer 3: assert a known key reads `C4`, toggle the checkbox, assert the labels are gone.
-- Update the `piano-keyboard` screenshot from steps 10 and 11 — labels on by default change
-  what that element looks like.
+- Layer 2: component test asserting white keys carry labels and black keys carry none.
+- Layer 3: assert a known key reads `C4`.
+- Update the `piano-keyboard` screenshot from steps 10 and 11 — labels change what that element
+  looks like.
 
 ## Manual
 

@@ -12,7 +12,7 @@ feature a flowkey user reaches for after the first read-through. Left, right, or
 The obvious implementation is an `EngineState.hands` field and a filter inside `advance()`.
 Do not do that. It touches the reducer, `nextIndexAfter`, the early-note grace and
 `practiceView`'s wrong-note check, each of which would need to agree about the same filter,
-and it has a deadlock waiting in it (below).
+and it has a stall waiting in it (below).
 
 Instead derive a **filtered `Score`** — the same score with each event's notes narrowed to the
 selected hand and events left with no notes dropped entirely — and hand that to the existing
@@ -20,20 +20,24 @@ engine. `advance`, `nextIndexAfter`, `setLoop` and `advancePracticeView` all alr
 `score` as a parameter and none of them changes. The feature becomes a selector plus a
 `useMemo`, and the engine stays a pure function of the score it was given.
 
-## Watch out — the deadlock this decision avoids
+## Watch out — the stall this decision avoids
 
 If the filter is applied _inside_ the engine rather than to the score, an event whose notes all
-belong to the other hand yields `expectedPitches === []`. Then:
+belong to the other hand yields `expectedPitches === []`. In `advance()` the guard
+`if (!expectedPitches.includes(event.note))` is then false for every possible note, so the
+player's notes are all classified as wrong and the queue never moves.
 
-- `expectedPitches.includes(event.note)` is false for every possible note, so every note the
-  player plays is classified as wrong, and
-- `expectedPitches.every(...)` on an empty array is `true`, so a unit test that hands the
-  reducer such an event directly sees it "complete" and passes.
+It does not lock up everywhere, which is what makes it nasty. `completeCurrentEvent` reaches
+its own `expectedPitches.every(...)`, and `.every()` on an empty array is `true`, so it recurses
+straight past an empty event — mid-piece the other hand's events would be skipped and the thing
+would look like it worked. The stall is at index 0: the first event of an attempt, at start or
+after Restart. The bug is therefore reproducible only from a fresh attempt on a piece whose
+first event is single-handed, which is the state a mid-piece unit test never constructs.
 
-A green Layer 2 suite, and an app that locks up on the first left-hand-only chord. Dropping the
-empty events from the score instead means the state cannot occur at all, which is the
-difference between guarding a bug and not having one. If a reviewer proposes moving the filter
-into the engine, this paragraph is the answer.
+Dropping the empty events from the score instead means the state cannot occur anywhere, which
+is the difference between guarding a bug and not having one. If a reviewer proposes moving the
+filter into the engine, this section is the answer — check it against `src/engine/advance.ts`
+rather than quoting it, since the argument turns on which guard runs first.
 
 ## In scope
 
@@ -47,42 +51,44 @@ into the engine, this paragraph is the answer.
   and the filtered list is a different list — the same number means a different note. Reuse
   `restartPractice`, which already zeroes the counters, which already closes the open attempt
   record through step 7's write-through effect. Do not invent a second reset path.
-- `AttemptRecord` gains an optional `hands?: 'left' | 'right'`, absent meaning both, and
-  `AttemptHistory` gains a column. Accuracy for a one-hand attempt is not comparable with a
-  two-hand one, and an uncolumned history quietly claims it is.
-
-## Watch out — the stored history predates this field
-
-`isAttemptRecordArray` validates field by field, and every record already in a player's
-`localStorage`, and in every progress file exported by step 8, has no `hands` key. The
-predicate must accept its absence, or this step silently empties the history of everyone who
-has used the app. That is the one failure in this step that destroys data rather than
-annoying someone, so test it directly: a fixture of step 7-era records must still load.
 
 ## Out of scope
 
+- **Recording the hand on `AttemptRecord`.** Nobody asked for it, and it is a `localStorage`
+  schema change riding into a step about how practice works. It also carries this arc's only
+  data-destroying failure: `isAttemptRecordArray` validates field by field, so a `hands` field
+  added without tolerating its absence would reject every record already stored and every file
+  step 8 has exported. Keep the schema change out, and keep it out of the same review as the
+  filter. The cost of leaving it out is recorded below rather than ignored.
 - Per-hand history filtering, or comparing left against right over time.
-- Remembering the hand selection across reloads (see step 13's note on preferences).
+- Remembering the hand selection across reloads (see step 13's note on the toggle it refuses).
 - Any change to how the queue colours fingers. The filtered score already removes the other
   hand's circles from the queue, because they are no longer in the events it renders — which is
   the second thing the score-filtering decision buys.
 
 ## Decisions to record in `DECISIONS.md`
 
-- Filter the score, not the engine — with the empty-event deadlock as the reason, since it is
-  exactly the kind of thing a later refactor would undo without it written down.
+- Filter the score, not the engine — with the index-0 stall as the reason, since it is exactly
+  the kind of thing a later refactor would undo without it written down.
 - Changing hands restarts, and why the index makes that unavoidable.
-- `hands` is optional on `AttemptRecord` for backwards compatibility, and absent means both.
+- **One-hand attempts are recorded in the history indistinguishably from two-hand ones**, so
+  the accuracy column now mixes two things it does not label. That is the price of leaving the
+  schema alone; record it so the next person reads it as a known trade rather than a bug.
+- Trading away `MANUAL-CHECKS.md` item 9's loop clause (see Manual below) — it is the only
+  hardware check of loop wrap-around with no timeout at the wrap point, which is exactly the
+  class of thing the container cannot demonstrate. Say so, rather than letting it lapse quietly
+  to keep the list at ten.
 
 ## Gate
 
 - Layer 2: `filterScoreByHand` over a both-hands chord, a one-hand event that survives, an
-  event that disappears, and `'both'` returning the input unchanged. The store predicate
-  accepting a record with no `hands` key. The history component rendering both an old record
-  and a new one.
-- Layer 3: select the right hand, play only the right-hand pitches of measures 1–2, and assert
-  the queue advances to the end of the range — the check that the dropped events really are
-  dropped rather than silently waited on. Then switch to the left hand and assert the attempt
+  event that disappears, and `'both'` returning the input unchanged.
+- Layer 3: **select the left hand**, not the right. Every event in measures 1–2 contains a
+  right-hand note, so a right-hand filter drops nothing there and the test would pass against
+  an implementation that narrows notes but never drops an empty event — the exact bug this step
+  exists to avoid. Filtering to the left hand drops `m1-b4` and `m1-b5` (right-hand only), so
+  playing just the left-hand pitches of measures 1–2 and asserting the queue reaches the end of
+  the range proves the dropping is real. Then switch to the right hand and assert the attempt
   restarted and the expected keys changed hand colour.
 - Update the `piano-keyboard` screenshot only if the selection control lands inside that
   element; if it sits beside it, no snapshot changes.
@@ -90,6 +96,8 @@ annoying someone, so test it directly: a fixture of step 7-era records must stil
 ## Manual
 
 Replace `MANUAL-CHECKS.md` item 9's loop clause with a hands clause, keeping the list at about
-ten: practise the right hand alone through a short loop, confirm the left hand's notes are
-neither shown nor waited for, switch to both, and confirm the attempt restarted and the full
-texture came back.
+ten — and record that trade as a decision rather than letting the loop check lapse quietly.
+The new clause: practise the left hand alone through a short loop, confirm the right hand's
+notes are neither shown nor waited for, switch to both, and confirm the attempt restarted and
+the full texture came back. Left rather than right for the same reason the Layer 3 test uses
+it — it is the hand for which events actually disappear.

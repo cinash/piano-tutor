@@ -17,10 +17,8 @@ for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano ca
 | [7](step7.md) History           | `localStorage` attempts, newest first               |
 | [8](step8.md) Progress transfer | Export and import the history as JSON               |
 
-> **Status lives here and nowhere else.** The step files carry no `Status:` line — they used to,
-> and steps 2–8 still announced "not started" long after they had shipped. A brief records what
-> was asked and why, which does not change once the work is done; what changed is in `git log`.
-> This table is the one place that tracks it.
+> **Status lives here and nowhere else.** The step files carry no `Status:` line; a brief
+> records what was asked, and `git log` records what landed.
 
 ## Planned — making it legible to a player
 
@@ -62,7 +60,8 @@ worth doing before step 10, which solves the same problem for a fraction of the 
 is out of scope by decision in `step5.md`. Wanting it back is a decision to reverse in the
 open, not a gap to fill quietly.
 
-## Still open, not owned by any step
-
-- Score repeats are parsed as though they were written out — `DECISIONS.md` records this as
-  unimplemented rather than untested. Notation would expose it first.
+**Recording which hand an attempt used.** Step 14 lets you practise one hand, and the history
+then mixes one-hand and two-hand accuracy without labelling it. Adding `hands` to
+`AttemptRecord` is a `localStorage` schema change with a data-destroying failure mode of its
+own, so it is deliberately not part of step 14. Its own step, if the mixing turns out to
+matter in practice.

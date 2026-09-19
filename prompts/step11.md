@@ -6,8 +6,8 @@ Depends on step 10. One branch, `step-11-hand-colours`, off `main`.
 
 Say which hand plays each key the app is asking for. `Note.hand` has been parsed since step 2
 — `parseScore.ts` sets it from the MusicXML `<staff>`, staff 2 meaning left — and **nothing in
-the UI has ever read it**. A grep for `hand` across `src/` returns only `handleEvent` and
-`handleKeyDown`. The data is already there, correct, and tested; this step spends it.
+the UI has ever read it**: outside `src/score/`, every match for `hand` is a `handleSomething`
+event handler. The data is already there, correct, and tested; this step spends it.
 
 Left/right colour is the first thing a flowkey user looks for, and the opening chord of Cicha
 Noc is the ideal case: G4 in the right hand over C3 and G3 in the left.
@@ -29,35 +29,24 @@ legend so neither system has to be guessed at.
   variant. Held still wins over both, per step 10.
 - A small legend beside the keyboard: two swatches, "left hand" and "right hand".
 
-## Watch out for one pitch in both hands at once
-
-`parseScore.ts` keys its tie-tracking on `` `${note.hand}-${note.pitch}` ``, which means the
-same pitch in both hands within one event is representable, not impossible — a chord where the
-hands meet on a unison. A `Map<number, Hand>` silently keeps whichever was inserted last, which
-is the arrival order of the notes array: an invisible rule that will one day render the wrong
-colour with nothing to point at.
-
-Decide it explicitly and write it down. The suggested rule is that the **lower-numbered staff
-wins** (right hand), because that is the one the melody is in and the note a player is most
-likely looking for. Cicha Noc has no such chord, so this is a decision made now in daylight
-rather than a bug found later in the dark.
-
 ## Out of scope
 
 - Recolouring the queue circles by hand, or adding an L/R marker to them.
 - Filtering practice to one hand — that is step 14, and it will consume this step's colours.
 - Hand colours on _held_ keys. Held is about what you are doing, not what is being asked.
+- A rule for the same pitch appearing in both hands at once. `parseScore.ts` keys ties on
+  `` `${note.hand}-${note.pitch}` ``, so a cross-hand unison is representable — but Cicha Noc
+  contains none, and the only score is bundled. Let the map keep whichever note arrives last,
+  and decide it when a piece needs it.
 
 ## Decisions to record in `DECISIONS.md`
 
 - Hand colours on the keyboard, finger colours in the queue, and why they do not compete.
-- The unison collision rule chosen above, with its reasoning.
 
 ## Gate
 
 - Layer 2: component test over a two-hand chord asserting each key carries the right
-  `data-hand` and class; one over a unison chord pinning the collision rule; one confirming
-  held still overrides both.
+  `data-hand` and class, and one confirming held still overrides both.
 - Layer 3: connect the virtual keyboard and assert that at the start position pitch 67 is
   `data-hand="right"` while 48 and 55 are `data-hand="left"` — the opening chord tests this
   step for free.

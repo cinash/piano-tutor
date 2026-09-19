@@ -25,16 +25,9 @@ total, and the loop when one is set.
 
 ## Watch out for `nextEventIndex` pointing past the end
 
-This is the trap in this step. When the final chord is satisfied, `completeCurrentEvent` sets
-`nextEventIndex` to an index with **no event behind it** and `status` to `complete`:
-
-```ts
-const nextEventIndex = nextIndexAfter(state, score);
-const nextEvent = score.events[nextEventIndex];
-if (!nextEvent) {
-  return { ...state, nextEventIndex, status: 'complete', ... };
-}
-```
+This is the trap in this step. When the final chord is satisfied, `completeCurrentEvent` in
+`src/engine/advance.ts` sets `status` to `complete` and leaves `nextEventIndex` pointing at an
+index with **no event behind it** — that is the branch it takes when there is no next event.
 
 So `score.events[state.engine.nextEventIndex].measure` throws on the last note of every
 successful run-through — the one path a happy-path test is least likely to reach, because
