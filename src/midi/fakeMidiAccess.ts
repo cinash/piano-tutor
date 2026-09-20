@@ -44,10 +44,19 @@ export class FakeMidiInput {
 
 /** Keeps every message it is sent, in order, for a test to read back. */
 export class FakeMidiOutput {
-  id = 'out-1';
+  // Outputs are found by name, so the name is identity enough to key the map by.
+  readonly id: string;
+  readonly name: string;
+  opened = false;
   sent: number[][] = [];
 
+  constructor(name: string) {
+    this.id = name;
+    this.name = name;
+  }
+
   async open() {
+    this.opened = true;
     return this;
   }
 
@@ -62,7 +71,14 @@ const byId = <T extends { id: string }>(ports: readonly T[]) =>
 export function fakeMidiAccess(
   ports: { inputs?: readonly FakeMidiInput[]; outputs?: readonly FakeMidiOutput[] } = {},
 ) {
-  return { inputs: byId(ports.inputs ?? []), outputs: byId(ports.outputs ?? []) };
+  return {
+    inputs: byId(ports.inputs ?? []),
+    outputs: byId(ports.outputs ?? []),
+    // App watches statechange to keep its device list current; no test plugs a device
+    // in mid-run, so the listener is accepted and never called.
+    addEventListener() {},
+    removeEventListener() {},
+  };
 }
 
 export function stubRequestMidiAccess(access: unknown) {

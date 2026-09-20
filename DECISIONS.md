@@ -617,11 +617,29 @@ _output_ port, and the app gains no audio code and no new dependency. What makes
 buildable in a container that never talks to the piano is that it splits in two: the sound
 is optional and the highlighting is not.
 
-So `findMidiOutput()` answers `MIDIOutput | null`, and every way of having no port is that
+The port is found by matching the output's name to the input the player already chose, so
+they still pick their piano exactly once and the app grows no second dropdown: the
+instrument carries the same names on both sides, so selecting `Digital Piano MIDI 1` as an
+input names the output too. Failing a match — a host whose two sides are named differently,
+or the virtual-keyboard and replay sources, which chose no device at all — the first output
+that is not the ALSA loopback, excluded by name against `/^midi through/i`.
+
+Step 17 shipped a different rule, "take the sole output", written on no evidence because
+the container has none to give; it is wrong on any Linux desktop and never once fired. The
+loopback `Midi Through` is always present, and this instrument exposes two ports of its
+own, so the owner's host offers `Midi Through Port-0`, `Digital Piano MIDI 1` and `Digital
+Piano MIDI 2` — one output is the exception rather than the rule, and no configuration the
+owner could have made would have produced it. The loopback is never chosen because a demo
+sent into it is inaudible in exactly the way that bug was; and since both of the
+instrument's ports sound, which one is picked does not matter musically, only that the
+same one is picked every time.
+
+`findMidiOutput()` answers `MIDIOutput | null`, and every way of having no port is that
 same answer — no Web MIDI at all, a permission the player denied (which is what every
-Playwright run is), or a host with no output port. A null plays the demo silently. It is
-not an error and does not reach the `role="alert"` line: pressing Listen with no piano
-attached is a normal thing to do, and the control is neither hidden nor disabled for it.
+Playwright run is), no outputs, or a host whose only output is the loopback. A null plays
+the demo silently. It is not an error and does not reach the `role="alert"` line: pressing
+Listen with no piano attached is a normal thing to do, and the control is neither hidden
+nor disabled for it.
 
 ## Listening is not practising
 

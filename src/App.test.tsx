@@ -3,11 +3,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 import {
+  FakeMidiInput,
   FakeMidiOutput,
   fakeMidiAccess,
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
 import { cichaNocScore } from './score/cichaNoc';
+
+// App decides once, as it is imported, whether the browser has Web MIDI at all, so the
+// property has to be there before that — which is what hoisting this above the imports
+// does. Its value is never read: beforeEach puts a real fake access in its place.
+vi.hoisted(() => {
+  Object.defineProperty(navigator, 'requestMIDIAccess', {
+    value: null,
+    configurable: true,
+  });
+});
 
 /**
  * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the nine
@@ -41,7 +52,12 @@ function playPerfectly() {
 }
 
 // Saved attempts outlive a render, so every test in the file starts with none.
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  // Every render lists the MIDI inputs; a test wanting ports stubs its own access over
+  // this one.
+  stubRequestMidiAccess(fakeMidiAccess());
+});
 
 describe('App', () => {
   it('renders the on-screen keyboard, not connected to any source initially', () => {
@@ -130,21 +146,23 @@ describe('listening to the piece', () => {
   async function startListening(output?: FakeMidiOutput) {
     const rendered = await renderConnectedApp();
     if (output) stubRequestMidiAccess(fakeMidiAccess({ outputs: [output] }));
-    vi.useFakeTimers();
-    // Awaited: start() looks the port up before it plays anything.
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('listen-to-piece'));
-    });
+    await clickListen();
     return rendered;
   }
 
-  afterEach(() => {
-    vi.useRealTimers();
-    Reflect.deleteProperty(navigator, 'requestMIDIAccess');
-  });
+  /** Hands the clock over, then clicks Listen; awaited, because start() looks the port
+   * up before it plays anything. */
+  async function clickListen() {
+    vi.useFakeTimers();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listen-to-piece'));
+    });
+  }
+
+  afterEach(() => vi.useRealTimers());
 
   it('plays the piece out of the piano, note-off before note-on where a pitch repeats', async () => {
-    const output = new FakeMidiOutput();
+    const output = new FakeMidiOutput('Digital Piano MIDI 1');
     await startListening(output);
 
     // m1 b1's chord, at the demo's one fixed velocity.
@@ -167,7 +185,7 @@ describe('listening to the piece', () => {
   });
 
   it('silences the instrument on Stop, and sends nothing after it', async () => {
-    const output = new FakeMidiOutput();
+    const output = new FakeMidiOutput('Digital Piano MIDI 1');
     await startListening(output);
 
     fireEvent.click(screen.getByTestId('listen-to-piece'));
@@ -194,6 +212,34 @@ describe('listening to the piece', () => {
     expect(current.className).not.toContain('falling-note--wrong');
     expect(screen.queryAllByTestId('attempt-history-row')).toHaveLength(0);
     expect(heldPitches(container)).toEqual([48, 55, 67]); // the demo's chord, not E4
+  });
+
+  it('plays through the output named after the piano the player selected', async () => {
+    const chosen = new FakeMidiOutput('Digital Piano MIDI 1');
+    const other = new FakeMidiOutput('Digital Piano MIDI 2');
+    stubRequestMidiAccess(
+      fakeMidiAccess({
+        inputs: [new FakeMidiInput('id-1', 'Digital Piano MIDI 1')],
+        // The chosen one second, so taking whichever port comes first takes the other.
+        outputs: [other, chosen],
+      }),
+    );
+    render(<App />);
+    // The dropdown fills in asynchronously, from the access the outputs hang off too.
+    await screen.findByRole('option', { name: 'Digital Piano MIDI 1' });
+    fireEvent.change(screen.getByTestId('webmidi-device-select'), {
+      target: { value: 'id-1' },
+    });
+    await screen.findByText('Connected: Digital Piano MIDI 1');
+
+    await clickListen();
+
+    expect(chosen.sent).toEqual([
+      [0x90, 67, 80],
+      [0x90, 48, 80],
+      [0x90, 55, 80],
+    ]);
+    expect(other.sent).toEqual([]);
   });
 
   it('plays silently rather than reporting an error when there is no output port', async () => {

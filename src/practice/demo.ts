@@ -58,6 +58,8 @@ export function buildDemoSchedule(score: Score, bpm: number): DemoStep[] {
  */
 export class DemoPlayer {
   private readonly steps: readonly DemoStep[];
+  // The piano the player selected, matched by name to the output to play through.
+  private readonly deviceName: string | null;
   private readonly onNotes: (pitches: ReadonlySet<number> | null) => void;
   private output: MIDIOutput | null = null;
   private sounding: ReadonlySet<number> = NOTHING;
@@ -69,15 +71,17 @@ export class DemoPlayer {
 
   constructor(
     steps: readonly DemoStep[],
+    deviceName: string | null,
     onNotes: (pitches: ReadonlySet<number> | null) => void,
   ) {
     this.steps = steps;
+    this.deviceName = deviceName;
     this.onNotes = onNotes;
   }
 
   /** A null output plays the schedule silently; the highlighting is not optional. */
   async start(): Promise<void> {
-    const output = await findMidiOutput();
+    const output = await findMidiOutput(this.deviceName);
     if (this.stopped) return;
 
     this.output = output;
