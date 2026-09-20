@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { connectVirtualKeyboard, playChord } from './virtualKeyboard';
+import { connectVirtualKeyboard } from './virtualKeyboard';
 
 /** Every pitch the keyboard currently marks as expected, lowest first. */
 function expectedPitches(page: Page) {
@@ -16,19 +16,14 @@ test('the keyboard marks the keys the engine waits for, and moves on once they a
 }) => {
   await connectVirtualKeyboard(page);
 
-  // m1 b1 is a C3-G3-G4 chord, and nothing else on the keyboard is marked.
-  await expect.poll(() => expectedPitches(page)).toEqual([48, 55, 67]);
-
-  const keyC3 = page.locator('[data-note="48"]');
-  await page.keyboard.down('z'); // C3, the lowest of the three
-
-  await expect(keyC3).toHaveAttribute('data-held', 'true');
-  await expect(keyC3).toHaveAttribute('data-expected', 'true');
-
-  await playChord(page, [55, 67]); // completes the chord, with C3 still sustaining
-
-  // m1 b4: G4 alone. C3 is still held, and no longer expected.
+  // m1 b1 is G4 alone, and nothing else on the keyboard is marked.
   await expect.poll(() => expectedPitches(page)).toEqual([67]);
-  await expect(keyC3).toHaveAttribute('data-held', 'true');
-  await expect(keyC3).toHaveAttribute('data-expected', 'false');
+
+  const keyG4 = page.locator('[data-note="67"]');
+  await page.keyboard.down('t'); // G4 completes m1 b1, and is left sustaining
+
+  // m1 b2.5: A4. G4 is still held, and no longer expected.
+  await expect.poll(() => expectedPitches(page)).toEqual([69]);
+  await expect(keyG4).toHaveAttribute('data-held', 'true');
+  await expect(keyG4).toHaveAttribute('data-expected', 'false');
 });

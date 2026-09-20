@@ -89,7 +89,7 @@ export function App() {
   const [demoStep, setDemoStep] = useState<DemoStep | null>(null);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
-  // score's identity across renders, and filtering 41 events costs nothing.
+  // score's identity across renders, and filtering 44 events costs nothing.
   const score = filterScoreByHand(cichaNocScore, hands);
 
   // Where the demo has reached while one plays, so the cursor follows it; the note the

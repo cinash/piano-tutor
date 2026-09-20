@@ -8,9 +8,9 @@ test('the readout names the measure being played, and moves on with the piece', 
   await connectVirtualKeyboard(page);
 
   const readout = page.getByTestId('position-readout');
-  await expect(readout).toHaveText('Measure 1 of 12');
+  await expect(readout).toHaveText('Measure 1 of 22');
 
   await playOpeningMeasure(page);
 
-  await expect(readout).toHaveText('Measure 2 of 12');
+  await expect(readout).toHaveText('Measure 2 of 22');
 });

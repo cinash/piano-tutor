@@ -8,7 +8,7 @@ test('downloads the history and imports it back into a browser with none', async
   page,
 }) => {
   await connectVirtualKeyboard(page);
-  await playOpeningMeasure(page); // five notes, all of them right
+  await playOpeningMeasure(page); // three notes, all of them right
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByTestId('export-progress').click();
@@ -17,7 +17,7 @@ test('downloads the history and imports it back into a browser with none', async
   expect(download.suggestedFilename()).toMatch(/^progress-\d+\.json$/);
   const exported: unknown = JSON.parse(await readFile(await download.path(), 'utf8'));
   expect(exported).toMatchObject([
-    { notesPlayed: 5, wrongNoteCount: 0, reachedEnd: false },
+    { notesPlayed: 3, wrongNoteCount: 0, reachedEnd: false },
   ]);
 
   // The reload is what makes the import assertion below discriminating: without it the
@@ -34,7 +34,7 @@ test('downloads the history and imports it back into a browser with none', async
   await expect(rows.locator('td')).toHaveText([
     /\d/,
     'whole piece',
-    '5',
+    '3',
     '0',
     '100%',
     'no',

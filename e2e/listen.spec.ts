@@ -38,24 +38,24 @@ test('Listen lights the keys through the opening bars, leaving practice where it
   await listen.click();
   await expect(listen).toHaveText('Stop');
 
-  // m1 b1's C3-G3-G4, and nothing asked for while it sounds.
-  await pollHeldPitches(page).toEqual([48, 55, 67]);
+  // m1 b1's G4, and nothing asked for while it sounds.
+  await pollHeldPitches(page).toEqual([67]);
   await expect(page.locator('[data-expected="true"]')).toHaveCount(0);
 
-  // m1 b4: G4 alone, 1363 ms in.
-  await pollHeldPitches(page).toEqual([67]);
+  // m1 b2.5: A4, 1364 ms in.
+  await pollHeldPitches(page).toEqual([69]);
 
-  // The cursor has followed the demo off the chord practice is still waiting for.
+  // The cursor has followed the demo off the note practice is still waiting for.
   // Which note it has reached is item 11 in MANUAL-CHECKS.md, read against the music.
   await expect.poll(() => cursorPosition(cursor)).not.toBe(practiceMark);
 
   await listen.click();
 
-  // Back to the engine: nothing sounding, m1 b1's three keys asked for again, and the
-  // demo has left no mark on where practice had got to.
+  // Back to the engine: nothing sounding, m1 b1's G4 asked for again, and the demo has
+  // left no mark on where practice had got to.
   await expect(listen).toHaveText('Listen');
   await pollHeldPitches(page).toEqual([]);
-  await expect(page.locator('[data-expected="true"]')).toHaveCount(3);
+  await expect(page.locator('[data-expected="true"]')).toHaveCount(1);
   await expect(readout).toHaveText(position ?? '');
   await expect.poll(() => cursorPosition(cursor)).toBe(practiceMark);
 });
