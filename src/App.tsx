@@ -39,6 +39,7 @@ import {
 import { mergeAttempts } from './progress/mergeAttempts';
 import type { AttemptRecord } from './progress/types';
 import { cichaNocScore } from './score/cichaNoc';
+import { filterScoreByHand, type HandSelection } from './score/filterScoreByHand';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
   return (
@@ -62,6 +63,14 @@ function describeError(err: unknown): string {
 // Browser support for the Web MIDI API doesn't change during a session.
 const webMidiSupported = isWebMidiSupported();
 
+// Radios rather than a <select>: a focused select jumps option on the first letter
+// typed, and "Both hands" would answer to B, which VirtualKeyboardSource reads as G3.
+const HAND_OPTIONS: readonly { value: HandSelection; label: string }[] = [
+  { value: 'both', label: 'Both hands' },
+  { value: 'left', label: 'Left hand' },
+  { value: 'right', label: 'Right hand' },
+];
+
 export function App() {
   const [view, setView] = useState<PracticeViewState>(createInitialPracticeViewState);
   const [active, setActive] = useState<ActiveSource>({ kind: 'none' });
@@ -72,16 +81,24 @@ export function App() {
   const [keyboardPreset, setKeyboardPreset] = useState<KeyboardPreset>(
     DEFAULT_KEYBOARD_PRESET,
   );
+  const [hands, setHands] = useState<HandSelection>('both');
+
+  // The piece as the selected hand plays it. A plain const: nothing depends on the
+  // score's identity across renders, and filtering 41 events costs nothing.
+  const score = filterScoreByHand(cichaNocScore, hands);
 
   const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);
   const connectedDeviceIdRef = useRef<string | null>(null);
   const recordedEventsRef = useRef<MidiEvent[]>([]);
   const isRecordingRef = useRef(false);
+  // handleEvent is registered once, at attach() time, so it can't close over the score
+  // of the render that changed the hand — it reads the current one through this ref.
+  const scoreRef = useRef(score);
 
   function handleEvent(event: MidiEvent) {
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
-    setView((prev) => advancePracticeView(prev, cichaNocScore, event, event.time));
+    setView((prev) => advancePracticeView(prev, scoreRef.current, event, event.time));
   }
 
   function handleLoopChange(loop: Loop | undefined) {
@@ -91,6 +108,17 @@ export function App() {
   function handleRestart() {
     setView(restartPractice);
   }
+
+  function handleHandsChange(next: HandSelection) {
+    setHands(next);
+    // nextEventIndex indexes the event list, and the other hand's is a different list,
+    // so the same number would be a different note — start the attempt again.
+    setView(restartPractice);
+  }
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
 
   useEffect(() => {
     if (import.meta.env.DEV) window.__practiceState = toPracticeStateSnapshot(view);
@@ -283,12 +311,12 @@ export function App() {
         </button>
       )}
       <LoopPicker
-        measureCount={cichaNocScore.measureCount}
+        measureCount={score.measureCount}
         loop={view.engine.loop}
         onChange={handleLoopChange}
       />
       <FallingNotes
-        events={cichaNocScore.events}
+        events={score.events}
         status={view.engine.status}
         nextEventIndex={view.engine.nextEventIndex}
         satisfiedNoteIds={view.engine.satisfiedNoteIds}
@@ -296,7 +324,24 @@ export function App() {
       />
       {/* Below the queue: above it, the queue shifts by a sub-pixel and its committed
           screenshots fail on an edge sliver. */}
-      <p data-testid="position-readout">{formatPosition(cichaNocScore, view.engine)}</p>
+      <p data-testid="position-readout">{formatPosition(score, view.engine)}</p>
+      {/* Below the queue for the same screenshot reason as the readout above. */}
+      <div>
+        Hands{' '}
+        {HAND_OPTIONS.map((option) => (
+          <label key={option.value} htmlFor={`hands-${option.value}`}>
+            <input
+              id={`hands-${option.value}`}
+              type="radio"
+              name="hands"
+              data-testid={`hands-${option.value}`}
+              checked={hands === option.value}
+              onChange={() => handleHandsChange(option.value)}
+            />{' '}
+            {option.label}{' '}
+          </label>
+        ))}
+      </div>
       <KeyboardRangePicker
         presets={KEYBOARD_PRESETS}
         selected={keyboardPreset}
@@ -306,7 +351,7 @@ export function App() {
         lowNote={keyboardPreset.low}
         highNote={keyboardPreset.high}
         heldNotes={view.engine.heldNotes}
-        expectedNotes={notesAt(cichaNocScore, view.engine.nextEventIndex)}
+        expectedNotes={notesAt(score, view.engine.nextEventIndex)}
       />
       <AttemptHistory records={attempts} />
       <div>
