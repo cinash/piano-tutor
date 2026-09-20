@@ -1,0 +1,7 @@
+.staff-view {
+  /* Bounded, not natural: the whole piece engraves to ~640px and would push the queue
+     down the window. The height is a whole number on purpose — see DECISIONS.md. */
+  height: 320px;
+  overflow: auto;
+  margin-bottom: 12px;
+}

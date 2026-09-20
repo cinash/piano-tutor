@@ -480,3 +480,67 @@ the `localStorage` schema alone — `isAttemptRecordArray` validates field by fi
 `hands` field added without tolerating its absence would reject every record already
 stored and every file step 8 has exported. Known trade, not a bug; recording the hand is
 its own step if the mixing turns out to matter.
+
+## The staff renders from the raw MusicXML, never from `Score`
+
+`Score` is lossy on purpose — rests are dropped, ties are collapsed into one event,
+`<type>` and `<dot>` are never consulted, and MusicXML's note spelling is discarded at
+parse time, all for reasons the entries above give. Notation cannot be reconstructed from
+it. It does not have to be: `src/score/cichaNoc.ts` already imports the file with Vite's
+`?raw`, so the renderer's input is a string that was in the bundle before this step, and
+that module now exports it alongside the parsed score.
+
+The two are independent representations of the same piece, neither derived from the other:
+the XML is what gets drawn, the `Score` is what the engine waits on. This is the entry
+that should stop a later refactor from "unifying" them — deriving the staff from `Score`
+would mean re-adding everything `parseScore` deliberately throws away, and deriving
+`Score` from the staff would put a layout engine underneath the practice engine.
+
+## OpenSheetMusicDisplay rather than VexFlow directly
+
+VexFlow draws noteheads and beams from instructions; it does not read MusicXML. Using it
+directly would mean writing a second MusicXML parser — one that keeps everything
+`parseScore.ts` discards — and a layout pass on top of it. OSMD is that parser and that
+layout pass, over VexFlow. The parser is the expensive half, so it is the half worth
+taking off the shelf.
+
+## The staff's bundle cost is recorded, not mitigated
+
+`opensheetmusicdisplay@2.1.3` ships a single prebuilt `build/opensheetmusicdisplay.min.js`
+of 1.33 MB as its only entry, with no `module` field, so there is nothing for Vite to
+tree-shake. `dist/assets/index-*.js` went from **228,556 bytes (67.5 kB gzipped)** to
+**1,539,422 bytes (391 kB gzipped)** — 6.7× — and that is the whole of the app's
+JavaScript, since it builds to one chunk.
+
+Nothing was done about it. No lazy boundary, no dynamic `import()`, no second chunk: the
+app is served from localhost during practice and from a small k3s deployment otherwise,
+so the number buys nothing back today. It is written down here so that whoever decides it
+matters is reacting to a measurement rather than a guess.
+
+## The staff is a fixed-height pane, and it sits above the loop picker
+
+Engraved at the window's width the whole piece is some 640 px tall, which would push the
+finger queue most of the way down the window — the staff is a third cue beside the queue
+and the keyboard, not a replacement, so it is bounded to 320 px and scrolls. The height is
+also a whole number on purpose: OSMD's is fractional (639.5 px here), and half a pixel of
+it would land the queue and the keyboard on a half-pixel boundary, failing their committed
+screenshots on antialiasing alone. It sits above the _loop picker_ rather than directly
+above the queue for the same screenshot-sliver reason that already put the position readout
+and the hand radios below it — measured, not guessed: between the two, one snapshot failed
+by 88 pixels.
+
+`autoResize` is off, so the score is engraved once at the width of the window that loaded
+it and does not reflow when the window is resized; the pane's `overflow: auto` keeps it
+reachable until a reload. That is the price of owning the lifecycle, and the lifecycle had
+to be owned — 2.1.3 attaches a window resize listener it never removes.
+
+## OSMD is stubbed in jsdom, and the staff is proved in a real browser
+
+OSMD measures glyphs through a canvas 2D context to lay a score out, and jsdom has none, so
+`render()` throws there — mounting the real thing under Vitest leaves an unhandled rejection
+behind every test that renders `<App />`. `src/testSetup.ts` replaces the class with a stub
+for every jsdom test, which leaves the component tests able to assert only that the staff's
+container is on the page. That thinness is the honest answer rather than a gap: the layer
+that can actually see notation is `e2e/staff.spec.ts`, which asserts against a real
+Chromium, and whether the notation is _correct_ is item 11 in `MANUAL-CHECKS.md`, because
+nothing automated can read music.
