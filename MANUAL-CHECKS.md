@@ -44,3 +44,7 @@ update it at the end of each step.
     the same piece, the same key and time signature (no sharps or flats, 6/8), both
     hands' staves — treble over bass — and the same notes in the same bars. Nothing
     automated can do this: the e2e suite can only tell that _something_ was engraved.
+    Then play a few bars on the real piano and read the cursor the same way: it should
+    sit on the note you are being asked for, still sit on the right one several bars
+    later rather than having slipped a note, and go back to the beginning on Restart and
+    at every wrap of the loop.
