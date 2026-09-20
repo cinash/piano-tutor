@@ -11,10 +11,12 @@ update it at the end of each step.
 3. Play a single note and confirm the matching on-screen key highlights, and un-highlights
    when you release it. Then switch the keyboard to 88 keys and confirm it still tracks
    the right key, and that the on-screen keyboard now matches the P-145 under your hands.
-   With nothing held, confirm the keys the app is waiting for are visibly marked, and that
-   playing one of them leaves it marked until the whole chord is played. On a chord that
-   uses both hands, confirm the hand colours match the hand you actually play each note
-   with.
+   With nothing held, confirm the keys the app is waiting for are visibly marked. The
+   hands take this arrangement's melody in turn, so confirm the marked key's colour
+   follows the hand you are meant to play it with — the right hand in bars 1-2, the left
+   in its echo in bars 3-4. Bar 19 is the one place both hands play at once: confirm its
+   C5 and C4 are marked in different colours, and that playing one leaves it marked until
+   the other follows.
 4. Play a quick run of notes and judge whether the on-screen response feels immediate —
    no perceptible lag between key press and highlight.
 5. Unplug the USB cable while connected; confirm the app doesn't crash and the status
@@ -22,7 +24,8 @@ update it at the end of each step.
 6. Reconnect the cable and re-select the device from the dropdown; confirm it works
    again.
 7. Click "Use computer keyboard" and confirm the mapped keys (Z X C V B N M and the row
-   above, Q W E R T Y U) light up the correct on-screen keys.
+   above, Q W E R T Y U I O P and the bracket beside it) light up the correct on-screen
+   keys.
 8. Click "Start recording", play a short phrase, click "Stop recording & download", and
    confirm a `recording-*.json` file downloads containing the notes you played.
 9. Play Cicha Noc through on the real piano and confirm the falling-note view and
@@ -50,10 +53,12 @@ update it at the end of each step.
     its notes, wrong notes, accuracy and range read as a fair account of what was
     played. Then click "Download progress", open the deployed tailnet copy, import the
     downloaded file there, and confirm the history arrives intact.
-11. Open the app beside your printed copy of Cicha Noc and read the staff against it:
-    the same piece, the same key and time signature (no sharps or flats, 6/8), both
-    hands' staves — treble over bass — and the same notes in the same bars. Nothing
-    automated can do this: the e2e suite can only tell that _something_ was engraved.
+11. Open the app beside your own copy of Cicha Noc and read the staff against it: the
+    same key and time signature (no sharps or flats, 3/4), both hands' staves — treble
+    over treble, as your ABC writes them — and the same notes, with the same fingerings,
+    in the same bars. Bars 9-12 are written out twice rather than carrying a repeat sign,
+    so your bars 13-18 are the app's 17-22. Nothing automated can do this: the e2e suite
+    can only tell that _something_ was engraved.
     Then play a few bars on the real piano and read the cursor the same way: it should
     sit on the note you are being asked for, still sit on the right one several bars
     later rather than having slipped a note, and go back to the beginning on Restart and

@@ -18,7 +18,7 @@ async function expectBothAttempts(page: Page) {
   await expect(rows.nth(1).locator('td')).toHaveText([
     /\d/,
     'whole piece',
-    '5',
+    '3',
     '0',
     '100%',
     'no',
@@ -30,7 +30,7 @@ test('lists each attempt newest first and keeps them across a reload', async ({
 }) => {
   await connectVirtualKeyboard(page);
 
-  await playOpeningMeasure(page); // five notes, all of them right
+  await playOpeningMeasure(page); // three notes, all of them right
   await page.getByTestId('restart-practice').click();
   await playChord(page, [64]); // E4 — neither the current nor the next expected note
 

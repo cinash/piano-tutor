@@ -21,19 +21,20 @@ vi.hoisted(() => {
 });
 
 /**
- * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the nine
+ * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the ten
  * pitches cicha-noc.musicxml uses, so a test can play the piece as written.
  */
 const CODE_FOR_PITCH: Record<number, string> = {
-  48: 'KeyZ',
-  53: 'KeyV',
-  55: 'KeyB',
-  57: 'KeyN',
   60: 'KeyQ',
   62: 'KeyW',
   64: 'KeyE',
   65: 'KeyR',
   67: 'KeyT',
+  69: 'KeyY',
+  71: 'KeyU',
+  72: 'KeyI',
+  74: 'KeyO',
+  77: 'BracketLeft',
 };
 
 async function renderConnectedApp() {
@@ -89,21 +90,18 @@ describe('App', () => {
     expect(current.className).toContain('falling-note--wrong');
   });
 
-  it('does not flag a sustained correct chord note as wrong once the engine advances past it', async () => {
+  it('does not flag a sustained correct note as wrong once the engine advances past it', async () => {
     await renderConnectedApp();
 
-    // Completing m1 b1's chord (RH G4 + LH C3+G3) advances straight to m1 b4, which
-    // wants G4 again — not C3 or G3, so a naive "is this held pitch still current or
-    // next" check on the accumulated held notes would wrongly flag the LH pair the
-    // instant this chord completes, even though nothing wrong was played. Assert here
-    // and not a beat later: m2 b1 repeats m1 b1's exact chord, so checking past m1 b5
-    // would pass under that naive check too, for the wrong reason.
+    // G4 completes m1 b1 and A4 completes m1 b2.5, with both keys left down. The engine
+    // now waits at m1 b3 for G4, and m2 b1 after it wants E4 — so a naive "is this held
+    // pitch still current or next" check on the accumulated held notes would wrongly
+    // flag the sustained A4, even though nothing wrong was played.
     fireEvent.keyDown(window, { code: 'KeyT' });
-    fireEvent.keyDown(window, { code: 'KeyZ' });
-    fireEvent.keyDown(window, { code: 'KeyB' });
+    fireEvent.keyDown(window, { code: 'KeyY' });
 
     const current = screen.getAllByTestId('falling-note-event')[0];
-    expect(current.dataset.eventId).toBe('m1-b4-e1');
+    expect(current.dataset.eventId).toBe('m1-b3-e1');
     expect(current.className).not.toContain('falling-note--wrong');
   });
 
@@ -127,7 +125,10 @@ describe('App', () => {
         .slice(1)
         .map((cell) => cell.textContent),
     ).toEqual(['whole piece', String(notesPlayed), '0', '100%', 'yes']);
-  });
+    // Every note of the piece is a separate re-render of the whole app, which takes
+    // about 1.6s alone and can pass 5s when the suite runs this file alongside the
+    // others. The default timeout was already marginal before step 21 changed the piece.
+  }, 20_000);
 });
 
 /** The pitches the on-screen keyboard is showing as sounding, lowest first. */
@@ -165,22 +166,16 @@ describe('listening to the piece', () => {
     const output = new FakeMidiOutput('Digital Piano MIDI 1');
     await startListening(output);
 
-    // m1 b1's chord, at the demo's one fixed velocity.
-    expect(output.sent).toEqual([
-      [0x90, 67, 80],
-      [0x90, 48, 80],
-      [0x90, 55, 80],
-    ]);
+    // m1 b1's G4, at the demo's one fixed velocity.
+    expect(output.sent).toEqual([[0x90, 67, 80]]);
 
-    act(() => vi.advanceTimersByTime(1364)); // m1 b4, 1.5 beats in at 66 bpm
+    act(() => vi.advanceTimersByTime(12_728)); // m5 b3, 14 beats in at 66 bpm
 
-    // m1 b4 is G4 again: its note-on has to come after the chord's note-off, or the
-    // instrument ties the two G4s into one sustained note.
-    expect(output.sent.slice(3)).toEqual([
-      [0x80, 67, 0],
-      [0x80, 48, 0],
-      [0x80, 55, 0],
-      [0x90, 67, 80],
+    // m5 plays D5 twice over: the second note-on has to come after the first's
+    // note-off, or the instrument ties the two D5s into one sustained note.
+    expect(output.sent.slice(-2)).toEqual([
+      [0x80, 74, 0],
+      [0x90, 74, 80],
     ]);
   });
 
@@ -190,15 +185,11 @@ describe('listening to the piece', () => {
 
     fireEvent.click(screen.getByTestId('listen-to-piece'));
 
-    expect(output.sent.slice(3)).toEqual([
-      [0x80, 67, 0],
-      [0x80, 48, 0],
-      [0x80, 55, 0],
-    ]);
+    expect(output.sent.slice(1)).toEqual([[0x80, 67, 0]]);
 
     act(() => vi.advanceTimersByTime(10_000));
 
-    expect(output.sent).toHaveLength(6);
+    expect(output.sent).toHaveLength(2);
     expect(screen.getByTestId('listen-to-piece').textContent).toBe('Listen');
   });
 
@@ -211,7 +202,7 @@ describe('listening to the piece', () => {
     expect(current.dataset.eventId).toBe('m1-b1-e1');
     expect(current.className).not.toContain('falling-note--wrong');
     expect(screen.queryAllByTestId('attempt-history-row')).toHaveLength(0);
-    expect(heldPitches(container)).toEqual([48, 55, 67]); // the demo's chord, not E4
+    expect(heldPitches(container)).toEqual([67]); // the demo's G4, not E4
   });
 
   it('plays through the output named after the piano the player selected', async () => {
@@ -234,11 +225,7 @@ describe('listening to the piece', () => {
 
     await clickListen();
 
-    expect(chosen.sent).toEqual([
-      [0x90, 67, 80],
-      [0x90, 48, 80],
-      [0x90, 55, 80],
-    ]);
+    expect(chosen.sent).toEqual([[0x90, 67, 80]]);
     expect(other.sent).toEqual([]);
   });
 
@@ -246,7 +233,7 @@ describe('listening to the piece', () => {
     const { container } = await startListening();
 
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(heldPitches(container)).toEqual([48, 55, 67]);
+    expect(heldPitches(container)).toEqual([67]);
     // Nothing is asked for during a demonstration; the keys shown are the ones sounding.
     expect(container.querySelectorAll('[data-expected="true"]')).toHaveLength(0);
   });

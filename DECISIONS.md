@@ -2,7 +2,7 @@
 
 Non-obvious choices made while building this app, and why.
 
-## `cicha-noc.musicxml` is self-authored, not transcribed from a physical book
+## `cicha-noc.musicxml` was self-authored, then replaced by the owner's arrangement
 
 The original plan was to transcribe the piece from the player's own sheet music in
 MuseScore. At the user's request, this file was written directly instead: a standard
@@ -11,6 +11,24 @@ C4 through finger 5 = G4, no hand shifts) so the fingering-to-pitch mapping neve
 changes. If the player's actual book uses different fingerings or a different key, this file
 should be replaced with one transcribed from it — nothing downstream depends on the
 specific pitches or fingerings chosen here.
+
+Step 21 replaced it. The owner supplied their own arrangement as ABC notation, and
+`cicha-noc.musicxml` is now a transcription of that rather than anything this project
+composed; its provenance is recorded in the file's own `<rights>`.
+
+It is a different piece of music in every respect the app can see: 3/4 rather than 6/8,
+C4-F5 rather than C3-G4, both hands written in treble clef, and a fingering on every
+single note. Its shape is a call and response — the right hand plays a phrase and the
+left hand echoes it on the same pitches — so the two hands never sound together except
+in m. 19, where a C5 over C4 is the only event in the piece carrying more than one note.
+There are no chords and no ties anywhere else, and no bar is left silent by both hands,
+so the piece has no gap between one event's end and the next one's onset.
+
+Nothing downstream depended on the old pitches, which is what kept the swap to one file,
+its parse snapshot, and the test assertions that named particular notes. Entries below
+this one that illustrate a decision with m1 b1's chord, a sustained left hand under a
+moving melody, or the 6/8 bar are describing the arrangement this one replaced; the
+decisions they record are unaffected.
 
 ## `MidiEvent.time` is source-relative, not wall-clock
 
@@ -55,7 +73,7 @@ It is still not derived from `cicha-noc.musicxml`. There is one score in the app
 imported by `App.tsx` at compile time with no way to load another, so a
 `keyboardRangeForScore()` would be branches that can never run — that would become the
 right answer only once a second score exists. Each preset is chosen wide enough to
-contain this score's C3-G4 range regardless, which is what the Layer 2 gate checks.
+contain this score's C4-F5 range regardless, which is what the Layer 2 gate checks.
 
 ## The keyboard says which key, the falling-note queue says which finger
 
@@ -129,10 +147,12 @@ label's size or orientation rather than its absence.
 
 Two overlapping octave rows of the QWERTY layout, keyed by `KeyboardEvent.code` so it's
 unaffected by locale or Shift state: `Z S X D C V G B H N J M ,` for one octave from the
-base note (default C3), and `Q 2 W 3 E R 5 T 6 Y 7 U I` for the next octave up,
-overlapping by one note at the top of the first row / bottom of the second — the
-convention used by several DAWs' "typing keyboard" instruments. This comfortably covers
-the piece's C3-G4 range with margin on both sides.
+base note (default C3), and `Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P [` above it, overlapping
+by one note at the top of the first row / bottom of the second — the convention used by
+several DAWs' "typing keyboard" instruments. The second row ran one octave, to C5, until
+step 21: the arrangement that landed then reaches D5 and F5, which fell off the end of
+it, so it was continued along the same pattern to F5 and stops there, at the piece's own
+top note.
 
 ## Replay is a dev-only file picker, not a bundled fixture
 
@@ -224,6 +244,15 @@ parser reads `<measure>` elements strictly in document order; a piece using `<re
 would currently play through once, unrolled or not. Add real support (and settle the
 measure-numbering-after-unroll question this file was told to record) when a piece
 that needs it exists.
+
+Step 21's arrangement is that piece — the owner's ABC repeats its bars 9-12 — and the
+answer was still not to implement repeats. The owner chose to have the repeat written
+out in the MusicXML instead, so those four bars appear twice and the file is 22 measures
+rather than 18. The parser is not the only thing that would have to understand a repeat
+sign: the staff would draw one, and the engine, the measure readout and the loop picker
+would all carry on straight past it, so a player taking the repeat would be marked wrong
+from bar 13 to the end. Writing it out keeps all of them telling the same story, at the
+cost of measure numbers after bar 12 not matching the owner's own source.
 
 ## A disconnected Web MIDI device silently drops the app back to "Not connected"
 
@@ -468,7 +497,7 @@ after Restart — hangs. Dropping the emptied events means that state cannot occ
 
 Filtering the score also takes the other hand out of the finger queue for free: those
 notes are no longer in the events it renders. `measureCount` is deliberately untouched,
-so the position readout still counts twelve bars when you practise one hand of them.
+so the position readout still counts twenty-two bars when you practise one hand of them.
 
 ## Changing hands restarts the attempt
 
@@ -481,8 +510,8 @@ write-through effect above. There is no second reset path.
 ## One-hand attempts are recorded indistinguishably from two-hand ones
 
 `AttemptRecord` says nothing about which hand was practised, so the history's accuracy
-column now mixes two things it does not label: twelve left-hand notes at 100% sits
-beside forty-one two-hand notes at 100% and reads the same. That is the price of leaving
+column now mixes two things it does not label: fourteen left-hand notes at 100% sits
+beside forty-five two-hand notes at 100% and reads the same. That is the price of leaving
 the `localStorage` schema alone — `isAttemptRecordArray` validates field by field, so a
 `hands` field added without tolerating its absence would reject every record already
 stored and every file step 8 has exported. Known trade, not a bug; recording the hand is
@@ -555,11 +584,10 @@ nothing automated can read music.
 ## The staff cursor joins the engine to the score on `startTime`
 
 The engine and the staff hold different lists of the same piece. `cicha-noc.musicxml`
-contains 61 `<note>` elements; `cichaNocScore.events` contains 41, because `groupIntoEvents`
-merges notes struck together into one thing to wait for, and because `parseScore` drops
-rests and collapses ties. Bar 1 alone is five noteheads against three events, and by the
-last bar the two lists are twenty positions apart. So `nextEventIndex` is a number that
-means nothing to OSMD.
+contains 66 `<note>` elements; `cichaNocScore.events` contains 44, because `parseScore`
+drops rests — 21 of them here, the whole-bar rests that keep the silent hand's voice
+filled in — and because `groupIntoEvents` merges notes struck together into one thing to
+wait for. So `nextEventIndex` is a number that means nothing to OSMD.
 
 `ScoreEvent.startTime` is quarter-note beats from the start of the piece, and OSMD's cursor
 reports the onset it is on as a fraction of a whole note: the same quantity in units that
@@ -569,10 +597,11 @@ distinct one. Counting noteheads or cursor steps instead would have to account f
 rest, tie and stave the parser discarded, and would fail by drifting a note at a time
 rather than by breaking — silently, which is the worst way for this to be wrong.
 
-Measured rather than assumed: with the join in place, all 41 events land exactly on an OSMD
-onset, `want` equal to `got` in all twelve bars, with no accumulated error. The piece's
-divisions are 2, so every `startTime` is a multiple of a half beat and the comparison is
-between dyadic fractions — exact in floating point, and no tolerance is needed.
+Measured rather than assumed, and measured again when step 21 replaced the arrangement:
+walking OSMD's cursor from end to end yields 44 onsets, every event's `startTime` matches
+one of them, and OSMD offers none that is not an event. The piece's divisions are 2, so
+every `startTime` is a multiple of a half beat and the comparison is between dyadic
+fractions — exact in floating point, and no tolerance is needed.
 
 ## The cursor is reset and re-scanned on every move, never tracked
 
@@ -600,7 +629,7 @@ the cursor is hidden, because there is no next note to mark.
 
 ## The cursor scrolls its own pane, not the page
 
-A twelve-bar piece lays out over several systems and the staff pane is 320 px, so a marker
+A twenty-two-bar piece lays out over several systems and the staff pane is 320 px, so a marker
 below the fold marks nothing. OSMD has its own `followCursor`, but it calls
 `scrollIntoView({ block: 'center' })`, which centres the cursor in _every_ scrollable
 ancestor — including the document, so each note played would drag the whole page about,

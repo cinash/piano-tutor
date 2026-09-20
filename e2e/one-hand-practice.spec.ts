@@ -15,13 +15,13 @@ test('practising one hand queues only that hand, and switching hands restarts', 
   await connectVirtualKeyboard(page);
   await page.getByTestId('hands-left').check();
 
-  // The left hand plays once a measure here, so the queue skips m1 b4 and b5 entirely
-  // rather than showing them as events with no notes left in them.
+  // The left hand is silent until m3 here, so the queue skips m1 and m2 entirely rather
+  // than showing their events with no notes left in them.
   await expect
     .poll(() => queuedEventIds(page))
-    .toEqual(['m1-b1-e1', 'm2-b1-e1', 'm3-b1-e1', 'm4-b1-e1']);
+    .toEqual(['m3-b1-e1', 'm3-b2.5-e1', 'm3-b3-e1', 'm4-b1-e1']);
 
-  await playChord(page, [48, 55]); // m1 b1, the left hand's half of the opening chord
+  await playChord(page, [67]); // m3 b1, the left hand's first note
   await expect
     .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
     .toBe(1);
@@ -36,15 +36,10 @@ test('practising one hand queues only that hand, and switching hands restarts', 
     .poll(() => page.evaluate(() => window.__practiceState?.notesPlayed))
     .toBe(0);
 
-  // m1 b1 is now G4 alone, in the right hand's colour; the left hand's C3 and G3 are
-  // no longer waited for.
+  // The queue is the right hand's now, starting at m1 rather than m3, and the G4 it
+  // waits for carries the right hand's colour instead of the left's.
+  await expect
+    .poll(() => queuedEventIds(page))
+    .toEqual(['m1-b1-e1', 'm1-b2.5-e1', 'm1-b3-e1', 'm2-b1-e1']);
   await expect(page.locator('[data-note="67"]')).toHaveAttribute('data-hand', 'right');
-  await expect(page.locator('[data-note="48"]')).toHaveAttribute(
-    'data-expected',
-    'false',
-  );
-  await expect(page.locator('[data-note="55"]')).toHaveAttribute(
-    'data-expected',
-    'false',
-  );
 });

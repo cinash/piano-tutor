@@ -7,10 +7,9 @@ import { expect, type Page } from '@playwright/test';
  * get wrong, per the flake step 1's merge commit fixed.
  */
 const KEY_FOR_PITCH: Record<number, string> = {
-  48: 'z', // C3
-  55: 'b', // G3
   64: 'e', // E4
   67: 't', // G4
+  69: 'y', // A4
 };
 
 export async function playChord(page: Page, pitches: number[]) {
@@ -40,9 +39,14 @@ export async function selectLoopRange(
   await page.getByTestId('loop-end-input').blur();
 }
 
-/** b1, b4, b5 of cicha-noc.musicxml's opening measure — m1 and m2 share this shape. */
+/** cicha-noc.musicxml's opening measure: the right hand's G4, A4, G4, three events. */
 export async function playOpeningMeasure(page: Page) {
-  await playChord(page, [67, 48, 55]);
   await playChord(page, [67]);
+  await playChord(page, [69]);
+  await playChord(page, [67]);
+}
+
+/** The measure after it: E4, the one note in it. */
+export async function playSecondMeasure(page: Page) {
   await playChord(page, [64]);
 }

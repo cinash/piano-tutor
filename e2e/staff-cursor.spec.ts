@@ -13,7 +13,7 @@ function cursorPosition(cursor: Locator) {
 
 // Movement and reset, not absolute position: whether the marker sits on the right note,
 // and stays on it over a run of bars, is item 11 in MANUAL-CHECKS.md.
-test('the cursor moves when a chord is played, and returns to the start on Restart', async ({
+test('the cursor moves when a note is played, and returns to the start on Restart', async ({
   page,
 }) => {
   await connectVirtualKeyboard(page);
@@ -22,7 +22,7 @@ test('the cursor moves when a chord is played, and returns to the start on Resta
   await expect(cursor).toBeVisible();
   const start = await cursorPosition(cursor);
 
-  await playChord(page, [67, 48, 55]); // m1 b1: the opening C3-G3-G4 chord
+  await playChord(page, [67]); // m1 b1: the opening G4
 
   await expect.poll(() => cursorPosition(cursor)).not.toBe(start);
 

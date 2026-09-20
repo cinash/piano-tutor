@@ -16,26 +16,46 @@ const quarterNote = (id: string, startTime: number, pitch: number): ScoreEvent =
   durationBeats: 1,
 });
 
-/** A quarter note, a beat of rest, a quarter note — cicha-noc.musicxml has one such gap. */
-const withAGap: Score = {
+const oneBarIn4_4 = (events: ScoreEvent[]): Score => ({
   title: 'fixture',
   divisions: 1,
   timeSignatures: [{ beats: 4, beatType: 4, measure: 1 }],
   measureCount: 1,
-  events: [quarterNote('a', 0, 60), quarterNote('b', 2, 62)],
-};
+  events,
+});
+
+/** A quarter note, a beat of rest, a quarter note. */
+const withAGap = oneBarIn4_4([quarterNote('a', 0, 60), quarterNote('b', 2, 62)]);
+
+/**
+ * A held note under a moving melody. cicha-noc.musicxml's hands alternate rather than
+ * overlap, so nothing in the piece itself makes an event outlast the next one's onset.
+ */
+const withAnOverrun = oneBarIn4_4([
+  { ...quarterNote('a', 0, 60), durationBeats: 4 },
+  quarterNote('b', 1, 62),
+]);
 
 describe('buildDemoSchedule', () => {
   it('sounds one event at a time, each until the next one begins', () => {
     const steps = buildDemoSchedule(cichaNocScore, BPM);
 
-    // m1 b1's C3-G3-G4 is written over three beats but m1 b4 arrives after one and a
-    // half, so the chord is clamped to it: no silence between them, and no note-off
-    // landing inside the G4 that follows.
+    // m1's G4-A4-G4, each ending exactly where the next begins, so no step of silence
+    // is written between them.
     expect(steps.slice(0, 3)).toEqual([
-      { atMs: 0, startTime: 0, pitches: new Set([67, 48, 55]) },
-      { atMs: 1500, startTime: 1.5, pitches: new Set([67]) },
-      { atMs: 2000, startTime: 2, pitches: new Set([64]) },
+      { atMs: 0, startTime: 0, pitches: new Set([67]) },
+      { atMs: 1500, startTime: 1.5, pitches: new Set([69]) },
+      { atMs: 2000, startTime: 2, pitches: new Set([67]) },
+    ]);
+  });
+
+  it('clamps an event that overruns the next to where the next begins', () => {
+    // The next step's note-offs end the held note, which is what sounds one event at a
+    // time; writing a silence at its notated end would cut into the note after it.
+    expect(buildDemoSchedule(withAnOverrun, BPM)).toEqual([
+      { atMs: 0, startTime: 0, pitches: new Set([60]) },
+      { atMs: 1000, startTime: 1, pitches: new Set([62]) },
+      { atMs: 2000, startTime: 2, pitches: new Set() },
     ]);
   });
 

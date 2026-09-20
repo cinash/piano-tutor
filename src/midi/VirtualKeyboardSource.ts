@@ -8,8 +8,9 @@ import {
 /**
  * Two piano-style rows of the QWERTY layout, keyed by KeyboardEvent.code so the
  * mapping is unaffected by locale or Shift state. Row 1 (Z..) covers one octave from
- * the base note; row 2 (Q..) covers the next, overlapping by one note at the top of
- * row 1 / bottom of row 2 the way many DAW "typing keyboard" instruments do.
+ * the base note; row 2 (Q..) carries on above it, overlapping by one note at the top of
+ * row 1 / bottom of row 2 the way many DAW "typing keyboard" instruments do, and runs
+ * to F5 — the highest note cicha-noc.musicxml asks for.
  */
 const SEMITONE_OFFSET_BY_CODE: Readonly<Record<string, number>> = {
   KeyZ: 0,
@@ -38,6 +39,11 @@ const SEMITONE_OFFSET_BY_CODE: Readonly<Record<string, number>> = {
   Digit7: 22,
   KeyU: 23,
   KeyI: 24,
+  Digit9: 25,
+  KeyO: 26,
+  Digit0: 27,
+  KeyP: 28,
+  BracketLeft: 29,
 };
 
 const BASE_NOTE = 48; // C3

@@ -33,7 +33,7 @@ describe('computeKeyboardLayout', () => {
   });
 
   it('covers every note in the requested range exactly once', () => {
-    const layout = computeKeyboardLayout(48, 67); // the C3-G4 range this piece uses
+    const layout = computeKeyboardLayout(48, 67); // an arbitrary two-octave span
     expect(layout.map((k) => k.note)).toEqual(
       Array.from({ length: 67 - 48 + 1 }, (_, i) => 48 + i),
     );

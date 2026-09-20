@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import {
   connectVirtualKeyboard,
   playOpeningMeasure,
+  playSecondMeasure,
   selectLoopRange,
 } from './virtualKeyboard';
 
@@ -19,11 +20,11 @@ test.describe('falling-note view', () => {
   }) => {
     await connectVirtualKeyboard(page);
     await playOpeningMeasure(page); // m1
-    await playOpeningMeasure(page); // m2
+    await playSecondMeasure(page); // m2
 
     await expect
       .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
-      .toBe(6);
+      .toBe(4);
 
     await expect(page.getByTestId('falling-notes')).toHaveScreenshot(
       'falling-notes-mid-piece.png',
@@ -59,7 +60,7 @@ test.describe('falling-note view', () => {
       .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
       .toBe(3);
 
-    await playOpeningMeasure(page); // m2: reaching m3 b1 would move past endMeasure 2
+    await playSecondMeasure(page); // m2: reaching m3 b1 would move past endMeasure 2
     await expect
       .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
       .toBe(0); // wrapped back to m1 b1, not advanced to m3

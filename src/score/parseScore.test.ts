@@ -4,6 +4,7 @@ import cichaNocXml from '../../cicha-noc.musicxml?raw';
 import { parseScore } from './parseScore';
 import cichaNocSnapshot from './fixtures/cicha-noc.snapshot.json';
 import graceNotesXml from './fixtures/grace-notes.musicxml?raw';
+import tiedNotesXml from './fixtures/tied-notes.musicxml?raw';
 
 const cichaNoc = parseScore(cichaNocXml);
 
@@ -49,19 +50,17 @@ describe('parseScore', () => {
   });
 
   it('groups simultaneous notes across both hands into one event', () => {
-    // Mirrors cicha-noc m. 1 beat 1: RH melody note + LH two-note chord, all starting together.
-    const firstEvent = cichaNoc.events[0];
+    // m. 19 beat 1, the one bar of cicha-noc where the hands play together rather than
+    // taking the melody in turn: C5 over C4, written on separate staves.
+    const octave = cichaNoc.events.find((e) => e.measure === 19 && e.beat === 1);
 
-    expect(firstEvent.measure).toBe(1);
-    expect(firstEvent.beat).toBe(1);
-    expect(firstEvent.notes).toEqual(
+    expect(octave?.notes).toEqual(
       expect.arrayContaining([
-        { pitch: 67, hand: 'right', finger: 5 }, // G4
-        { pitch: 48, hand: 'left', finger: 5 }, // C3
-        { pitch: 55, hand: 'left', finger: 1 }, // G3
+        { pitch: 72, hand: 'right', finger: 3 }, // C5
+        { pitch: 60, hand: 'left', finger: 1 }, // C4
       ]),
     );
-    expect(firstEvent.notes).toHaveLength(3);
+    expect(octave?.notes).toHaveLength(2);
   });
 
   it('produces no event for a rest, while later notes keep the full timeline position', () => {
@@ -89,21 +88,22 @@ describe('parseScore', () => {
   });
 
   it('resolves a tie into a single event with combined duration, across a barline', () => {
-    // m.9 beat 4: G4 dotted quarter, tied into m.10's G4 eighth.
-    const tied = cichaNoc.events.find((e) => e.measure === 9 && e.beat === 4);
+    // cicha-noc.musicxml has no tie of its own, so this is its own fixture: m.1 beat 2
+    // is a G4 quarter tied into m.2's G4 eighth.
+    const score = parseScore(tiedNotesXml);
+
+    const tied = score.events.find((e) => e.measure === 1 && e.beat === 2);
     expect(tied?.notes).toEqual([{ pitch: 67, hand: 'right', finger: 5 }]);
-    expect(tied?.durationBeats).toBeCloseTo(2); // (3 + 1) divisions / 2 divisions-per-quarter
+    expect(tied?.durationBeats).toBeCloseTo(1.5); // (2 + 1) divisions / 2 per quarter
 
-    // No separate event was produced for the tied-into note in m.10.
-    expect(
-      cichaNoc.events.some((e) => e.measure === 10 && e.notes[0]?.pitch === 67),
-    ).toBe(false);
-
-    // The next note in m.10 (F4) keeps its normal position, unaffected by the tie merge.
-    const next = cichaNoc.events.find(
-      (e) => e.measure === 10 && e.notes[0]?.pitch === 65,
+    // No separate event was produced for the tied-into note in m.2.
+    expect(score.events.some((e) => e.measure === 2 && e.notes[0]?.pitch === 67)).toBe(
+      false,
     );
-    expect(next?.beat).toBe(2);
+
+    // The next note in m.2 (F4) keeps its normal position, unaffected by the tie merge.
+    const next = score.events.find((e) => e.measure === 2 && e.notes[0]?.pitch === 65);
+    expect(next?.beat).toBe(1.5);
   });
 
   it('parses a dotted duration via <duration> rather than <type>/<dot>', () => {
@@ -123,13 +123,23 @@ describe('parseScore', () => {
   });
 
   it('reads fingering when present and omits it when absent', () => {
-    // m.6 beat 6: D4 with no fingering.
-    const withoutFingering = cichaNoc.events.find((e) => e.measure === 6 && e.beat === 6);
-    expect(withoutFingering?.notes[0]).toEqual({ pitch: 62, hand: 'right' });
+    // cicha-noc.musicxml fingers every note, so only the present half comes from it.
+    expect(cichaNoc.events[0].notes[0]).toEqual({
+      pitch: 67,
+      hand: 'right',
+      finger: 3,
+    });
 
-    // m.8 beat 6: the same D4, this time with fingering 2.
-    const withFingering = cichaNoc.events.find((e) => e.measure === 8 && e.beat === 6);
-    expect(withFingering?.notes[0]).toEqual({ pitch: 62, hand: 'right', finger: 2 });
+    const score = parseScore(
+      scoreWithNotes(`
+        <note>
+          <pitch><step>D</step><octave>4</octave></pitch>
+          <duration>2</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        </note>
+      `),
+    );
+
+    expect(score.events[0].notes[0]).toEqual({ pitch: 62, hand: 'right' });
   });
 
   it('ignores a grace note: no event, and it does not shift the following note', () => {
