@@ -15,7 +15,10 @@ const NOTHING: ReadonlySet<number> = new Set();
 
 /** What sounds from `atMs` until the next step falls due; an empty set is silence. */
 export interface DemoStep {
+  /** When the step falls due, in milliseconds from the start of the demo. */
   atMs: number;
+  /** Where it is in the score, in quarter-note beats — what the staff cursor marks. */
+  startTime: number;
   pitches: ReadonlySet<number>;
 }
 
@@ -34,6 +37,7 @@ export function buildDemoSchedule(score: Score, bpm: number): DemoStep[] {
 
     steps.push({
       atMs: event.startTime * msPerBeat,
+      startTime: event.startTime,
       pitches: new Set(event.notes.map((note) => note.pitch)),
     });
     // Only a real gap needs a step of silence: where this event instead overruns the
@@ -41,7 +45,8 @@ export function buildDemoSchedule(score: Score, bpm: number): DemoStep[] {
     // is what sounds one event at a time. parseScore drops rests, so the gap itself
     // survives only as this arithmetic.
     if (endTime < nextStartTime) {
-      steps.push({ atMs: endTime * msPerBeat, pitches: NOTHING });
+      // At the event's end, so the cursor spends the gap on the note coming next.
+      steps.push({ atMs: endTime * msPerBeat, startTime: endTime, pitches: NOTHING });
     }
   });
 
@@ -49,8 +54,9 @@ export function buildDemoSchedule(score: Score, bpm: number): DemoStep[] {
 }
 
 /**
- * Plays a schedule out of the piano's MIDI output, reporting what is sounding as it
- * goes — and reporting null when the schedule runs out, which is how the demo ends.
+ * Plays a schedule out of the piano's MIDI output, reporting each step as it falls due —
+ * what is sounding and where in the piece it is — and reporting null when the schedule
+ * runs out, which is how the demo ends.
  *
  * Messages are sent as each step falls due rather than scheduled ahead with
  * `send(data, timestamp)`: Web MIDI cannot cancel a scheduled message, so a stopped or
@@ -60,7 +66,7 @@ export class DemoPlayer {
   private readonly steps: readonly DemoStep[];
   // The piano the player selected, matched by name to the output to play through.
   private readonly deviceName: string | null;
-  private readonly onNotes: (pitches: ReadonlySet<number> | null) => void;
+  private readonly onStep: (step: DemoStep | null) => void;
   private output: MIDIOutput | null = null;
   private sounding: ReadonlySet<number> = NOTHING;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -72,11 +78,11 @@ export class DemoPlayer {
   constructor(
     steps: readonly DemoStep[],
     deviceName: string | null,
-    onNotes: (pitches: ReadonlySet<number> | null) => void,
+    onStep: (step: DemoStep | null) => void,
   ) {
     this.steps = steps;
     this.deviceName = deviceName;
-    this.onNotes = onNotes;
+    this.onStep = onStep;
   }
 
   /** A null output plays the schedule silently; the highlighting is not optional. */
@@ -107,10 +113,10 @@ export class DemoPlayer {
 
     const next = this.steps[index + 1];
     if (!next) {
-      this.onNotes(null);
+      this.onStep(null);
       return;
     }
-    this.onNotes(step.pitches);
+    this.onStep(step);
     // Timed from the start rather than step to step, so a late timer doesn't push the
     // rest of the piece back with it.
     this.timer = setTimeout(

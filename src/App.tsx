@@ -20,7 +20,7 @@ import { downloadRecording } from './midi/recording';
 import type { MidiEvent, MidiSource } from './midi/types';
 import { FallingNotes } from './practice/FallingNotes';
 import { LoopPicker } from './practice/LoopPicker';
-import { DEMO_BPM, DemoPlayer, buildDemoSchedule } from './practice/demo';
+import { DEMO_BPM, DemoPlayer, buildDemoSchedule, type DemoStep } from './practice/demo';
 import { formatPosition } from './practice/positionReadout';
 import { toPracticeStateSnapshot } from './practice/practiceState';
 import {
@@ -84,8 +84,9 @@ export function App() {
     DEFAULT_KEYBOARD_PRESET,
   );
   const [hands, setHands] = useState<HandSelection>('both');
-  // What the demo is sounding, and null when no demo is running.
-  const [demoNotes, setDemoNotes] = useState<ReadonlySet<number> | null>(null);
+  // What the demo is sounding and where in the piece it has reached, and null when no
+  // demo is running.
+  const [demoStep, setDemoStep] = useState<DemoStep | null>(null);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 41 events costs nothing.
@@ -122,7 +123,7 @@ export function App() {
   const stopDemo = useCallback(() => {
     demoRef.current?.stop();
     demoRef.current = null;
-    setDemoNotes(null);
+    setDemoStep(null);
   }, []);
 
   function handleHandsChange(next: HandSelection) {
@@ -144,12 +145,14 @@ export function App() {
       buildDemoSchedule(score, DEMO_BPM),
       // The selected input's name is the output's name too, on this instrument.
       active.kind === 'webmidi' ? active.deviceName : null,
-      (pitches) => (pitches ? setDemoNotes(pitches) : stopDemo()),
+      (step) => (step ? setDemoStep(step) : stopDemo()),
     );
     // Both set before start() has finished looking for the port, so a second click
     // stops this demo rather than starting another and the button reads "Stop" at once.
     demoRef.current = player;
-    setDemoNotes(new Set());
+    // Nothing sounding yet, and at the beginning of the piece, which is where the demo
+    // is about to start.
+    setDemoStep({ atMs: 0, startTime: 0, pitches: new Set() });
     void player.start();
   }
 
@@ -353,12 +356,17 @@ export function App() {
             Restart
           </button>{' '}
           <button type="button" onClick={handleListen} data-testid="listen-to-piece">
-            {demoNotes ? 'Stop' : 'Listen'}
+            {demoStep ? 'Stop' : 'Listen'}
           </button>
         </>
       )}
-      {/* The filtered score, not cichaNocScore: nextEventIndex indexes this list. */}
-      <StaffView targetStartTime={score.events[view.engine.nextEventIndex]?.startTime} />
+      {/* Where the demo has reached while one plays, so the cursor follows it; the
+          filtered score otherwise, because nextEventIndex indexes that list. */}
+      <StaffView
+        targetStartTime={
+          demoStep?.startTime ?? score.events[view.engine.nextEventIndex]?.startTime
+        }
+      />
       <LoopPicker
         measureCount={score.measureCount}
         loop={view.engine.loop}
@@ -401,8 +409,8 @@ export function App() {
       <PianoKeyboard
         lowNote={keyboardPreset.low}
         highNote={keyboardPreset.high}
-        heldNotes={demoNotes ?? view.engine.heldNotes}
-        expectedNotes={demoNotes ? [] : notesAt(score, view.engine.nextEventIndex)}
+        heldNotes={demoStep?.pitches ?? view.engine.heldNotes}
+        expectedNotes={demoStep ? [] : notesAt(score, view.engine.nextEventIndex)}
       />
       <AttemptHistory records={attempts} />
       <div>

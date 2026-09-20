@@ -656,6 +656,21 @@ over — `isRecordingRef` is a ref for the same reason. Whatever restarts practi
 demo too: switching hands, connecting a source, unplugging the one that was connected. So
 does unmounting, because a demo outliving the screen would leave the piano sounding.
 
+What the demo _does_ drive on screen is divided by a line between "where are we in the
+music" and "what should you play". The staff cursor answers the first, so while the demo
+plays it follows the demo. The falling-note queue and the keyboard's expected-note
+highlight answer the second, and they stay with practice: nothing is asked for during a
+demonstration, and a queue racing ahead of a child who is listening would be a second
+instruction at the same time. None of this reaches `PracticeViewState` — the demo's
+position is component state beside what it is sounding, so Stop restores the practice
+cursor by the same path that restores the keyboard.
+
+That position is a second time on `DemoStep`, and the two are different questions:
+`atMs` is when the timer fires, in milliseconds from the start of the demo, and
+`startTime` is where the step is in the score, in quarter-note beats. The staff cursor
+marks beats, so it wants the second and would be wrong at any tempo but one if it were
+handed the first.
+
 ## Notes are sent as they fall due, never scheduled ahead
 
 Web MIDI's `send(data, timestamp)` would let the whole piece be handed to the browser in
