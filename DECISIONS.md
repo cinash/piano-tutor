@@ -521,18 +521,18 @@ matters is reacting to a measurement rather than a guess.
 
 Engraved at the window's width the whole piece is some 640 px tall, which would push the
 finger queue most of the way down the window — the staff is a third cue beside the queue
-and the keyboard, not a replacement, so it is bounded to 320 px and scrolls. The fixed height is also what keeps
-it out of the layout of everything below it: OSMD's rendered height is fractional (639.5 px
-here), and a half-pixel of it would land the queue and the keyboard on a half-pixel
-boundary, failing their committed screenshots on antialiasing alone.
+and the keyboard, not a replacement, so it is bounded to 320 px and scrolls. The height is
+also a whole number on purpose: OSMD's is fractional (639.5 px here), and half a pixel of
+it would land the queue and the keyboard on a half-pixel boundary, failing their committed
+screenshots on antialiasing alone. It sits above the _loop picker_ rather than directly
+above the queue for the same screenshot-sliver reason that already put the position readout
+and the hand radios below it — measured, not guessed: between the two, one snapshot failed
+by 88 pixels.
 
-Placing it above the _loop picker_ rather than directly above the queue is the same
-constraint one step further in. `falling-notes-*.png` is a screenshot of the queue element,
-and the queue's top edge sits on a fractional boundary, so its top row of pixels contains a
-sliver of whatever is immediately above it — in practice, the bottom border of the loop
-picker's measure inputs. Anything inserted between the two changes that sliver and fails
-the snapshot. This is the same reasoning that already put the position readout and the hand
-radios below the queue.
+`autoResize` is off, so the score is engraved once at the width of the window that loaded
+it and does not reflow when the window is resized; the pane's `overflow: auto` keeps it
+reachable until a reload. That is the price of owning the lifecycle, and the lifecycle had
+to be owned — 2.1.3 attaches a window resize listener it never removes.
 
 ## OSMD is stubbed in jsdom, and the staff is proved in a real browser
 
@@ -544,8 +544,3 @@ container is on the page. That thinness is the honest answer rather than a gap: 
 that can actually see notation is `e2e/staff.spec.ts`, which asserts against a real
 Chromium, and whether the notation is _correct_ is item 11 in `MANUAL-CHECKS.md`, because
 nothing automated can read music.
-
-No screenshot of the staff is committed. OSMD's SVG moves with its version, its fonts and
-the platform, so such a snapshot would fail for reasons that have nothing to do with this
-app; the e2e test counts `.staffline` groups instead — OSMD's own class, unlike the
-`vf-`-prefixed ones VexFlow emits, which are a private API.

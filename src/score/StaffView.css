@@ -1,9 +1,6 @@
 .staff-view {
-  /* Bounded rather than natural: engraved at the window's width the whole piece is some
-     640px tall, and letting it take that would push the queue most of the way down the
-     window. The height is also deliberately a whole number — OSMD's is fractional
-     (639.5px here), and half a pixel of it would land the queue and the keyboard on a
-     half-pixel boundary and fail their committed screenshots on antialiasing alone. */
+  /* Bounded, not natural: the whole piece engraves to ~640px and would push the queue
+     down the window. The height is a whole number on purpose — see DECISIONS.md. */
   height: 320px;
   overflow: auto;
   margin-bottom: 12px;
