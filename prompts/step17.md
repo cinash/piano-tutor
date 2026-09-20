@@ -1,96 +1,210 @@
-# Step 17 — Fold the finger queue away
+# Step 17 — Listen to the piece, with the keys lighting up
 
-Depends on step 15 for the reason it exists, and touches `App.tsx` and `FallingNotes` only.
-One branch, `step-17-fold-queue`, off `main`.
+Depends on steps 9–11 for the keyboard and its highlight, and on step 14 for the hand
+filter. Touches `App.tsx`, `WebMidiSource.ts`, one new module, and lifts
+`WebMidiSource.test.ts`'s fake access object into a shared helper. One branch,
+`step-17-listen`, off `main`.
 
 ## Goal
 
-Let the player put the finger-number queue away. Step 15 put the notation on screen, and the
-staff and the queue now answer overlapping questions in a column that no longer fits a laptop
-window: the score takes 320 px, the queue another 160, and the on-screen keyboard — the one
-element that has to be visible while the hands are on the real one — has been pushed below the
-fold. The player asked for this directly after seeing the staff land.
+Let the player hear the piece before playing it, with the on-screen keys lighting up in
+time with the sound. The app has never demonstrated the music it waits for, so a child who
+does not already know Cicha Noc is being asked to produce notes nobody has shown them. This
+came from the players — the owner's children — and it is the highest-priority item on the
+plan, ahead of step 18.
 
-This is a visibility control, not a change to what the queue shows.
+## Before you start — confirm the instrument answers
 
-## Confirmed decision — fold the queue, not the fingerings on the staff
+The documentation says the P-145 sounds what it is sent: the P-145 / P-143 MIDI Reference's
+implementation chart marks Note ON and Note OFF recognized as well as transmitted. That
+reading is second-hand — Yamaha's download host refuses automated fetches — and nothing in
+this repository has ever sent the piano a byte, so confirm it on the actual instrument.
 
-"The hands with numbers below the notes" reads two ways, and the player confirmed which: it is
-the strip of colour-coded finger circles that `FallingNotes` renders below the staff, not the
-fingering digits OSMD engraves on the score itself. The engraved fingerings stay exactly as
-they are, and no OSMD option is touched by this step.
+**The owner runs this check, not the implementing agent**: the container never talks to the
+piano. Ask for it at the start, write the visual half while you wait — it does not depend on
+the answer — and do not report the step done before the answer comes back. On the host, with
+the piano connected, at `http://localhost:5173` (a secure context, so `requestMIDIAccess`
+exists), in the browser console:
 
-## Confirmed decision — the queue is hidden, not unmounted from the engine
+```js
+const access = await navigator.requestMIDIAccess({ sysex: false });
+console.log([...access.inputs.values()].map((p) => p.name));
+console.log([...access.outputs.values()].map((p) => p.name));
+// Replace the pattern with the piano's own name, from the list just printed.
+const out = [...access.outputs.values()].find((p) => /P-?14[35]|piano/i.test(p.name));
+await out.open();
+out.send([0x90, 60, 96]); // middle C on
+setTimeout(() => out.send([0x80, 60, 0]), 1000); // and off
+```
 
-Folding is a display choice and must not change what the engine waits for, what the position
-readout says, or what an attempt records. The engine has never known the queue exists — step 4
-built it as a pure view of `score.events` — so keeping it that way is the cheap option as well
-as the correct one. A folded queue that quietly stopped an attempt being recorded, or that
-behaved differently from an unfolded one on a wrong note, is the failure this decision rules
-out.
+Substituting that name matters: a host with a soft synth or an IAC bus has other
+destinations, and middle C out of the computer's speakers would answer the wrong question.
+The two port lists are the other half of what comes back, and they decide the port rule
+below. If the piano stays silent with its MIDI receive channel and MIDI-in enabled, stop and
+say so: the answer is then a different sound source (a Web Audio synth in the app), and that
+is a decision for the owner to take, not a substitution to make quietly.
 
-Whether "hidden" means not rendered at all or rendered with `hidden` is an implementation
-detail with one constraint, in the gate below.
+## Confirmed decision — the piano makes the sound, the app makes none
+
+The player asked for the playback to go through the MIDI interface of the piano. So this
+step sends note-on and note-off to the instrument's MIDI _output_ port and adds no audio of
+its own, and no new dependency.
+
+The consequence is what makes the step buildable in the container at all: **the sound is
+optional, the highlighting is not.** Port discovery answers `MIDIOutput | null`, and every
+way of getting nothing is that same answer: no Web MIDI, a denied permission — which is what
+every Playwright run is, since `requestMIDIAccess` exists in the container and rejects with
+`NotAllowedError` — an empty `outputs` map, or no port matching. A null output runs the demo
+silently and must not reach the `role="alert"` line: pressing Listen without a piano is a
+normal thing to do, not an error. Do not hide or disable the control when there is no output.
+
+## Confirmed decision — a Listen button, not an autoplay
+
+Offered a demo that starts by itself as soon as a device is connected, the player chose an
+explicit control. It sits beside "Restart", on the same row and under the same
+`active.kind !== 'none'` condition, and carries a `data-testid` like every other control in
+`App.tsx`. While the demo runs the same button reads "Stop" and stops it.
+
+## Confirmed decision — listening is not practising
+
+The demo must not touch `PracticeViewState`: not `nextEventIndex`, not the wrong-note set,
+not the attempt counters, and so nothing of it reaches `AttemptHistory`. While it runs,
+incoming MIDI is dropped rather than passed to `advancePracticeView` — a child playing along
+would otherwise have every note recorded as an attempt, most of them wrong, since the engine
+is still waiting where they stopped. Stop the demo, then play. Whatever restarts practice —
+disconnecting, switching hands — stops the demo too, and so does unmounting.
+
+## Confirmed decision — one fixed demo tempo, which is not a tempo control
+
+`cicha-noc.musicxml` carries no tempo mark, and something has to turn `startTime` and
+`durationBeats` (quarter-note beats) into milliseconds. One constant in the new module,
+`DEMO_BPM = 66` in quarter notes — a shade slower than a performance because it is a
+demonstration — tuned by ear in the manual check and then left alone. It does not go in
+`src/config.ts`, which is the player-configurable presets, and a demo constant sitting there
+reads as a knob somebody should wire up. Wait-mode practice stays untimed and the clock
+introduced here runs only while the demo runs; what that rules out is under Out of scope.
 
 ## In scope
 
-- A control next to the queue that folds and unfolds it, labelled so it says which state it is
-  in. Match `LoopPicker`'s existing checkbox idiom rather than inventing a disclosure widget;
-  a `data-testid` on it, as every other control in `App.tsx` carries.
-- The fold state lives in `App.tsx` beside `keyboardPreset` and `hands`, which are the two
-  existing pieces of view-only state, and is passed down. It is not engine state and does not
-  belong in `PracticeViewState`.
-- **Remembering the choice across a reload.** A player who folds the queue means it, and having
-  it come back on every refresh is the thing that makes such a control not worth using.
-  `localStorage`, alongside the attempt history, and reading it must tolerate a missing or
-  corrupt value the way `attemptStore.ts` already does — that file is the pattern to copy, not
-  a new one to invent.
-- Whatever `DECISIONS.md` needs so that a later reader does not "simplify" the fold into the
-  engine.
+- **The schedule, as a pure value.** A new module turning a `Score` and a BPM into a list of
+  timed steps:
+
+  ```ts
+  interface DemoStep {
+    atMs: number;
+    pitches: ReadonlySet<number>; // sounding from atMs; empty means silence
+  }
+  ```
+
+  A `ReadonlySet` so it reaches `PianoKeyboard.heldNotes` without a per-render conversion.
+  One step per `ScoreEvent` at its `startTime`, and **one event sounds at a time**: its notes
+  stop at `min(startTime + durationBeats, next.startTime)`, and where that falls before the
+  next event begins, an empty step goes in at that moment — the piece has one such gap, and
+  since `parseScore` drops rests it survives only as this arithmetic. A final empty step
+  closes the last event. The `min` itself is there to prevent overlap: a chord carries one
+  `durationBeats` for all its notes — the longest of them, by `DECISIONS.md` — so without it
+  a note-off would land in the middle of the next event's own copy of that pitch.
+
+  **Note-off before note-on at every boundary**, including for pitches that appear in both
+  steps. Eleven boundaries in this piece repeat a pitch; sending off only for departing
+  pitches ties Cicha Noc's repeated melody notes into one sustained note on the real
+  instrument, and on-before-off silences the new one instead.
+
+- **The runner, one timer at a time.** Walk the steps with a single pending `setTimeout`,
+  sending each step's messages as it falls due. **Do not schedule ahead with
+  `output.send(data, timestamp)`**: Web MIDI has no `clear()` in Chromium, so a pre-scheduled
+  piece would keep playing out of the instrument after Stop and after a disconnect — and the
+  highlight needs a timer anyway, so pre-scheduling would be a second schedule to keep in
+  step with the first. Stop clears the pending timer and sends note-off for whatever is
+  sounding; a note left on by a stopped demo is the failure a real piano shows. Two traps:
+  `handleEvent` is registered once at `attach()` time, so the flag that drops input while the
+  demo runs has to be a ref, as `isRecordingRef` already is; and stop the demo from
+  `handleHandsChange` and `disconnect`, the two places that already restart practice, rather
+  than from an effect keyed on `score`, whose identity is stable only while both hands are
+  selected.
+
+- **Finding the output port**, using the names the hardware check printed. If the host shows
+  exactly one output, take the sole output; if it shows several, match the piano by name.
+  **Write only the rule the evidence supports** — the other branch is dead code, and the
+  check happens before the code does. Either way the lookup answers `MIDIOutput | null` and
+  nothing downstream asks why. `getMidiAccess()` in `WebMidiSource.ts` already returns the
+  `MIDIAccess` carrying `outputs` beside `inputs`, and is module-private today, so export it
+  or add the lookup beside `listMidiInputs`. **No second dropdown**: the player has already
+  picked their piano once.
+
+- **The highlight, with no change to `PianoKeyboard`.** While the demo runs, `App` passes the
+  current step's pitches as `heldNotes` and an empty `expectedNotes`. The component, its CSS
+  and its `data-` attributes are untouched: "this key is sounding now" is precisely what
+  `heldNotes` already draws, and a third key state would mean new CSS, a new attribute and a
+  new precedence rule for a cue that already exists. Blanking `expectedNotes` is deliberate —
+  during a demonstration the only marks on the keyboard should be what is sounding, not a
+  chord telling the player to do something else at the same time.
+
+- The demo plays `score`, the hand-filtered one `App` already computes, so "Left hand" plus
+  Listen demonstrates the left hand alone.
 
 ## Out of scope
 
-- **A fold for anything else.** Not the staff — `step15.md` put a control to hide it out of
-  scope and nothing since has changed that — not the keyboard, not the history. One control,
-  one thing folded. If the screen is still too tall afterwards, that is the next step's
-  evidence, gathered honestly.
-- Animating the fold. A transition is a nicety that buys a `prefers-reduced-motion` question
-  and a flaky screenshot, and nobody asked for one.
-- Re-laying-out the page, moving elements, or reclaiming the space for something else. The
-  elements below simply move up.
-- Any change to what the queue draws when it is visible: the five finger colours, the wrong-note
-  treatment and the loop-boundary behaviour are all step 4's and step 5's, and are pinned by
-  committed screenshots.
+- **Reusing `generatePerfectPerformance` or `ReplayMidiSource`.** Both already walk a score
+  on a clock, and both are the wrong tool: the first is fixture machinery at a fixed
+  `MS_PER_BEAT` with no way to express the clamp above, and the second feeds `handleEvent`,
+  which is exactly what "listening is not practising" forbids.
+- **The staff cursor following the demo.** It stays where the engine left it. Making it
+  follow is a one-expression change to what `StaffView` is passed and the obvious next step,
+  but it is not what was asked for, and step 16's cursor has only just landed.
+- **Listening to the loop range only.** Listen plays from the top of the piece.
+- Speed control, a count-in, a metronome: no slider, no 50% / 75%.
+- Dynamics. One fixed velocity for every note, a constant beside the tempo.
+- Sustain, program change, channel selection: channel 1, note on and note off, nothing else.
+- Any change to the queue, the staff, the history, or the keyboard component.
+- A test-only speed knob to make the Playwright check finish sooner. The gate below is
+  written not to need one.
 
 ## Decisions to record in `DECISIONS.md`
 
-- That the fold is view state in `App.tsx` and never reaches the engine, with the reason:
-  practice must be identical folded and unfolded.
-- That the choice persists in `localStorage`, and what a missing or unreadable value does.
+- The sound comes from the instrument over MIDI out, the app has no audio of its own, and a
+  null output port runs the demo silently rather than raising anything.
+- Listening is not practising: the demo never touches engine or attempt state, and input is
+  dropped while it runs.
+- Messages are sent as they fall due rather than scheduled ahead, because Web MIDI cannot
+  cancel a scheduled message and a stuck note on the real piano is the price.
+- One event sounds at a time, and why: chords carry a single duration, and the highlight
+  should match the cue practice gives.
+- Amend the existing "Tempo is out of scope" entry rather than adding a fifth: the demo's
+  fixed constant is not the slider coming back.
 
 ## Gate
 
-- Layer 2: fold the queue and assert it is gone from the page; unfold it and assert it is back.
-  Then the one that matters — **with the queue folded, play the opening measure through the
-  virtual keyboard and assert the engine advanced exactly as it does unfolded.** That is the
-  assertion that pins the decision above, and it is worth more than the two visibility ones.
-- Layer 2: a second mount reads the stored choice back.
-- **Layer 3 carries a trap.** `falling-notes-*.png` and `piano-keyboard-*.png` are element
-  screenshots, and the queue's top row of pixels contains a sliver of whatever sits immediately
-  above it — `step15.md` and the entry it left in `DECISIONS.md` record how that was found and
-  what it cost. So a fold control placed between the loop picker and the queue will fail those
-  snapshots even though nothing about the queue changed. Put the control where it does not
-  disturb them, confirm by running the suite, and **do not re-bless the snapshots to get past
-  it** — they are step 4's and step 13's record, and this step has no business changing what
-  the queue or the keyboard look like.
-- No new committed screenshot. A folded queue is an absence, and `toBeVisible()` says it better
-  than a picture of nothing.
-- `npm run ci` green proves the wiring; that the screen is actually more usable with the queue
-  folded is the manual check.
+- Layer 1/2: the step list for the opening bars at a known BPM — the opening chord's three
+  pitches at 0 ms, the next event starting where that one ends, an empty step closing the
+  piece. Cover the rest-shaped gap with a two-event fixture written for it rather than
+  hunting for the one instance in `cicha-noc.musicxml`.
+- Layer 2 over `App` with fake timers and a fake `MIDIOutput`: Listen sends note-on for the
+  opening chord and note-off for it when the next step falls due, with the note-off first at
+  a boundary that repeats a pitch; Stop sends note-off for what is sounding and nothing
+  afterwards; a MIDI event arriving mid-demo leaves `PracticeViewState` untouched; and a null
+  output runs the demo silently without surfacing an error. `WebMidiSource.test.ts` fakes the
+  access object with unexported locals — lift what you need into a shared helper rather than
+  writing a second fake, and keep it at the port boundary.
+- **Layer 3 is the check that establishes the requested behaviour exists.** With the computer
+  keyboard connected: click Listen, then poll immediately that `[data-held="true"]` is
+  exactly the opening chord's three pitches and that nothing is marked expected — the chord
+  holds for 1363 ms and the value does not come back once the demo moves on. Poll that the
+  held set has moved on to the next event, then click Stop and assert the keyboard is back to
+  the engine's state and `position-readout` never moved. Assert the first move, not the whole
+  piece, which runs about 33 s.
+- No committed screenshot, and put Listen on the existing Restart row so that nothing shifts
+  — `DECISIONS.md`'s entry on the element snapshots gives the reason. Do not re-bless them.
+- `npm run ci` green proves the schedule, the highlighting and that nothing else moved. It
+  proves nothing about the sound: the container never talks to the piano, so the MIDI-out
+  half is verified by hand and the report should say so rather than implying the suite
+  covered it.
 
 ## Manual
 
-Extend item 11 rather than adding a twelfth: with the real piano connected, fold the queue and
-confirm the staff and the on-screen keyboard are both visible at once without scrolling, that
-playing the piece still behaves exactly as it did unfolded, and that the choice survives closing
-and reopening the tab.
+Extend item 9 rather than adding a twelfth item, and keep it to three clauses: the piano
+plays Cicha Noc while the on-screen keys follow it, Stop silences the instrument at once
+with no note left sounding, and "Attempts" gained nothing from the demo. Say whether 66 BPM
+suits a child following along. Expect the texture to sound thinner than the printed music —
+one event sounds at a time, so bar 1's left-hand chord is released when the melody moves,
+which is the decision above and not a fault.

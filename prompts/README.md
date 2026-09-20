@@ -63,11 +63,23 @@ explains.
 Both are worth doing after step 10, which answers the same complaint for a fraction of the
 cost.
 
-## Planned — making room for it
+## Planned next — hearing it first
+
+| Step                   | What it adds                                      |
+| ---------------------- | ------------------------------------------------- |
+| [17](step17.md) Listen | The piano plays the piece while the keys light up |
+
+Asked for by the players, who are children, and the highest priority on this list: the app
+waits for a piece it has never demonstrated, so a child who does not know Cicha Noc has
+nothing to copy. The sound comes from the instrument itself over MIDI out rather than from
+any audio in the app, which is why the suite can only prove that the keys light up — and why
+`step17.md` opens with a hardware check for the owner to run at the piano.
+
+## Planned — making room for the staff
 
 | Step                           | What it adds                              |
 | ------------------------------ | ----------------------------------------- |
-| [17](step17.md) Fold the queue | A control that puts the finger queue away |
+| [18](step18.md) Fold the queue | A control that puts the finger queue away |
 
 Step 15's consequence rather than a new idea: with 320 px of staff on screen the column no
 longer fits a laptop window, and the on-screen keyboard — the one element that has to be
@@ -79,7 +91,9 @@ exists, so it can be built before or after step 16.
 
 **Tempo and speed control.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo
 is out of scope by decision in `step5.md`. Wanting it back is a decision to reverse in the
-open, not a gap to fill quietly.
+open, not a gap to fill quietly. Step 17's demo has to pick a speed to play at and so carries
+one fixed constant, but that is a property of the demonstration: practice stays untimed and
+there is still no control.
 
 **Recording which hand an attempt used.** Kept out of step 14, which says why. Its own step,
 if the mixing turns out to matter in practice.
