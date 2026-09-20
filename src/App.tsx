@@ -20,6 +20,7 @@ import { downloadRecording } from './midi/recording';
 import type { MidiEvent, MidiSource } from './midi/types';
 import { FallingNotes } from './practice/FallingNotes';
 import { LoopPicker } from './practice/LoopPicker';
+import { formatPosition } from './practice/positionReadout';
 import { toPracticeStateSnapshot } from './practice/practiceState';
 import {
   advancePracticeView,
@@ -293,6 +294,9 @@ export function App() {
         satisfiedNoteIds={view.engine.satisfiedNoteIds}
         hasWrongNote={view.wrongNotes.size > 0}
       />
+      {/* Below the queue: above it, the queue shifts by a sub-pixel and its committed
+          screenshots fail on an edge sliver. */}
+      <p data-testid="position-readout">{formatPosition(cichaNocScore, view.engine)}</p>
       <KeyboardRangePicker
         presets={KEYBOARD_PRESETS}
         selected={keyboardPreset}
