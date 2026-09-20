@@ -19,6 +19,7 @@
     "ci": "npm run check:versions && npm run lint && npm run format:check && npm run build && npm run test && npm run test:e2e"
   },
   "dependencies": {
+    "opensheetmusicdisplay": "2.1.3",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

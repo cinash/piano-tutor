@@ -38,6 +38,7 @@ import {
 } from './progress/attemptStore';
 import { mergeAttempts } from './progress/mergeAttempts';
 import type { AttemptRecord } from './progress/types';
+import { StaffView } from './score/StaffView';
 import { cichaNocScore } from './score/cichaNoc';
 import { filterScoreByHand, type HandSelection } from './score/filterScoreByHand';
 
@@ -310,6 +311,7 @@ export function App() {
           Restart
         </button>
       )}
+      <StaffView />
       <LoopPicker
         measureCount={score.measureCount}
         loop={view.engine.loop}

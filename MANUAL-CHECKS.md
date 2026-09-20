@@ -40,3 +40,7 @@ update it at the end of each step.
     its notes, wrong notes, accuracy and range read as a fair account of what was
     played. Then click "Download progress", open the deployed tailnet copy, import the
     downloaded file there, and confirm the history arrives intact.
+11. Open the app beside your printed copy of Cicha Noc and read the staff against it:
+    the same piece, the same key and time signature (no sharps or flats, 6/8), both
+    hands' staves — treble over bass — and the same notes in the same bars. Nothing
+    automated can do this: the e2e suite can only tell that _something_ was engraved.
