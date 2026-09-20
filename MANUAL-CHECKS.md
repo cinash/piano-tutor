@@ -42,7 +42,9 @@ update it at the end of each step.
    left sounding, and that "Attempts" gained nothing from the demonstration. With the piano
    selected in the dropdown the demo plays out of the output of that same name, and
    `Midi Through` sitting in the port list beside the two `Digital Piano` ports no longer
-   stops any of it.
+   stops any of it. Watch the staff while it plays: the green cursor should move along
+   with the demo and be on the bar being played, and "Stop" should put it back on the note
+   practice was waiting for.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was

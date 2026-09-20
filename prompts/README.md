@@ -17,6 +17,7 @@ for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano ca
 | [7](step7.md) History           | `localStorage` attempts, newest first               |
 | [8](step8.md) Progress transfer | Export and import the history as JSON               |
 | [17](step17.md) Listen          | Keys lighting up to the piece; the sound took 19    |
+| [19](step19.md) Output port     | The demo's port, matched to the piano by name       |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -76,18 +77,17 @@ visible while the hands are on the real piano — is the thing that falls off th
 for by the player as soon as the staff landed. It depends on step 15 only for the reason it
 exists, so it can be built before or after step 16.
 
-## Planned — making Listen audible
+## Planned — the cursor follows the demo
 
-| Step                        | What it repairs                               |
-| --------------------------- | --------------------------------------------- |
-| [19](step19.md) Output port | The demo reaches the piano instead of nowhere |
+| Step                           | What it repairs                                    |
+| ------------------------------ | -------------------------------------------------- |
+| [20](step20.md) Cursor follows | The staff marker moves with the demo, not practice |
 
-Step 17 shipped the highlighting and the right note-on and note-off bytes, but chose the
-output port by a rule no Linux host can satisfy: the sole output, where the ALSA loopback
-`Midi Through` is always present and the piano offers two ports of its own besides. The
-lookup therefore gave up and answered null, which is defined — correctly — as "play the
-schedule silently", so the keys lit up, nothing was reported and `npm run ci` stayed green
-over a demo nobody could hear. A repair rather than a feature: nothing on screen changes.
+The other half of step 17's unfinished wiring, reported by the player once step 19 made the
+demo audible: the keys light up and the piano plays, but the green cursor stays on the note
+practice is waiting for. Step 17 gave the keyboard a second source while the demo runs and
+never gave the staff one. The queue stays with practice on purpose — the cursor says where
+we are, the queue says what to play, and nothing is asked for during a demonstration.
 
 ## Deliberately not planned
 

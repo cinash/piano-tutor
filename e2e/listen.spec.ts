@@ -1,6 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { connectVirtualKeyboard } from './virtualKeyboard';
+
+/** Where OSMD has put the cursor, read as e2e/staff-cursor.spec.ts reads it. */
+function cursorPosition(cursor: Locator) {
+  return cursor.evaluate((el) => `${el.style.left} ${el.style.top}`);
+}
 
 /** Every pitch the keyboard is showing as sounding, lowest first. */
 function heldPitches(page: Page) {
@@ -25,6 +30,10 @@ test('Listen lights the keys through the opening bars, leaving practice where it
   const readout = page.getByTestId('position-readout');
   const position = await readout.textContent();
   const listen = page.getByTestId('listen-to-piece');
+  const cursor = page.getByTestId('staff').locator('img');
+  await expect(cursor).toBeVisible();
+  // Where practice is waiting, which the demo must both leave and come back to.
+  const practiceMark = await cursorPosition(cursor);
 
   await listen.click();
   await expect(listen).toHaveText('Stop');
@@ -36,6 +45,10 @@ test('Listen lights the keys through the opening bars, leaving practice where it
   // m1 b4: G4 alone, 1363 ms in.
   await pollHeldPitches(page).toEqual([67]);
 
+  // The cursor has followed the demo off the chord practice is still waiting for.
+  // Which note it has reached is item 11 in MANUAL-CHECKS.md, read against the music.
+  await expect.poll(() => cursorPosition(cursor)).not.toBe(practiceMark);
+
   await listen.click();
 
   // Back to the engine: nothing sounding, m1 b1's three keys asked for again, and the
@@ -44,4 +57,5 @@ test('Listen lights the keys through the opening bars, leaving practice where it
   await pollHeldPitches(page).toEqual([]);
   await expect(page.locator('[data-expected="true"]')).toHaveCount(3);
   await expect(readout).toHaveText(position ?? '');
+  await expect.poll(() => cursorPosition(cursor)).toBe(practiceMark);
 });
