@@ -311,7 +311,8 @@ export function App() {
           Restart
         </button>
       )}
-      <StaffView />
+      {/* The filtered score, not cichaNocScore: nextEventIndex indexes this list. */}
+      <StaffView targetStartTime={score.events[view.engine.nextEventIndex]?.startTime} />
       <LoopPicker
         measureCount={score.measureCount}
         loop={view.engine.loop}

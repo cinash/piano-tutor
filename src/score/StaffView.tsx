@@ -1,12 +1,22 @@
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import './StaffView.css';
 import { cichaNocXml } from './cichaNoc';
 
-/** The notation, drawn once from the raw MusicXML. Nothing here follows the player. */
-export function StaffView() {
+export interface StaffViewProps {
+  /**
+   * Where to mark, in quarter-note beats from the start of the piece — the `startTime`
+   * of the event the engine is waiting for, or `undefined` once the piece is finished.
+   */
+  targetStartTime: number | undefined;
+}
+
+/** The notation, drawn from the raw MusicXML, with the cursor on the next note due. */
+export function StaffView({ targetStartTime }: StaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Null until the first render() has run, because that is what creates the cursor.
+  const [renderedOsmd, setRenderedOsmd] = useState<OpenSheetMusicDisplay | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -20,7 +30,9 @@ export function StaffView() {
 
     void osmd.load(cichaNocXml).then(() => {
       // load() is a promise, so this can resolve after unmount, into a detached div.
-      if (!cancelled) osmd.render();
+      if (cancelled) return;
+      osmd.render();
+      setRenderedOsmd(osmd);
     });
 
     // StrictMode runs the effect twice in development; without emptying the container
@@ -30,6 +42,32 @@ export function StaffView() {
       container.replaceChildren();
     };
   }, []);
+
+  useEffect(() => {
+    if (!renderedOsmd) return;
+    const { cursor } = renderedOsmd;
+
+    // Hidden while it moves: update() is a no-op on a hidden cursor, so the scan below
+    // redraws once at the end rather than once per step.
+    cursor.hide();
+    if (targetStartTime === undefined) return; // the piece is over; there is no next note
+
+    // Every move is a reset and a re-scan rather than a tracked delta — see DECISIONS.md.
+    const targetInWholeNotes = targetStartTime / 4; // OSMD's unit, not the score's
+    cursor.reset();
+    while (
+      !cursor.iterator.EndReached &&
+      cursor.iterator.CurrentSourceTimestamp.RealValue < targetInWholeNotes
+    ) {
+      cursor.next();
+    }
+    cursor.show();
+
+    // OSMD's own followCursor centres the cursor in every scrollable ancestor, which
+    // drags the whole page about on each note; 'nearest' scrolls the staff pane only as
+    // far as it must, and not at all while the marker is already visible.
+    cursor.cursorElement.scrollIntoView({ block: 'nearest' });
+  }, [renderedOsmd, targetStartTime]);
 
   return <div ref={containerRef} className="staff-view" data-testid="staff" />;
 }

@@ -544,3 +544,60 @@ container is on the page. That thinness is the honest answer rather than a gap: 
 that can actually see notation is `e2e/staff.spec.ts`, which asserts against a real
 Chromium, and whether the notation is _correct_ is item 11 in `MANUAL-CHECKS.md`, because
 nothing automated can read music.
+
+## The staff cursor joins the engine to the score on `startTime`
+
+The engine and the staff hold different lists of the same piece. `cicha-noc.musicxml`
+contains 61 `<note>` elements; `cichaNocScore.events` contains 41, because `groupIntoEvents`
+merges notes struck together into one thing to wait for, and because `parseScore` drops
+rests and collapses ties. Bar 1 alone is five noteheads against three events, and by the
+last bar the two lists are twenty positions apart. So `nextEventIndex` is a number that
+means nothing to OSMD.
+
+`ScoreEvent.startTime` is quarter-note beats from the start of the piece, and OSMD's cursor
+reports the onset it is on as a fraction of a whole note: the same quantity in units that
+convert by a factor of four. The cursor is therefore sought by advancing it from the start
+until its timestamp reaches the target `startTime`, and every event in the piece has a
+distinct one. Counting noteheads or cursor steps instead would have to account for every
+rest, tie and stave the parser discarded, and would fail by drifting a note at a time
+rather than by breaking — silently, which is the worst way for this to be wrong.
+
+Measured rather than assumed: with the join in place, all 41 events land exactly on an OSMD
+onset, `want` equal to `got` in all twelve bars, with no accumulated error. The piece's
+divisions are 2, so every `startTime` is a multiple of a half beat and the comparison is
+between dyadic fractions — exact in floating point, and no tolerance is needed.
+
+## The cursor is reset and re-scanned on every move, never tracked
+
+OSMD's cursor walks forwards from the start, so seeking backwards — which Restart does, and
+which the loop does every time it wraps — means resetting and stepping forward again. That
+happens on every target change, unconditionally, rather than keeping a "the cursor is at
+index N" variable in step with the engine: knowing that the target had moved backwards would
+itself mean remembering where it was, which is the variable this avoids. The piece is 41
+events long and the scan costs nothing measurable.
+
+The scan runs with the cursor hidden, because OSMD's `update()` is a no-op on a hidden
+cursor: hide, reset, step, then `show()` redraws once at the end rather than once per step.
+
+## The staff always draws the whole piece, both hands, and is marked from the filtered score
+
+Step 14's hand filter drops events from the `Score` the engine runs on, but it does not
+touch the survivors' `startTime`. The target handed to `StaffView` is therefore read from
+the _filtered_ score — `score.events[nextEventIndex]?.startTime`, the list
+`nextEventIndex` actually indexes — while the staff goes on drawing both staves of the
+whole piece from the XML. Practising one hand moves the cursor over the notes of that hand
+on a score that still shows the other; narrowing what is drawn is a different feature and
+nobody asked for it. The same expression covers the end of the piece: `nextEventIndex` is
+allowed one past the last event when `status` is `complete`, `undefined` comes back, and
+the cursor is hidden, because there is no next note to mark.
+
+## The cursor scrolls its own pane, not the page
+
+A twelve-bar piece lays out over several systems and the staff pane is 320 px, so a marker
+below the fold marks nothing. OSMD has its own `followCursor`, but it calls
+`scrollIntoView({ block: 'center' })`, which centres the cursor in _every_ scrollable
+ancestor — including the document, so each note played would drag the whole page about,
+and the keyboard is already the element that falls off the bottom. It is left off, and the
+seek calls `scrollIntoView({ block: 'nearest' })` on the cursor element itself instead:
+that scrolls the pane only as far as it must, and does nothing at all while the marker is
+already visible.

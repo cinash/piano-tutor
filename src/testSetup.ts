@@ -7,5 +7,15 @@ vi.mock('opensheetmusicdisplay', () => ({
   OpenSheetMusicDisplay: class {
     load = () => Promise.resolve({});
     render = () => {};
+    // A cursor already at the end of a score with no notes in it: the seek reaches for
+    // these, and there is nothing here for it to walk through.
+    cursor = {
+      hide: () => {},
+      show: () => {},
+      reset: () => {},
+      next: () => {},
+      iterator: { EndReached: true },
+      cursorElement: { scrollIntoView: () => {} },
+    };
   },
 }));

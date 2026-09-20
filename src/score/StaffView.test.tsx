@@ -5,7 +5,7 @@ import { StaffView } from './StaffView';
 
 // OSMD is stubbed in jsdom (src/testSetup.ts), so this can only assert the container.
 it('renders the staff container', () => {
-  render(<StaffView />);
+  render(<StaffView targetStartTime={0} />);
 
   screen.getByTestId('staff');
 });
