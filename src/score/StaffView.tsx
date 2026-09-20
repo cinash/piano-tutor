@@ -7,12 +7,13 @@ import { cichaNocXml } from './cichaNoc';
 export interface StaffViewProps {
   /**
    * Where to mark, in quarter-note beats from the start of the piece — the `startTime`
-   * of the event the engine is waiting for, or `undefined` once the piece is finished.
+   * of the event the engine is waiting for, or where a running demo has reached, or
+   * `undefined` once the piece is finished.
    */
   targetStartTime: number | undefined;
 }
 
-/** The notation, drawn from the raw MusicXML, with the cursor on the next note due. */
+/** The notation, drawn from the raw MusicXML, with the cursor on the marked position. */
 export function StaffView({ targetStartTime }: StaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Null until the first render() has run, because that is what creates the cursor.

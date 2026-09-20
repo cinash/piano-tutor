@@ -56,7 +56,8 @@ describe('buildDemoSchedule', () => {
     expect(buildDemoSchedule(withAGap, BPM)).toEqual([
       { atMs: 0, startTime: 0, pitches: new Set([60]) },
       // The silence carries the end of the note it closes, one beat before the next
-      // event begins, so the cursor spends the gap on the note coming next.
+      // event begins, so the cursor moves with the music rather than staying on a note
+      // that has stopped sounding.
       { atMs: 1000, startTime: 1, pitches: new Set() },
       { atMs: 2000, startTime: 2, pitches: new Set([62]) },
       { atMs: 3000, startTime: 3, pitches: new Set() },

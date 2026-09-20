@@ -45,7 +45,8 @@ export function buildDemoSchedule(score: Score, bpm: number): DemoStep[] {
     // is what sounds one event at a time. parseScore drops rests, so the gap itself
     // survives only as this arithmetic.
     if (endTime < nextStartTime) {
-      // At the event's end, so the cursor spends the gap on the note coming next.
+      // At the event's end, so the cursor moves off the note that has stopped sounding
+      // and onto whatever the score writes there — the rest itself, where there is one.
       steps.push({ atMs: endTime * msPerBeat, startTime: endTime, pitches: NOTHING });
     }
   });

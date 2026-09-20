@@ -49,8 +49,8 @@ by the same path that already restores the keyboard.
 - **`DemoStep` carries where it is, not only when.** Add `startTime: number`, in
   quarter-note beats from the start of the piece, beside the existing `atMs`. A step that
   sounds an event carries that event's `startTime`; the step of silence that closes an event
-  carries the event's end, so that during a gap the cursor sits on the note coming next —
-  which is what the practice cursor does at a rest.
+  carries the event's end, so that the cursor moves off a note that has stopped sounding
+  rather than sitting on it through the gap.
 
 - **`DemoPlayer` reports the step rather than the pitches.** The callback becomes
   `(step: DemoStep | null) => void`; `null` still means the schedule ran out and still ends

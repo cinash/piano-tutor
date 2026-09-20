@@ -92,6 +92,11 @@ export function App() {
   // score's identity across renders, and filtering 41 events costs nothing.
   const score = filterScoreByHand(cichaNocScore, hands);
 
+  // Where the demo has reached while one plays, so the cursor follows it; the note the
+  // engine is waiting for otherwise. The filtered score, which nextEventIndex indexes.
+  const staffTarget =
+    demoStep?.startTime ?? score.events[view.engine.nextEventIndex]?.startTime;
+
   const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);
   const connectedDeviceIdRef = useRef<string | null>(null);
@@ -150,8 +155,7 @@ export function App() {
     // Both set before start() has finished looking for the port, so a second click
     // stops this demo rather than starting another and the button reads "Stop" at once.
     demoRef.current = player;
-    // Nothing sounding yet, and at the beginning of the piece, which is where the demo
-    // is about to start.
+    // Nothing sounding yet, at the start of the piece where the demo is about to begin.
     setDemoStep({ atMs: 0, startTime: 0, pitches: new Set() });
     void player.start();
   }
@@ -360,13 +364,7 @@ export function App() {
           </button>
         </>
       )}
-      {/* Where the demo has reached while one plays, so the cursor follows it; the
-          filtered score otherwise, because nextEventIndex indexes that list. */}
-      <StaffView
-        targetStartTime={
-          demoStep?.startTime ?? score.events[view.engine.nextEventIndex]?.startTime
-        }
-      />
+      <StaffView targetStartTime={staffTarget} />
       <LoopPicker
         measureCount={score.measureCount}
         loop={view.engine.loop}
