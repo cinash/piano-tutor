@@ -159,10 +159,7 @@ describe('listening to the piece', () => {
     });
   }
 
-  afterEach(() => {
-    vi.useRealTimers();
-    Reflect.deleteProperty(navigator, 'requestMIDIAccess');
-  });
+  afterEach(() => vi.useRealTimers());
 
   it('plays the piece out of the piano, note-off before note-on where a pitch repeats', async () => {
     const output = new FakeMidiOutput('Digital Piano MIDI 1');

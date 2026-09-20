@@ -34,7 +34,7 @@ export async function listMidiInputs(): Promise<MidiInputDescriptor[]> {
 }
 
 /** The kernel's ALSA loopback, present on every Linux desktop and sounding nothing. */
-const LOOPBACK_NAME = /^midi through/i;
+const LOOPBACK_NAME_PATTERN = /^midi through/i;
 
 /**
  * The port to play the demo through, or null when there is nothing to play through: no
@@ -42,11 +42,8 @@ const LOOPBACK_NAME = /^midi through/i;
  * no output port but the loopback. The demo runs silently on a null, so nothing
  * downstream asks which of those it was, and none of them is an error to report.
  *
- * `preferredName` is the input the player already selected. The instrument exposes the
- * same names on both sides, so that one choice names the output too and the app needs no
- * second dropdown. Failing a match — a host whose two sides differ, or the virtual
- * keyboard and replay sources, which chose no device — any port of the instrument's own
- * sounds, so the first that is not the loopback is a bounded guess.
+ * `preferredName` is the input the player already selected; this instrument carries the
+ * same names on both sides, so that one choice names the output too — see `DECISIONS.md`.
  */
 export async function findMidiOutput(
   preferredName: string | null,
@@ -56,7 +53,7 @@ export async function findMidiOutput(
     const outputs = Array.from(access.outputs.values());
     const port =
       outputs.find((output) => output.name === preferredName) ??
-      outputs.find((output) => !LOOPBACK_NAME.test(output.name ?? ''));
+      outputs.find((output) => !LOOPBACK_NAME_PATTERN.test(output.name ?? ''));
     if (!port) return null;
     await port.open();
     return port;

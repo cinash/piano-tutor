@@ -67,18 +67,15 @@ describe('findMidiOutput', () => {
     const outputs = hostOutputs();
     stubRequestMidiAccess(fakeMidiAccess({ outputs }));
 
-    const port = await findMidiOutput('Digital Piano MIDI 1');
-
-    expect(port?.name).toBe('Digital Piano MIDI 1');
-    expect(outputs.map((output) => output.opened)).toEqual([false, true, false]);
-  });
-
-  it('takes the other port of the same instrument when that is the one selected', async () => {
-    stubRequestMidiAccess(fakeMidiAccess({ outputs: hostOutputs() }));
-
+    // MIDI 2 rather than MIDI 1, so that matching the name has to beat the fallback,
+    // which would answer MIDI 1 whichever port was selected.
     const port = await findMidiOutput('Digital Piano MIDI 2');
 
     expect(port?.name).toBe('Digital Piano MIDI 2');
+    // Opening a port claims the ALSA device exclusively; the rest are left alone.
+    expect(
+      outputs.filter((output) => output.opened).map((output) => output.name),
+    ).toEqual(['Digital Piano MIDI 2']);
   });
 
   it('falls back to a piano port, never the loopback, when no device was selected', async () => {

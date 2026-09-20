@@ -39,10 +39,10 @@ update it at the end of each step.
    thinner texture than the printed music, since one event sounds at a time (see
    `DECISIONS.md`), and say whether 66 BPM is slow enough for a child to follow along.
    Press "Stop" mid-piece and confirm the instrument falls silent at once, with no note
-   left sounding, and that "Attempts" gained nothing from the demonstration. The piano
-   must be selected in the dropdown for any of this to sound, since the demo plays out of
-   the output named after it; `Midi Through` sitting in the port list alongside the two
-   `Digital Piano` ports no longer stops it.
+   left sounding, and that "Attempts" gained nothing from the demonstration. With the piano
+   selected in the dropdown the demo plays out of the output of that same name, and
+   `Midi Through` sitting in the port list beside the two `Digital Piano` ports no longer
+   stops any of it.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was
