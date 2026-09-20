@@ -101,6 +101,24 @@ describe('PianoKeyboard', () => {
     expect(hand(60)).toBeNull(); // not expected at all
   });
 
+  it('names every white key and leaves the black keys bare', () => {
+    const { container } = render(
+      <PianoKeyboard
+        lowNote={60}
+        highNote={72}
+        heldNotes={new Set()}
+        expectedNotes={[]}
+      />,
+    );
+    const labels = (color: 'white' | 'black') =>
+      Array.from(container.querySelectorAll(`.piano-key--${color}`)).map(
+        (key) => key.textContent,
+      );
+
+    expect(labels('white')).toEqual(['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']);
+    expect(labels('black')).toEqual(['', '', '', '', '']);
+  });
+
   it('labels the two hand colours beside the keyboard', () => {
     const { getByText } = render(
       <PianoKeyboard

@@ -96,6 +96,28 @@ Held still wins over both hand colours, for the reason in the entry above. Such 
 keeps reporting its `data-hand` regardless: the attribute tracks the lookup, the colour
 tracks what you are doing.
 
+## Key labels are sharps only, and only on the white keys
+
+`noteName` has the MIDI number and nothing else to work from, so every black key it
+names is a sharp. That is a limitation rather than a preference: `parseScore.ts` reads
+the MusicXML spelling to compute a pitch and then discards it, so by the time a number
+reaches the keyboard nothing remains to say whether the composer wrote B♭ or A♯, and in
+a flat key the app would print A♯ over the score's B♭. Fixing it means carrying the
+spelling through the parser and onto `Note`, which is a step of its own with its own
+parser tests, and was not smuggled into this one. It stays latent for now — no black key
+is labelled — but it is the first thing to settle for anything that names one.
+
+The labels go on the white keys and nowhere else. A black key is about 27px wide at the
+default four-octave preset, which does not hold `C♯4`, and truncating it to `C♯` would
+sit an unoctaved label beside octaved ones; a black key's identity is read off its white
+neighbours, which is how it is found on the real instrument too. They stay on at every
+preset, 88 keys included, where a white key is about 24px — narrower than the black keys
+this declined to label. That is deliberate: two characters fit 24px where four do not,
+and a player who picks the whole instrument is not asking for a subset of its labels.
+There is no width threshold hiding them and no switch turning them off. If they turn out
+to be unreadable or to be clutter, that is a real observation, and the answer is the
+label's size or orientation rather than its absence.
+
 ## `VirtualKeyboardSource` key mapping
 
 Two overlapping octave rows of the QWERTY layout, keyed by `KeyboardEvent.code` so it's

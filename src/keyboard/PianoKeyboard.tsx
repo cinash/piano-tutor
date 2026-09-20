@@ -1,6 +1,7 @@
 import './PianoKeyboard.css';
 import type { Note } from '../score/types';
 import { computeKeyboardLayout } from './keyboardLayout';
+import { noteName } from './noteName';
 
 export interface PianoKeyboardProps {
   lowNote: number;
@@ -39,7 +40,10 @@ export function PianoKeyboard({
               data-hand={expected?.hand}
               className={`piano-key piano-key--${key.color}${stateClass}`}
               style={{ left: `${key.leftPercent}%`, width: `${key.widthPercent}%` }}
-            />
+            >
+              {/* White keys only — see DECISIONS.md. */}
+              {key.color === 'white' && noteName(key.note)}
+            </div>
           );
         })}
       </div>
