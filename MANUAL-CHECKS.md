@@ -31,7 +31,10 @@ update it at the end of each step.
    short loop range, play through it several times, and confirm it wraps back to the
    range's start correctly each time without losing that same "no timeout" behavior at
    the wrap point. Finally, mid-piece, press "Restart" and confirm playback returns to
-   the first note with the piano still connected and the loop range unchanged.
+   the first note with the piano still connected and the loop range unchanged. Then
+   select "Left hand", play a short loop through, and confirm the right hand's notes are
+   neither shown nor waited for; switch back to "Both hands" and confirm the attempt
+   restarted and the full texture came back.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was

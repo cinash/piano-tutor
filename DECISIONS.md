@@ -444,3 +444,39 @@ alone, and re-sorts newest first so an imported record can't land out of the ord
 `AttemptHistory` promises. Merging is what makes carrying a file between the host Chrome and
 the tailnet deploy non-destructive: neither side loses what the other never saw, and
 importing the same file twice changes nothing.
+
+## Practising one hand filters the score, not the engine
+
+Left/right/both narrows a copy of the `Score` — each event's notes cut to the selected
+hand, and events left with nothing dropped — and hands that to the unchanged engine.
+The alternative, a `hands` field on `EngineState` and a filter inside `advance()`, would
+have to be agreed on by `advance`, `nextIndexAfter`, the early-note grace and
+`practiceView`'s wrong-note check, and it has a stall in it: an event belonging entirely
+to the other hand leaves `expectedPitches` empty, nothing matches it, and `advance()`
+never moves past it. That stall hides, which is what makes it worth writing down —
+`completeCurrentEvent` tests `expectedPitches.every(...)`, true of an empty array, so
+completing a real event recurses straight past the empty ones after it and mid-piece the
+thing looks like it works. Only index 0 — the first event of an attempt, at start or
+after Restart — hangs. Dropping the emptied events means that state cannot occur.
+
+Filtering the score also takes the other hand out of the finger queue for free: those
+notes are no longer in the events it renders. `measureCount` is deliberately untouched,
+so the position readout still counts twelve bars when you practise one hand of them.
+
+## Changing hands restarts the attempt
+
+`nextEventIndex` is an index into the event list, and each hand's filtered list is a
+different list — holding the number across a change would land on a different note. So
+the hand radios call `restartPractice`, the same path the Restart button uses, which
+zeroes the counters and therefore closes the open attempt record through the
+write-through effect above. There is no second reset path.
+
+## One-hand attempts are recorded indistinguishably from two-hand ones
+
+`AttemptRecord` says nothing about which hand was practised, so the history's accuracy
+column now mixes two things it does not label: twelve left-hand notes at 100% sits
+beside forty-one two-hand notes at 100% and reads the same. That is the price of leaving
+the `localStorage` schema alone — `isAttemptRecordArray` validates field by field, so a
+`hands` field added without tolerating its absence would reject every record already
+stored and every file step 8 has exported. Known trade, not a bug; recording the hand is
+its own step if the mixing turns out to matter.
