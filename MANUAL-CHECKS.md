@@ -34,7 +34,12 @@ update it at the end of each step.
    the first note with the piano still connected and the loop range unchanged. Then
    select "Left hand", play a short loop through, and confirm the right hand's notes are
    neither shown nor waited for; switch back to "Both hands" and confirm the attempt
-   restarted and the full texture came back.
+   restarted and the full texture came back. Then press "Listen" and confirm the piano
+   itself plays Cicha Noc while the on-screen keys light up in time with it — expect a
+   thinner texture than the printed music, since one event sounds at a time (see
+   `DECISIONS.md`), and say whether 66 BPM is slow enough for a child to follow along.
+   Press "Stop" mid-piece and confirm the instrument falls silent at once, with no note
+   left sounding, and that "Attempts" gained nothing from the demonstration.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was

@@ -20,6 +20,7 @@ import { downloadRecording } from './midi/recording';
 import type { MidiEvent, MidiSource } from './midi/types';
 import { FallingNotes } from './practice/FallingNotes';
 import { LoopPicker } from './practice/LoopPicker';
+import { DEMO_BPM, DemoPlayer, buildDemoSchedule } from './practice/demo';
 import { formatPosition } from './practice/positionReadout';
 import { toPracticeStateSnapshot } from './practice/practiceState';
 import {
@@ -83,6 +84,8 @@ export function App() {
     DEFAULT_KEYBOARD_PRESET,
   );
   const [hands, setHands] = useState<HandSelection>('both');
+  // What the demo is sounding, and null when no demo is running.
+  const [demoNotes, setDemoNotes] = useState<ReadonlySet<number> | null>(null);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 41 events costs nothing.
@@ -93,11 +96,16 @@ export function App() {
   const connectedDeviceIdRef = useRef<string | null>(null);
   const recordedEventsRef = useRef<MidiEvent[]>([]);
   const isRecordingRef = useRef(false);
+  const demoRef = useRef<DemoPlayer | null>(null);
   // handleEvent is registered once, at attach() time, so it can't close over the score
   // of the render that changed the hand — it reads the current one through this ref.
   const scoreRef = useRef(score);
 
   function handleEvent(event: MidiEvent) {
+    // Listening is not practising: without this, a child playing along with the demo
+    // would have every note recorded as an attempt, and most of them wrong. Like
+    // isRecordingRef, a ref because handleEvent is registered once, at attach() time.
+    if (demoRef.current) return;
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
     setView((prev) => advancePracticeView(prev, scoreRef.current, event, event.time));
   }
@@ -110,16 +118,44 @@ export function App() {
     setView(restartPractice);
   }
 
+  // Stable: disconnect() and the unmount cleanup below both depend on it.
+  const stopDemo = useCallback(() => {
+    demoRef.current?.stop();
+    demoRef.current = null;
+    setDemoNotes(null);
+  }, []);
+
   function handleHandsChange(next: HandSelection) {
     setHands(next);
+    stopDemo();
     // nextEventIndex indexes the event list, and the other hand's is a different list,
     // so the same number would be a different note — start the attempt again.
     setView(restartPractice);
   }
 
+  function handleListen() {
+    if (demoRef.current) {
+      stopDemo();
+      return;
+    }
+    // The filtered score, so "Left hand" plus Listen demonstrates the left hand alone.
+    // A null is the schedule running out, and ends the demo the same way Stop does.
+    const player = new DemoPlayer(buildDemoSchedule(score, DEMO_BPM), (pitches) =>
+      pitches ? setDemoNotes(pitches) : stopDemo(),
+    );
+    // Both set before start() has finished looking for the port, so a second click
+    // stops this demo rather than starting another and the button reads "Stop" at once.
+    demoRef.current = player;
+    setDemoNotes(new Set());
+    void player.start();
+  }
+
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  // A demo left running past unmount would leave the instrument sounding.
+  useEffect(() => stopDemo, [stopDemo]);
 
   useEffect(() => {
     if (import.meta.env.DEV) window.__practiceState = toPracticeStateSnapshot(view);
@@ -170,6 +206,7 @@ export function App() {
     nextStatus: ActiveSource,
     deviceId: string | null = null,
   ) {
+    stopDemo();
     sourceRef.current?.stop();
     sourceRef.current = source;
     connectedDeviceIdRef.current = deviceId;
@@ -187,12 +224,13 @@ export function App() {
   // Stable because the device-list effect below depends on it; every other handler
   // here is only ever called from a JSX event and doesn't need referential stability.
   const disconnect = useCallback(() => {
+    stopDemo();
     sourceRef.current?.stop();
     sourceRef.current = null;
     connectedDeviceIdRef.current = null;
     setView(createInitialPracticeViewState());
     setActive({ kind: 'none' });
-  }, []);
+  }, [stopDemo]);
 
   function connectWebMidi(deviceId: string) {
     const device = webMidiInputs.find((input) => input.id === deviceId);
@@ -307,9 +345,14 @@ export function App() {
         </button>
       )}
       {active.kind !== 'none' && (
-        <button type="button" onClick={handleRestart} data-testid="restart-practice">
-          Restart
-        </button>
+        <>
+          <button type="button" onClick={handleRestart} data-testid="restart-practice">
+            Restart
+          </button>{' '}
+          <button type="button" onClick={handleListen} data-testid="listen-to-piece">
+            {demoNotes ? 'Stop' : 'Listen'}
+          </button>
+        </>
       )}
       {/* The filtered score, not cichaNocScore: nextEventIndex indexes this list. */}
       <StaffView targetStartTime={score.events[view.engine.nextEventIndex]?.startTime} />
@@ -350,11 +393,13 @@ export function App() {
         selected={keyboardPreset}
         onChange={setKeyboardPreset}
       />
+      {/* While the demo runs the keyboard shows what is sounding and nothing else:
+          the keys the engine waits for would be a second instruction at the same time. */}
       <PianoKeyboard
         lowNote={keyboardPreset.low}
         highNote={keyboardPreset.high}
-        heldNotes={view.engine.heldNotes}
-        expectedNotes={notesAt(score, view.engine.nextEventIndex)}
+        heldNotes={demoNotes ?? view.engine.heldNotes}
+        expectedNotes={demoNotes ? [] : notesAt(score, view.engine.nextEventIndex)}
       />
       <AttemptHistory records={attempts} />
       <div>
