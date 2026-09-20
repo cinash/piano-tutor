@@ -63,6 +63,18 @@ explains.
 Both are worth doing after step 10, which answers the same complaint for a fraction of the
 cost.
 
+## Planned — making room for it
+
+| Step                           | What it adds                              |
+| ------------------------------ | ----------------------------------------- |
+| [17](step17.md) Fold the queue | A control that puts the finger queue away |
+
+Step 15's consequence rather than a new idea: with 320 px of staff on screen the column no
+longer fits a laptop window, and the on-screen keyboard — the one element that has to be
+visible while the hands are on the real piano — is the thing that falls off the bottom. Asked
+for by the player as soon as the staff landed. It depends on step 15 only for the reason it
+exists, so it can be built before or after step 16.
+
 ## Deliberately not planned
 
 **Tempo and speed control.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo
