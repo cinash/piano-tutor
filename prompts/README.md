@@ -45,15 +45,25 @@ keyboard, taken once the element is finished rather than updated by each step th
 Step 10 is the one that matters. If only one of these six is ever built, build that one:
 it is what turns the app from a display into a tutor. The rest are refinement.
 
-## Deliberately not planned
+## Planned — the notation
 
-**Sheet music.** The staff is the one flowkey feature with no cheap route, and the reason is
-structural: `Score` drops rests and resolves ties into single events, so notation cannot be
-rendered from it. It needs either OpenSheetMusicDisplay re-reading `cicha-noc.musicxml` at
-runtime, or a second parse feeding VexFlow — a large pinned dependency against a 226 KB bundle,
-plus reconciling OSMD's cursor with `nextEventIndex`. Worth doing deliberately, with its own
-prompt and a measured bundle size. Not worth smuggling into one of the steps above, and not
-worth doing before step 10, which solves the same problem for a fraction of the cost.
+The other half of the same complaint: steps 9–14 make the screen say which key to press, and
+these two make it show what is written.
+
+| Step                         | What it adds                                     |
+| ---------------------------- | ------------------------------------------------ |
+| [15](step15.md) The staff    | OpenSheetMusicDisplay draws `cicha-noc.musicxml` |
+| [16](step16.md) Staff cursor | The marker follows `nextEventIndex`              |
+
+**Split on purpose, and in this order.** Step 15 carries the dependency and the bundle
+measurement, so a renderer that proves too heavy is found before step 16's mapping is written
+rather than after. Step 16 carries the only hard problem in the pair, which `step16.md`
+explains.
+
+Both are worth doing after step 10, which answers the same complaint for a fraction of the
+cost.
+
+## Deliberately not planned
 
 **Tempo and speed control.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo
 is out of scope by decision in `step5.md`. Wanting it back is a decision to reverse in the
