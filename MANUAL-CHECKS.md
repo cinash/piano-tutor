@@ -39,7 +39,10 @@ update it at the end of each step.
    thinner texture than the printed music, since one event sounds at a time (see
    `DECISIONS.md`), and say whether 66 BPM is slow enough for a child to follow along.
    Press "Stop" mid-piece and confirm the instrument falls silent at once, with no note
-   left sounding, and that "Attempts" gained nothing from the demonstration.
+   left sounding, and that "Attempts" gained nothing from the demonstration. The piano
+   must be selected in the dropdown for any of this to sound, since the demo plays out of
+   the output named after it; `Midi Through` sitting in the port list alongside the two
+   `Digital Piano` ports no longer stops it.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was
@@ -53,3 +56,7 @@ update it at the end of each step.
     sit on the note you are being asked for, still sit on the right one several bars
     later rather than having slipped a note, and go back to the beginning on Restart and
     at every wrap of the loop.
+
+Close the browser tab before using `amidi` or `aplaymidi` on the host, and quit those
+before going back to the browser: a page holding a Web MIDI port locks the ALSA device,
+and whichever side comes second reports `Device or resource busy`.

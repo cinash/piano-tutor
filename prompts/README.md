@@ -16,6 +16,7 @@ for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano ca
 | [6](step6.md) Restart           | Restart, and what one attempt contains              |
 | [7](step7.md) History           | `localStorage` attempts, newest first               |
 | [8](step8.md) Progress transfer | Export and import the history as JSON               |
+| [17](step17.md) Listen          | Keys lighting up to the piece; the sound took 19    |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -63,18 +64,6 @@ explains.
 Both are worth doing after step 10, which answers the same complaint for a fraction of the
 cost.
 
-## Planned next — hearing it first
-
-| Step                   | What it adds                                      |
-| ---------------------- | ------------------------------------------------- |
-| [17](step17.md) Listen | The piano plays the piece while the keys light up |
-
-Asked for by the players, who are children, and the highest priority on this list: the app
-waits for a piece it has never demonstrated, so a child who does not know Cicha Noc has
-nothing to copy. The sound comes from the instrument itself over MIDI out rather than from
-any audio in the app, which is why the suite can only prove that the keys light up — and why
-`step17.md` opens with a hardware check for the owner to run at the piano.
-
 ## Planned — making room for the staff
 
 | Step                           | What it adds                              |
@@ -86,6 +75,19 @@ longer fits a laptop window, and the on-screen keyboard — the one element that
 visible while the hands are on the real piano — is the thing that falls off the bottom. Asked
 for by the player as soon as the staff landed. It depends on step 15 only for the reason it
 exists, so it can be built before or after step 16.
+
+## Planned — making Listen audible
+
+| Step                        | What it repairs                               |
+| --------------------------- | --------------------------------------------- |
+| [19](step19.md) Output port | The demo reaches the piano instead of nowhere |
+
+Step 17 shipped the highlighting and the right note-on and note-off bytes, but chose the
+output port by a rule no Linux host can satisfy: the sole output, where the ALSA loopback
+`Midi Through` is always present and the piano offers two ports of its own besides. The
+lookup therefore gave up and answered null, which is defined — correctly — as "play the
+schedule silently", so the keys lit up, nothing was reported and `npm run ci` stayed green
+over a demo nobody could hear. A repair rather than a feature: nothing on screen changes.
 
 ## Deliberately not planned
 

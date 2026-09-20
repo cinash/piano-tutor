@@ -1,8 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { FakeMidiInput, fakeMidiAccess, stubRequestMidiAccess } from './fakeMidiAccess';
+import {
+  FakeMidiInput,
+  FakeMidiOutput,
+  fakeMidiAccess,
+  stubRequestMidiAccess,
+} from './fakeMidiAccess';
 import type { MidiEvent } from './types';
-import { WebMidiSource, isWebMidiSupported, listMidiInputs } from './WebMidiSource';
+import {
+  WebMidiSource,
+  findMidiOutput,
+  isWebMidiSupported,
+  listMidiInputs,
+} from './WebMidiSource';
 
 /** Connects a WebMidiSource to a fresh fake input and starts collecting its events. */
 async function connectedSource() {
@@ -39,6 +49,69 @@ describe('listMidiInputs', () => {
     await expect(listMidiInputs()).resolves.toEqual([
       { id: 'id-1', name: 'Yamaha P-145', state: 'connected' },
     ]);
+  });
+});
+
+/**
+ * The owner's host, as ALSA presents it: the kernel loopback alongside the instrument's
+ * own two ports, all three surfaced to Web MIDI under the same names on the input side.
+ * Three outputs rather than one is why the sole-output rule this replaced never fired.
+ */
+const hostOutputs = () =>
+  ['Midi Through Port-0', 'Digital Piano MIDI 1', 'Digital Piano MIDI 2'].map(
+    (name) => new FakeMidiOutput(name),
+  );
+
+describe('findMidiOutput', () => {
+  it('opens and returns the output named after the input the player selected', async () => {
+    const outputs = hostOutputs();
+    stubRequestMidiAccess(fakeMidiAccess({ outputs }));
+
+    const port = await findMidiOutput('Digital Piano MIDI 1');
+
+    expect(port?.name).toBe('Digital Piano MIDI 1');
+    expect(outputs.map((output) => output.opened)).toEqual([false, true, false]);
+  });
+
+  it('takes the other port of the same instrument when that is the one selected', async () => {
+    stubRequestMidiAccess(fakeMidiAccess({ outputs: hostOutputs() }));
+
+    const port = await findMidiOutput('Digital Piano MIDI 2');
+
+    expect(port?.name).toBe('Digital Piano MIDI 2');
+  });
+
+  it('falls back to a piano port, never the loopback, when no device was selected', async () => {
+    stubRequestMidiAccess(fakeMidiAccess({ outputs: hostOutputs() }));
+
+    const port = await findMidiOutput(null);
+
+    expect(port?.name).toBe('Digital Piano MIDI 1');
+  });
+
+  it('falls back the same way when no output carries the selected name', async () => {
+    stubRequestMidiAccess(fakeMidiAccess({ outputs: hostOutputs() }));
+
+    const port = await findMidiOutput('Some Other Piano');
+
+    expect(port?.name).toBe('Digital Piano MIDI 1');
+  });
+
+  it('answers null when the loopback is the only output', async () => {
+    const loopback = new FakeMidiOutput('Midi Through Port-0');
+    stubRequestMidiAccess(fakeMidiAccess({ outputs: [loopback] }));
+
+    await expect(findMidiOutput(null)).resolves.toBeNull();
+    expect(loopback.opened).toBe(false);
+  });
+
+  it('answers null when the browser refuses MIDI access', async () => {
+    Object.defineProperty(navigator, 'requestMIDIAccess', {
+      value: () => Promise.reject(new Error('permission denied')),
+      configurable: true,
+    });
+
+    await expect(findMidiOutput('Digital Piano MIDI 1')).resolves.toBeNull();
   });
 });
 

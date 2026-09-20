@@ -140,8 +140,11 @@ export function App() {
     }
     // The filtered score, so "Left hand" plus Listen demonstrates the left hand alone.
     // A null is the schedule running out, and ends the demo the same way Stop does.
-    const player = new DemoPlayer(buildDemoSchedule(score, DEMO_BPM), (pitches) =>
-      pitches ? setDemoNotes(pitches) : stopDemo(),
+    const player = new DemoPlayer(
+      buildDemoSchedule(score, DEMO_BPM),
+      // The selected input's name is the output's name too, on this instrument.
+      active.kind === 'webmidi' ? active.deviceName : null,
+      (pitches) => (pitches ? setDemoNotes(pitches) : stopDemo()),
     );
     // Both set before start() has finished looking for the port, so a second click
     // stops this demo rather than starting another and the button reads "Stop" at once.

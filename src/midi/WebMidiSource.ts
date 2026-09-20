@@ -33,22 +33,33 @@ export async function listMidiInputs(): Promise<MidiInputDescriptor[]> {
   }));
 }
 
+/** The kernel's ALSA loopback, present on every Linux desktop and sounding nothing. */
+const LOOPBACK_NAME = /^midi through/i;
+
 /**
  * The port to play the demo through, or null when there is nothing to play through: no
  * Web MIDI, a permission the player denied — which is what every Playwright run is — or
- * no output port at all. The demo runs silently on a null, so nothing downstream asks
- * which of those it was, and none of them is an error to report.
+ * no output port but the loopback. The demo runs silently on a null, so nothing
+ * downstream asks which of those it was, and none of them is an error to report.
+ *
+ * `preferredName` is the input the player already selected. The instrument exposes the
+ * same names on both sides, so that one choice names the output too and the app needs no
+ * second dropdown. Failing a match — a host whose two sides differ, or the virtual
+ * keyboard and replay sources, which chose no device — any port of the instrument's own
+ * sounds, so the first that is not the loopback is a bounded guess.
  */
-export async function findMidiOutput(): Promise<MIDIOutput | null> {
+export async function findMidiOutput(
+  preferredName: string | null,
+): Promise<MIDIOutput | null> {
   try {
     const access = await getMidiAccess();
     const outputs = Array.from(access.outputs.values());
-    // One output port is taken to be the piano's own. Several — a soft synth, a
-    // loopback bus — are an ambiguity this app does not resolve: it asks the player
-    // for their piano once, in the input dropdown, and adds no second one.
-    if (outputs.length !== 1) return null;
-    await outputs[0].open();
-    return outputs[0];
+    const port =
+      outputs.find((output) => output.name === preferredName) ??
+      outputs.find((output) => !LOOPBACK_NAME.test(output.name ?? ''));
+    if (!port) return null;
+    await port.open();
+    return port;
   } catch {
     return null;
   }
