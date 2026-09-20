@@ -255,6 +255,13 @@ version of the same regression test carries, in its own comment, the one fact th
 makes it discriminating rather than accidentally passing either way (m2 b1 repeats
 m1 b1's exact chord).
 
+## `nextEventIndex` is allowed past the last event, and `status` is the guard
+
+A completed piece leaves `nextEventIndex` one past the end of `score.events`, so anything
+reading the current event must branch on `status === 'complete'` first rather than index
+and hope — `formatPosition` (`src/practice/positionReadout.ts`) does, and `notesAt` takes
+the same fact as its empty-list case.
+
 ## `window.__practiceState` only carries what a Layer 3 test needs
 
 The snapshot (`src/practice/practiceState.ts`) is `nextEventIndex`, `heldNotes` and the
