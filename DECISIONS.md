@@ -35,6 +35,13 @@ note(s) and shift the queue only when the engine advances — no `requestAnimati
 no continuous scroll, no clock dependency. This keeps the view a pure re-render on state
 change rather than introducing timing concerns for a feature that isn't being built yet.
 
+Step 17's Listen demo does run on a clock, and that is not the slider coming back. It
+plays at one constant, `DEMO_BPM`, tuned by ear and left alone; the clock exists only
+while the demo is playing, and practice itself is still untimed and still waits forever.
+The constant lives in the demo's own module rather than in `src/config.ts`, which holds
+the presets the player can change — a demo constant sitting there would read as a knob
+somebody had forgotten to wire up.
+
 ## On-screen keyboard width is a player-configurable preset, not derived from the score
 
 Offered a choice between a fixed four octaves, a fixed five and a fixed 88, the player
@@ -601,3 +608,70 @@ and the keyboard is already the element that falls off the bottom. It is left of
 seek calls `scrollIntoView({ block: 'nearest' })` on the cursor element itself instead:
 that scrolls the pane only as far as it must, and does nothing at all while the marker is
 already visible.
+
+## The demo is played by the piano; the app makes no sound of its own
+
+Offered a Web Audio synth, a sampled-piano dependency and the instrument itself, the player
+chose the instrument. "Listen" therefore sends note-on and note-off to the piano's MIDI
+_output_ port, and the app gains no audio code and no new dependency. What makes that
+buildable in a container that never talks to the piano is that it splits in two: the sound
+is optional and the highlighting is not.
+
+So `findMidiOutput()` answers `MIDIOutput | null`, and every way of having no port is that
+same answer — no Web MIDI at all, a permission the player denied (which is what every
+Playwright run is), or a host with no output port. A null plays the demo silently. It is
+not an error and does not reach the `role="alert"` line: pressing Listen with no piano
+attached is a normal thing to do, and the control is neither hidden nor disabled for it.
+
+## Listening is not practising
+
+The demo never touches `PracticeViewState` — not `nextEventIndex`, not the wrong-note set,
+not the attempt counters — so nothing of it reaches `AttemptHistory`. While it runs,
+incoming MIDI is dropped before it reaches `advancePracticeView`: a child playing along
+with the demonstration would otherwise have every note recorded as an attempt, and most of
+them counted wrong, since the engine is still waiting where they stopped. Stop the demo,
+then play.
+
+The flag that drops the input is a ref rather than state because `handleEvent` is
+registered once, at `attach()` time, and would otherwise go on reading the value it closed
+over — `isRecordingRef` is a ref for the same reason. Whatever restarts practice stops the
+demo too: switching hands, connecting a source, unplugging the one that was connected. So
+does unmounting, because a demo outliving the screen would leave the piano sounding.
+
+## Notes are sent as they fall due, never scheduled ahead
+
+Web MIDI's `send(data, timestamp)` would let the whole piece be handed to the browser in
+one go, and Chromium gives no way to take it back — there is no `clear()`. A pre-scheduled
+piece would keep playing out of the instrument after Stop, and after the cable was
+unplugged. A single pending `setTimeout` walks the schedule instead, sending each step as
+it arrives; Stop clears that timer and sends note-off for whatever is sounding, because a
+note left on is the failure a real piano shows. The highlighting needs a timer of its own
+in any case, so pre-scheduling would have meant two schedules to keep in step rather than
+one.
+
+Every boundary sends note-off before note-on, including for a pitch that sounds in both
+steps. Eleven boundaries in Cicha Noc repeat a pitch, and stopping only the departing ones
+would tie the melody's repeated notes into one sustained note on the instrument, while
+on-before-off would silence the new note instead of the old one.
+
+## The demo sounds one event at a time
+
+A chord carries a single `durationBeats` for all its notes — the longest of them, by _Score
+parsing: a chord's `durationBeats` is the longest of its notes_ — so there is no per-note
+duration to play a chord from. So every boundary in the schedule stops every sounding
+pitch before it starts the next event's: a pitch lasts until the next event begins, or
+until its own written end where that comes first. One event sounds at a time, bar 1's
+left-hand chord is released when the melody moves, and the texture is thinner than the
+printed music.
+
+That is the same cue practice already gives. Wait-mode asks for one event at a time and the
+keyboard marks one event at a time, so a demonstration that sustained the accompaniment
+underneath would be showing the player something the rest of the app never asks for. It
+also keeps the note-offs honest: a chord left sounding under the next event would put its
+note-off in the middle of that event's own copy of the pitch.
+
+While the demo plays, the keyboard's `heldNotes` are the demo's and its `expectedNotes` are
+empty. "This key is sounding now" is exactly what `heldNotes` already draws, so no third key
+state, no new attribute and no new precedence rule were needed; and during a demonstration
+the only marks on the keyboard should be what is sounding, not a chord telling the player to
+do something else at the same time.

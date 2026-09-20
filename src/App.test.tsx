@@ -1,7 +1,12 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
+import {
+  FakeMidiOutput,
+  fakeMidiAccess,
+  stubRequestMidiAccess,
+} from './midi/fakeMidiAccess';
 import { cichaNocScore } from './score/cichaNoc';
 
 /**
@@ -35,9 +40,10 @@ function playPerfectly() {
   }
 }
 
-describe('App', () => {
-  beforeEach(() => localStorage.clear());
+// Saved attempts outlive a render, so every test in the file starts with none.
+beforeEach(() => localStorage.clear());
 
+describe('App', () => {
   it('renders the on-screen keyboard, not connected to any source initially', () => {
     render(<App />);
     expect(screen.getByText('Not connected')).toBeDefined();
@@ -105,5 +111,97 @@ describe('App', () => {
         .slice(1)
         .map((cell) => cell.textContent),
     ).toEqual(['whole piece', String(notesPlayed), '0', '100%', 'yes']);
+  });
+});
+
+/** The pitches the on-screen keyboard is showing as sounding, lowest first. */
+function heldPitches(container: HTMLElement) {
+  return Array.from(container.querySelectorAll('[data-held="true"]'))
+    .map((key) => Number(key.getAttribute('data-note')))
+    .sort((a, b) => a - b);
+}
+
+describe('listening to the piece', () => {
+  /**
+   * Connects with real timers — waiting for the status line under fake ones would hang
+   * — then hands the clock over before the demo starts. An output port is optional:
+   * without one the demo plays silently, which is what a host with no piano does.
+   */
+  async function startListening(output?: FakeMidiOutput) {
+    const rendered = await renderConnectedApp();
+    if (output) stubRequestMidiAccess(fakeMidiAccess({ outputs: [output] }));
+    vi.useFakeTimers();
+    // Awaited: start() looks the port up before it plays anything.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listen-to-piece'));
+    });
+    return rendered;
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+    Reflect.deleteProperty(navigator, 'requestMIDIAccess');
+  });
+
+  it('plays the piece out of the piano, note-off before note-on where a pitch repeats', async () => {
+    const output = new FakeMidiOutput();
+    await startListening(output);
+
+    // m1 b1's chord, at the demo's one fixed velocity.
+    expect(output.sent).toEqual([
+      [0x90, 67, 80],
+      [0x90, 48, 80],
+      [0x90, 55, 80],
+    ]);
+
+    act(() => vi.advanceTimersByTime(1364)); // m1 b4, 1.5 beats in at 66 bpm
+
+    // m1 b4 is G4 again: its note-on has to come after the chord's note-off, or the
+    // instrument ties the two G4s into one sustained note.
+    expect(output.sent.slice(3)).toEqual([
+      [0x80, 67, 0],
+      [0x80, 48, 0],
+      [0x80, 55, 0],
+      [0x90, 67, 80],
+    ]);
+  });
+
+  it('silences the instrument on Stop, and sends nothing after it', async () => {
+    const output = new FakeMidiOutput();
+    await startListening(output);
+
+    fireEvent.click(screen.getByTestId('listen-to-piece'));
+
+    expect(output.sent.slice(3)).toEqual([
+      [0x80, 67, 0],
+      [0x80, 48, 0],
+      [0x80, 55, 0],
+    ]);
+
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(output.sent).toHaveLength(6);
+    expect(screen.getByTestId('listen-to-piece').textContent).toBe('Listen');
+  });
+
+  it('leaves practice untouched by a note played while the demo runs', async () => {
+    const { container } = await startListening();
+
+    fireEvent.keyDown(window, { code: 'KeyE' }); // E4, which the piece does not want yet
+
+    const current = screen.getAllByTestId('falling-note-event')[0];
+    expect(current.dataset.eventId).toBe('m1-b1-e1');
+    expect(current.className).not.toContain('falling-note--wrong');
+    expect(screen.queryAllByTestId('attempt-history-row')).toHaveLength(0);
+    expect(heldPitches(container)).toEqual([48, 55, 67]); // the demo's chord, not E4
+  });
+
+  it('plays silently rather than reporting an error when there is no output port', async () => {
+    const { container } = await startListening();
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(heldPitches(container)).toEqual([48, 55, 67]);
+    // Nothing is asked for during a demonstration; the keys shown are the ones sounding.
+    expect(container.querySelectorAll('[data-expected="true"]')).toHaveLength(0);
   });
 });

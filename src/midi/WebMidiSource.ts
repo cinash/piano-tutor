@@ -33,6 +33,27 @@ export async function listMidiInputs(): Promise<MidiInputDescriptor[]> {
   }));
 }
 
+/**
+ * The port to play the demo through, or null when there is nothing to play through: no
+ * Web MIDI, a permission the player denied — which is what every Playwright run is — or
+ * no output port at all. The demo runs silently on a null, so nothing downstream asks
+ * which of those it was, and none of them is an error to report.
+ */
+export async function findMidiOutput(): Promise<MIDIOutput | null> {
+  try {
+    const access = await getMidiAccess();
+    const outputs = Array.from(access.outputs.values());
+    // One output port is taken to be the piano's own. Several — a soft synth, a
+    // loopback bus — are an ambiguity this app does not resolve: it asks the player
+    // for their piano once, in the input dropdown, and adds no second one.
+    if (outputs.length !== 1) return null;
+    await outputs[0].open();
+    return outputs[0];
+  } catch {
+    return null;
+  }
+}
+
 /** Notifies the handler whenever a MIDI device is plugged in or unplugged. */
 export async function subscribeToMidiInputChanges(
   handler: () => void,
