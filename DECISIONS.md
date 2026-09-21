@@ -737,3 +737,28 @@ empty. "This key is sounding now" is exactly what `heldNotes` already draws, so 
 state, no new attribute and no new precedence rule were needed; and during a demonstration
 the only marks on the keyboard should be what is sounding, not a chord telling the player to
 do something else at the same time.
+
+## Folding the finger queue away is view state in `App.tsx`, and never reaches the engine
+
+The queue is a pure view of `score.events` — step 4 built it that way and nothing since has
+given the engine any knowledge that it exists. Folding it is therefore a `useState` in
+`App.tsx` beside `keyboardPreset` and `hands`, the other two view-only pieces of state, and
+`<FallingNotes>` is simply not rendered while it is folded. It is deliberately not part of
+`PracticeViewState`: practice must be identical folded and unfolded, and the failure this
+rules out is a folded queue that quietly stopped an attempt being recorded, or that behaved
+differently from an unfolded one on a wrong note. `App.test.tsx` pins it — the opening
+measure is played through the virtual keyboard twice, folded and unfolded, and the position
+readout and the recorded attempt have to match.
+
+The control sits _below_ the queue rather than above it, joining the position readout and
+the hand radios there for the same screenshot-sliver reason those two already record.
+
+## The folded choice is stored as a string, and anything else reads as unfolded
+
+It lives in `localStorage` under `piano-tutor.queue-folded.v1`, alongside the attempt
+history, because a player who puts the queue away means it and having it come back on every
+refresh is what makes such a control not worth using. `loadQueueFolded()` tests the stored
+string for `'true'`, so a missing key, a cleared store, or anything a different version of
+this app or a hand-edited store might have left there reads as unfolded — the same "anything
+unrecognised means the default" rule `loadAttempts()` follows, reached without a parse step
+because a single boolean does not need one.
