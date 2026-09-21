@@ -8,6 +8,7 @@ import {
   fakeMidiAccess,
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
+import { loadQueueFolded } from './practice/queueFoldStore';
 import { cichaNocScore } from './score/cichaNoc';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
@@ -296,6 +297,10 @@ describe('folding the finger queue away', () => {
     const { unmount } = render(<App />);
     fireEvent.click(screen.getByTestId('fold-queue-checkbox'));
     unmount();
+
+    // Through the store as well as the remount: jsdom cannot reload the page, and a
+    // flag kept in a module-level variable would survive a remount but not a reload.
+    expect(loadQueueFolded()).toBe(true);
 
     render(<App />);
     expect(screen.queryByTestId('falling-notes')).toBeNull();

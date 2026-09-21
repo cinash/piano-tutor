@@ -385,6 +385,8 @@ export function App() {
           hasWrongNote={view.wrongNotes.size > 0}
         />
       )}
+      {/* Below the queue: anything above it shifts the queue by a sub-pixel and its
+          committed screenshots fail on an edge sliver. */}
       <label htmlFor="fold-queue-checkbox">
         <input
           id="fold-queue-checkbox"
@@ -395,8 +397,6 @@ export function App() {
         />{' '}
         Hide the finger queue
       </label>
-      {/* Below the queue: above it, the queue shifts by a sub-pixel and its committed
-          screenshots fail on an edge sliver. */}
       <p data-testid="position-readout">{formatPosition(score, view.engine)}</p>
       {/* Below the queue for the same screenshot reason as the readout above. */}
       <div>

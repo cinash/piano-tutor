@@ -746,9 +746,12 @@ given the engine any knowledge that it exists. Folding it is therefore a `useSta
 `<FallingNotes>` is simply not rendered while it is folded. It is deliberately not part of
 `PracticeViewState`: practice must be identical folded and unfolded, and the failure this
 rules out is a folded queue that quietly stopped an attempt being recorded, or that behaved
-differently from an unfolded one on a wrong note. `App.test.tsx` pins it — the opening
-measure is played through the virtual keyboard twice, folded and unfolded, and the position
-readout and the recorded attempt have to match.
+differently from an unfolded one on a wrong note. `App.test.tsx` pins the first of those:
+the opening measure is played through the virtual keyboard twice, folded and unfolded, and
+the position readout and the recorded attempt have to match. The wrong-note half is pinned
+by the shape of the code rather than by a test — the queue only ever renders a `hasWrongNote`
+boolean that `practiceView` has already computed, so not rendering it cannot reach the
+computation.
 
 The control sits _below_ the queue rather than above it, joining the position readout and
 the hand radios there for the same screenshot-sliver reason those two already record.
