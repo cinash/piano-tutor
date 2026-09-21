@@ -118,8 +118,8 @@ cause in the same finding, and acting on the wrong half redesigns something that
 
 Fix what the reviewers confirm **before** you commit the work as done or open a pull request — but
 sort what came back first, because the two kinds cost very different amounts and only one of them
-should hold the work up. Each reviewer labels its findings **blocking** or **non-blocking**, and
-its brief in `.claude/agents/` defines where that line sits for it.
+should hold the work up. Each code reviewer labels its findings **blocking** or **non-blocking**,
+and its brief in `.claude/agents/` defines where that line sits for it.
 
 Fix the blocking findings now. Take a non-blocking one only where the fix is genuinely a line or
 two; otherwise write it down and leave it. Say which bucket each finding went into. Without that
@@ -150,6 +150,94 @@ its own terms: whether the fixes are correct, whether they introduced anything n
 clean-code reviewer — whether a simplification genuinely simplified or merely relocated the
 complexity. Do not hand over the previous findings as a checklist to confirm; a reviewer told what
 the last one concluded stops looking.
+
+## Planning documents go through a different gate
+
+Everything above is the gate for **code**. A **planning document** — a `prompts/stepN.md` brief, a
+planned section of `prompts/README.md`, any document that commits the project to building
+something — goes through this one instead.
+
+Not because the code reviewers cannot read prose. The record shows they can: they have been run on
+briefs repeatedly, four rounds on the steps 9-14 plan, and what they found there were real defects
+— a gate that would have passed on the very bug its step existed to prevent among them. What they
+have never produced is the thing a plan needs most, which is a consolidated list of the questions
+that are the **owner's** to answer. Worse, a reviewer whose bias is simplicity will quietly take
+those questions away: review round 1 on step 9 stripped a configurable keyboard width as
+"configurability nobody asked for", the owner asked directly answered "preferably configurable",
+and the step had to be rewritten (`9ff142f`). That episode is what this gate exists for.
+
+### Which gate applies
+
+- **Decides what will be built** — a brief in `prompts/` or `.claude/prompts/`, a planned section
+  of `prompts/README.md`, a `DECISIONS.md` entry that commits the project forward rather than
+  recording a choice already made: **this gate**.
+- **Changes how the work is done** — this file, a reviewer brief in `.claude/agents/`, a skill in
+  `.claude/skills/`: **this gate**. A rule commits the project as surely as a plan does.
+- **Describes what already exists** — `README.md`'s instructions, a `DECISIONS.md` entry that only
+  records, the wording of `MANUAL-CHECKS.md`: no gate of its own. It rides along in the code gate
+  when it ships with code, and is an ordinary edit when it does not.
+- **Code**: the sections above, unchanged.
+
+Gate the brief **before** the code it plans is written; that is the whole of its value. A single
+change carrying both a brief and its implementation is one that should have been split, and the
+plan gate cannot do its job on it — an **ask** it returns is a question the code has already
+answered. Where one arrives anyway, run the code gate and say in the report that the plan went
+ungated.
+
+There is a floor: a typo, a link, a formatting fix, or moving a step from Planned to Shipped
+decides nothing and earns no round. Formatting needs no step of its own either, since `npm run ci`
+runs `prettier --check .` across the repository and these files are in it. Two things no tool
+checks — that every link in `prompts/README.md` resolves, and that its table matches what has
+actually shipped. Both are by hand, and the second is worth a script the day someone tires of it.
+
+### The two plan reviewers
+
+Launch **both in parallel, in a single message**, before the brief is handed to an implementing
+agent, and give each the original request and the document. `plan-tradeoff-reviewer` asks whether
+this is the right thing to build; `plan-gap-reviewer` asks what the document does not say and whose
+question that is. **The Opus rule above applies unchanged.** Their briefs live in `.claude/agents/`
+and both apply `.claude/skills/planning-docs/SKILL.md`, which is the standard for **writing** a
+brief in the first place, not only for reviewing one.
+
+### Findings: blocking, non-blocking, and ask
+
+The two labels above carry over unchanged, so one vocabulary covers both gates. Plan reviewers add
+a third, and it is the one they exist for.
+
+**ask** — the choice belongs to the owner: taste, priorities, what they are willing to live with,
+what music or hardware they will supply. **Do not answer it yourself**, and do not settle it with a
+sensible default and a footnote. Put the asks to them as **one numbered list, five at most across
+both reviewers together**, merged and ranked by what a wrong answer would cost; the ones that do
+not fit go into the brief as open questions rather than being dropped. `SKILL.md` says how to
+phrase them.
+
+### Finishing: a plan may ship with a question open
+
+This replaces "green CI" as the finishing condition, and it is narrower than it first looks. A
+brief is finished when every **ask** has been answered — or, where the answer would not change what
+the document instructs, is recorded in it as a named precondition saying what happens under each
+answer. `step22.md` is the worked example: it cannot start until a second piece exists, and it says
+what happens whether the owner authors one or the project transcribes public-domain material.
+
+That escape is only for a question of that shape. An **ask** whose answer would rewrite the step —
+step 9's keyboard width was one — is not made finished by writing it down; it waits. A brief
+carrying an unanswered ask of either kind does not go to an implementing agent until it has been
+recorded or answered.
+
+### Re-running, and stopping
+
+Re-run both when a round produced **blocking** findings you acted on, or when the owner's answer
+changed the document — an answered ask can rewrite a brief, and a rewritten brief is unreviewed. A
+round with no blocking findings and no unrecorded **ask** ends the loop. A brief amended once
+implementation is under way re-enters the gate for the amendment, and the implementer keeps going
+on the parts it does not touch.
+
+**Three rounds, as for code**, and for the same reason: the steps 9-14 plan needed four, and its
+last two rounds found defects rather than disagreement, so a lower cap would have shipped them. A
+round the owner's answer caused does not count against the cap, exactly as an Opus re-do does not.
+
+An empty plan review is a weaker result than an empty code review: say which futures were played
+forward and which alternatives were weighed, or the emptiness means nothing.
 
 ## House rules for the code itself
 
