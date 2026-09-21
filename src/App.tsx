@@ -385,9 +385,6 @@ export function App() {
           hasWrongNote={view.wrongNotes.size > 0}
         />
       )}
-      {/* Above the queue would be the natural place for a control that folds it, but
-          anything there shifts the queue by a sub-pixel and fails its committed
-          screenshots — so below, with the readout and the hand radios. */}
       <label htmlFor="fold-queue-checkbox">
         <input
           id="fold-queue-checkbox"
