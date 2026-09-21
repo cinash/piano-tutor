@@ -18,8 +18,14 @@ for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano ca
 | [8](step8.md) Progress transfer | Export and import the history as JSON               |
 | [17](step17.md) Listen          | Keys lighting up to the piece; the sound took 19    |
 | [19](step19.md) Output port     | The demo's port, matched to the piano by name       |
+| 21 The owner's own piece        | `cicha-noc.musicxml` replaced by the owner's ABC    |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
+
+Step 21 has no file of its own: it was asked for directly rather than planned, and what was
+asked is recorded in its commit message and in `DECISIONS.md` instead. It swapped the
+self-authored 6/8 score for the owner's own arrangement — 3/4, both hands in treble clef,
+the hands taking the melody in turn, and its repeat written out rather than notated.
 
 ## Planned — making it legible to a player
 
@@ -88,6 +94,25 @@ demo audible: the keys light up and the piano plays, but the green cursor stays 
 practice is waiting for. Step 17 gave the keyboard a second source while the demo runs and
 never gave the staff one. The queue stays with practice on purpose — the cursor says where
 we are, the queue says what to play, and nothing is asked for during a demonstration.
+
+## Planned — more than one piece
+
+| Step                             | What it adds                             |
+| -------------------------------- | ---------------------------------------- |
+| [22](step22.md) Choose the piece | Buttons that change which piece you play |
+
+Step 21 replaced the one piece; this one stops it being the only one. **It cannot be built
+until a second piece exists, and the owner has to supply it** — `step22.md` says why, and
+what the alternative is if they would rather not author one.
+
+Two things in the app do not fall out of a piece swap on their own, and the brief names
+both: the staff loads its XML in an effect that never runs again, so it would keep drawing
+the old score, and a restart deliberately keeps the loop, which a shorter piece has no bars
+for. Pieces are bundled at build time rather than picked from disk, for the same reason the
+replay picker is dev-only.
+
+Recording which piece an attempt was of is deliberately not part of it — the same trade
+step 14 made for hands, and the obvious step after this one.
 
 ## Deliberately not planned
 
