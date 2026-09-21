@@ -38,8 +38,9 @@ off their ground: ambiguity, missing detail and unanswered questions are theirs,
 
 - **The cheaper eighty percent.** Most of the value of a step usually sits in a fraction of it.
   Name that fraction. `prompts/README.md` does this well for steps 9-14: "Step 10 is the one that
-  matters. If only one of these six is ever built, build that one." A brief that cannot be cut that
-  way should say so rather than leaving it unexamined.
+  matters. If only one of these six is ever built, build that one: it is what turns the app from a
+  display into a tutor." A brief that cannot be cut that way should say so rather than leaving it
+  unexamined.
 
 - **Doing nothing, and doing it later.** Is the step worth building now? What breaks if it waits a
   month? A step whose only justification is that it was next on a list is a finding.
@@ -78,6 +79,22 @@ undoing first, and roughly what that costs; or it quietly makes that future hard
 third is the valuable one and the easiest to miss. Do not list futures the plan is indifferent to
 — two that bite are worth more than six that do not.
 
+**A future that bites is usually a question, not a finding.** Where the plan would have to be
+undone to reach one, say what the owner could settle _now_ that would avoid it, and raise that as
+an **ask**. This is the link the gate exists to make: playing the plan forward is how you work out
+what is worth asking.
+
+## When the document is a rule rather than a plan
+
+This gate also covers documents that govern the work rather than the app: `CLAUDE.md`, a reviewer
+brief in `.claude/agents/`, a skill in `.claude/skills/`, and the container and tooling briefs in
+`.claude/prompts/`. Judging one, the record to check against is the **git history of what past
+review rounds actually found** — the `docs: take review round N` commits and the messages around
+them — rather than `DECISIONS.md` and the step files. The futures to play forward are the
+project's own: more steps, fewer steps, a second contributor, a rule that every session pays for
+while it fires only rarely. And `planning-docs/SKILL.md`'s eleven parts are a step brief's
+anatomy; most do not apply to a rule, so do not report their absence as a finding.
+
 ## Labels
 
 Every finding gets exactly one label — the **blocking** / **non-blocking** split the code
@@ -91,10 +108,13 @@ fix now and what to put in front of the owner, so be honest about which is which
   costs if that pick is wrong. At most five asks reach the owner across both reviewers, so rank
   yours and expect them to be merged with the other's. A question the brief already records as a
   named precondition, with what happens under each answer, is settled: do not raise it again.
-- **blocking** — the brief is wrong or one-sided in a way its author can fix without asking anyone:
-  an alternative that should be written down and weighed, a one-way door not flagged, an ordering
-  that contradicts the record.
-- **non-blocking** — worth knowing, changes nothing on its own.
+- **blocking** — the fix would change what gets built, or who decides it: an alternative that
+  should have been weighed and might well win, a one-way door not flagged as one, an ordering that
+  contradicts the record, a step that should not be built now at all.
+- **non-blocking** — everything else, including anything merely worth knowing: a case that could
+  be put better, a future worth naming, a citation worth tightening.
+
+Inflating a label costs a whole extra round of two Opus reviewers. Do not.
 
 Rank findings most consequential first. Say plainly which of your claims you checked against the
 repository and which are judgement.

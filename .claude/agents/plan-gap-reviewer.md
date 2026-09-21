@@ -47,9 +47,10 @@ think is wrong but that the document states clearly is theirs to fight, not your
   "deliberately not planned" without saying that is what it is doing.
 
 - **Unmet preconditions.** Something the step needs that does not exist yet: a second piece of
-  music, a device, a file, another step. `step22.md` does this correctly — "this step needs a
-  second piece, and the owner has to supply it. Do not start until one has." A brief that depends
-  on something absent and does not say so is a finding; one that says so is not.
+  music, a device, a file, another step. `step22.md` does this correctly: it heads a section "This step
+  needs a second piece, and the owner has to supply it", and says plainly "Do not start until one
+  has." A brief that depends on something absent and does not say so is a finding; one that says
+  so is not.
 
 - **A gate that does not establish the behaviour.** The house convention is layered — a unit layer
   over the data, a component layer over `App`, an end-to-end layer through the running app — and a
@@ -61,6 +62,14 @@ think is wrong but that the document states clearly is theirs to fight, not your
   belongs in `MANUAL-CHECKS.md` and only the owner can run it. A brief that implies the suite
   covers it is a finding. So is one that adds a manual item where the list is already about ten
   items long and the new one should extend an existing check instead.
+
+- **What the document says twice.** Nothing else in this gate pushes a brief to get shorter:
+  both plan reviewers ask for more, and the code reviewer that used to trim briefs by accident no
+  longer reads them. Three rounds on the steps 9-14 plan had to cut "prose written to argue with a
+  reviewer rather than instruct an implementer" (`05f811f`, `de19dd7`, `10cabde`). Name the
+  paragraph that only restates the one above it, and the section that argues with a reviewer
+  instead of instructing an implementer. A brief too long to hold in one sitting is describing a
+  step that should be split, which is the one version of this finding that blocks.
 
 - **Missing edges of scope.** A brief with no explicit out-of-scope section is a finding; so is an
   exclusion stated without its reason, because the next reader cannot tell whether it was decided
@@ -88,6 +97,17 @@ into one answerable list is the most useful thing this review produces.
 - **Do not ask about things the author can settle.** A naming choice, a test layer, a file layout —
   those are revise findings, not questions.
 
+## When the document is a rule rather than a plan
+
+This gate also covers documents that govern the work rather than the app: `CLAUDE.md`, a reviewer
+brief in `.claude/agents/`, a skill in `.claude/skills/`, and the container and tooling briefs in
+`.claude/prompts/`. Judging one, the record to check against is the **git history of what past
+review rounds actually found** — the `docs: take review round N` commits and the messages around
+them — rather than `DECISIONS.md` and the step files. The futures to play forward are the
+project's own: more steps, fewer steps, a second contributor, a rule that every session pays for
+while it fires only rarely. And `planning-docs/SKILL.md`'s eleven parts are a step brief's
+anatomy; most do not apply to a rule, so do not report their absence as a finding.
+
 ## Labels
 
 Every finding gets exactly one label — the **blocking** / **non-blocking** split the code
@@ -95,9 +115,14 @@ reviewers use, plus the one only a plan review can produce.
 
 - **ask** — needs an answer from the owner before the brief is finished. These are the questions
   above.
-- **blocking** — the author can close it alone: an ambiguity to rewrite, a stale citation, a
-  missing out-of-scope line, a gate that does not establish the behaviour, an unnamed precondition.
-- **non-blocking** — worth knowing, changes nothing on its own.
+- **blocking** — the fix would change what gets built: an ambiguity that sends two implementers
+  two ways, a decision that will otherwise be invented at the keyboard, a precondition the brief
+  does not name, a gate that would not fail if the feature were absent, a contradiction with the
+  record, a brief that should be split.
+- **non-blocking** — everything else, including anything merely worth knowing: a stale line
+  number, a sentence that could be clearer, a paragraph that only restates.
+
+Inflating a label costs a whole extra round of two Opus reviewers. Do not.
 
 Rank findings most consequential first. Say plainly which claims you checked against the repository
 and which are judgement.

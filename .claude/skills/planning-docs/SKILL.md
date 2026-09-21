@@ -18,7 +18,11 @@ this document is the standard for.
 
 ## What a brief contains
 
-Not every part applies to every step, but a part left out should be left out on purpose.
+Not every part applies to every step, but a part left out should be left out on purpose. And a
+document that governs the work rather than the app — a change to `CLAUDE.md`, a reviewer brief, a
+skill — goes through the same gate but not this anatomy, which is a step brief's: take the parts
+that fit, usually the goal, the choice and what it rejects, what this makes harder later, and the
+open questions, and leave the rest.
 
 1. **A head paragraph.** What the step does, which files it touches, whether it adds a dependency,
    and the branch it goes on. A reader should be able to size it from this alone.
