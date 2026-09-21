@@ -31,6 +31,7 @@ import {
   setPracticeLoop,
   type PracticeViewState,
 } from './practice/practiceView';
+import { loadQueueFolded, saveQueueFolded } from './practice/queueFoldStore';
 import { AttemptHistory } from './progress/AttemptHistory';
 import {
   isAttemptRecordArray,
@@ -84,6 +85,9 @@ export function App() {
     DEFAULT_KEYBOARD_PRESET,
   );
   const [hands, setHands] = useState<HandSelection>('both');
+  // A display choice, and deliberately not engine state: practice must be identical
+  // folded and unfolded — see DECISIONS.md.
+  const [queueFolded, setQueueFolded] = useState(loadQueueFolded);
   // What the demo is sounding and where in the piece it has reached, and null when no
   // demo is running.
   const [demoStep, setDemoStep] = useState<DemoStep | null>(null);
@@ -210,6 +214,8 @@ export function App() {
   }, [view]);
 
   useEffect(() => saveAttempts(attempts), [attempts]);
+
+  useEffect(() => saveQueueFolded(queueFolded), [queueFolded]);
 
   function attach(
     source: MidiSource,
@@ -370,15 +376,27 @@ export function App() {
         loop={view.engine.loop}
         onChange={handleLoopChange}
       />
-      <FallingNotes
-        events={score.events}
-        status={view.engine.status}
-        nextEventIndex={view.engine.nextEventIndex}
-        satisfiedNoteIds={view.engine.satisfiedNoteIds}
-        hasWrongNote={view.wrongNotes.size > 0}
-      />
-      {/* Below the queue: above it, the queue shifts by a sub-pixel and its committed
-          screenshots fail on an edge sliver. */}
+      {!queueFolded && (
+        <FallingNotes
+          events={score.events}
+          status={view.engine.status}
+          nextEventIndex={view.engine.nextEventIndex}
+          satisfiedNoteIds={view.engine.satisfiedNoteIds}
+          hasWrongNote={view.wrongNotes.size > 0}
+        />
+      )}
+      {/* Below the queue: anything above it shifts the queue by a sub-pixel and its
+          committed screenshots fail on an edge sliver. */}
+      <label htmlFor="fold-queue-checkbox">
+        <input
+          id="fold-queue-checkbox"
+          type="checkbox"
+          data-testid="fold-queue-checkbox"
+          checked={queueFolded}
+          onChange={(event) => setQueueFolded(event.target.checked)}
+        />{' '}
+        Hide the finger queue
+      </label>
       <p data-testid="position-readout">{formatPosition(score, view.engine)}</p>
       {/* Below the queue for the same screenshot reason as the readout above. */}
       <div>

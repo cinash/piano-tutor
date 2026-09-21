@@ -63,6 +63,11 @@ update it at the end of each step.
     sit on the note you are being asked for, still sit on the right one several bars
     later rather than having slipped a note, and go back to the beginning on Restart and
     at every wrap of the loop.
+    Then tick "Hide the finger queue" and confirm the staff and the on-screen keyboard
+    are both visible at once without scrolling — which is the whole point of the control
+    — that playing the piece still behaves exactly as it did with the queue showing, and
+    that closing the tab and reopening `http://localhost:5173` brings it back still
+    hidden.
 
 Close the browser tab before using `amidi` or `aplaymidi` on the host, and quit those
 before going back to the browser: a page holding a Web MIDI port locks the ALSA device,

@@ -8,6 +8,7 @@ import {
   fakeMidiAccess,
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
+import { loadQueueFolded } from './practice/queueFoldStore';
 import { cichaNocScore } from './score/cichaNoc';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
@@ -236,5 +237,72 @@ describe('listening to the piece', () => {
     expect(heldPitches(container)).toEqual([67]);
     // Nothing is asked for during a demonstration; the keys shown are the ones sounding.
     expect(container.querySelectorAll('[data-expected="true"]')).toHaveLength(0);
+  });
+});
+
+describe('folding the finger queue away', () => {
+  /** cicha-noc.musicxml's opening measure: the right hand's G4, A4, G4. */
+  function playOpeningMeasure() {
+    for (const pitch of [67, 69, 67]) {
+      fireEvent.keyDown(window, { code: CODE_FOR_PITCH[pitch] });
+      fireEvent.keyUp(window, { code: CODE_FOR_PITCH[pitch] });
+    }
+  }
+
+  /**
+   * Plays the opening measure into a freshly mounted app, folded or not, and reports
+   * everything on screen that the engine drives: where practice has reached, and what
+   * the attempt it recorded says.
+   */
+  async function practiseOpeningMeasure(folded: boolean) {
+    localStorage.clear(); // or the previous run's attempt is listed in this one too
+    const { unmount } = await renderConnectedApp();
+    if (folded) fireEvent.click(screen.getByTestId('fold-queue-checkbox'));
+
+    playOpeningMeasure();
+
+    const result = {
+      position: screen.getByTestId('position-readout').textContent,
+      attempt: within(screen.getByTestId('attempt-history-row'))
+        .getAllByRole('cell')
+        .slice(1) // the first cell is the wall-clock time the attempt started
+        .map((cell) => cell.textContent),
+    };
+    unmount();
+    return result;
+  }
+
+  it('takes the queue off the page and puts it back', () => {
+    render(<App />);
+    expect(screen.getByTestId('falling-notes')).toBeDefined();
+
+    fireEvent.click(screen.getByTestId('fold-queue-checkbox'));
+    expect(screen.queryByTestId('falling-notes')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('fold-queue-checkbox'));
+    expect(screen.getByTestId('falling-notes')).toBeDefined();
+  });
+
+  it('advances the engine exactly as an unfolded queue does', async () => {
+    const folded = await practiseOpeningMeasure(true);
+    const unfolded = await practiseOpeningMeasure(false);
+
+    expect(folded).toEqual(unfolded);
+    // Not two identical nothings: the measure really was played, and recorded.
+    expect(unfolded.position).toBe('Measure 2 of 22');
+    expect(unfolded.attempt).toEqual(['whole piece', '3', '0', '100%', 'no']);
+  });
+
+  it('remembers the choice across a reload', () => {
+    const { unmount } = render(<App />);
+    fireEvent.click(screen.getByTestId('fold-queue-checkbox'));
+    unmount();
+
+    // Through the store as well as the remount: jsdom cannot reload the page, and a
+    // flag kept in a module-level variable would survive a remount but not a reload.
+    expect(loadQueueFolded()).toBe(true);
+
+    render(<App />);
+    expect(screen.queryByTestId('falling-notes')).toBeNull();
   });
 });
