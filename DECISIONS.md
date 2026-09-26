@@ -17,10 +17,21 @@ Step 21 replaced it. The owner supplied their own arrangement as ABC notation, a
 composed; its provenance is recorded in the file's own `<rights>`.
 
 It is a different piece of music in every respect the app can see: 3/4 rather than 6/8,
-C4-F5 rather than C3-G4, both hands written in treble clef, and a fingering on every
-single note. Its shape is a call and response — the right hand plays a phrase and the
-left hand echoes it on the same pitches — so the two hands never sound together except
-in m. 19, where a C5 over C4 is the only event in the piece carrying more than one note.
+C3-F5 rather than C3-G4, the left hand in bass clef, and a fingering on every single note.
+Its shape is a call and response — the right hand plays a phrase and the left hand
+echoes it an octave lower — so the two hands never sound together except in m. 19,
+where a C5 over C3 is the only event in the piece carrying more than one note.
+
+The owner's ABC has the left hand in treble clef, echoing on the same pitches as the
+right, and step 21 transcribed it that way. Step 24 moved the left hand down an octave
+and into bass clef, because the same-pitch echo lit the left hand's keys to the right of
+the right hand's on the keyboard. That follows how two-hand beginner arrangements of the
+piece are written rather than the owner's ABC. The same step corrected the left hand's
+fingering in bars 19-22 to a left-hand C position (C3 on 5 up to G3 on 1), because as
+written it was right-hand fingering, the thumb on the lowest note; so every note still
+carries a fingering, but not all of them are the owner's. Attempts saved before step 24
+merged on 2026-09-26 were played against the old left hand; nothing in a record says
+which, so that date is the only dividing line.
 There are no chords and no ties anywhere else, and no bar is left silent by both hands,
 so the piece has no gap between one event's end and the next one's onset.
 
@@ -83,7 +94,7 @@ It is still not derived from `cicha-noc.musicxml`. There is one score in the app
 imported by `App.tsx` at compile time with no way to load another, so a
 `keyboardRangeForScore()` would be branches that can never run — that would become the
 right answer only once a second score exists. Each preset is chosen wide enough to
-contain this score's C4-F5 range regardless, which is what the Layer 2 gate checks.
+contain this score's C3-F5 range regardless, which is what the Layer 2 gate checks.
 
 ## The keyboard says which key, the falling-note queue says which finger
 

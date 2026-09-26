@@ -7,7 +7,7 @@ export interface KeyboardPreset {
 /**
  * The on-screen keyboard's selectable widths, as an explicit list rather than a
  * computed span — see DECISIONS.md. Each preset's range comfortably contains
- * cicha-noc.musicxml's own C4-F5 range.
+ * cicha-noc.musicxml's own C3-F5 range.
  */
 export const KEYBOARD_PRESETS: readonly KeyboardPreset[] = [
   { label: '4 octaves', low: 36, high: 83 }, // C2-B5

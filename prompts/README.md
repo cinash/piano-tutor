@@ -26,13 +26,15 @@ judge a brief against, and the guide for writing one.
 | [19](step19.md) Output port     | The demo's port, matched to the piano by name       |
 | 21 The owner's own piece        | `cicha-noc.musicxml` replaced by the owner's ABC    |
 | [23](step23.md) Listen speed    | Demo speed presets, 50%–150%; practice untimed      |
+| [24](step24.md) Left hand lower | Left hand an octave down, bass clef, fingering      |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
 Step 21 has no file of its own: it was asked for directly rather than planned, and what was
 asked is recorded in its commit message and in `DECISIONS.md` instead. It swapped the
 self-authored 6/8 score for the owner's own arrangement — 3/4, both hands in treble clef,
-the hands taking the melody in turn, and its repeat written out rather than notated.
+the hands taking the melody in turn, and its repeat written out rather than notated. Step 24
+later moved its left hand an octave down, into bass clef.
 
 ## Planned — making it legible to a player
 
@@ -125,7 +127,6 @@ step 14 made for hands, and the obvious step after this one.
 
 | Step                               | What it repairs                                   |
 | ---------------------------------- | ------------------------------------------------- |
-| [24](step24.md) Left hand lower    | Left hand an octave down, bass clef, fingering    |
 | [25](step25.md) Staff scroll       | The marker held a third of the way in, gliding    |
 | [26](step26.md) Remember the piano | Reconnect to the last piano when it is plugged in |
 

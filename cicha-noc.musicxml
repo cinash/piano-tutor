@@ -6,9 +6,9 @@
   <identification>
     <creator type="composer">Franz Xaver Gruber</creator>
     <creator type="lyricist">Joseph Mohr</creator>
-    <rights>Composed 1818. Public domain. This two-hand arrangement and its fingerings were supplied by the project owner as ABC notation and transcribed to MusicXML for piano-tutor, not taken from a published edition.</rights>
+    <rights>Composed 1818. Public domain. This two-hand arrangement and its fingerings were supplied by the project owner as ABC notation and transcribed to MusicXML for piano-tutor, not taken from a published edition. After transcription, at the owner's request, the left hand was moved down an octave and into bass clef, and its fingering in bars 19-22 corrected.</rights>
     <encoding>
-      <software>Transcribed from the owner's ABC notation for piano-tutor</software>
+      <software>Transcribed from the owner's ABC notation for piano-tutor, left hand moved down an octave, bars 19-22 left-hand fingering corrected</software>
     </encoding>
   </identification>
   <part-list>
@@ -24,7 +24,7 @@
         <time><beats>3</beats><beat-type>4</beat-type></time>
         <staves>2</staves>
         <clef number="1"><sign>G</sign><line>2</line></clef>
-        <clef number="2"><sign>G</sign><line>2</line></clef>
+        <clef number="2"><sign>F</sign><line>4</line></clef>
       </attributes>
       <note>
         <pitch><step>G</step><octave>4</octave></pitch>
@@ -88,7 +88,7 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>G</step><octave>4</octave></pitch>
+        <pitch><step>G</step><octave>3</octave></pitch>
         <duration>3</duration>
         <voice>2</voice>
         <type>quarter</type>
@@ -97,7 +97,7 @@
         <notations><technical><fingering>3</fingering></technical></notations>
       </note>
       <note>
-        <pitch><step>A</step><octave>4</octave></pitch>
+        <pitch><step>A</step><octave>3</octave></pitch>
         <duration>1</duration>
         <voice>2</voice>
         <type>eighth</type>
@@ -105,7 +105,7 @@
         <notations><technical><fingering>2</fingering></technical></notations>
       </note>
       <note>
-        <pitch><step>G</step><octave>4</octave></pitch>
+        <pitch><step>G</step><octave>3</octave></pitch>
         <duration>2</duration>
         <voice>2</voice>
         <type>quarter</type>
@@ -123,7 +123,7 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>E</step><octave>4</octave></pitch>
+        <pitch><step>E</step><octave>3</octave></pitch>
         <duration>6</duration>
         <voice>2</voice>
         <type>half</type>
@@ -187,7 +187,7 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>C</step><octave>5</octave></pitch>
+        <pitch><step>C</step><octave>4</octave></pitch>
         <duration>4</duration>
         <voice>2</voice>
         <type>half</type>
@@ -195,7 +195,7 @@
         <notations><technical><fingering>1</fingering></technical></notations>
       </note>
       <note>
-        <pitch><step>C</step><octave>5</octave></pitch>
+        <pitch><step>C</step><octave>4</octave></pitch>
         <duration>2</duration>
         <voice>2</voice>
         <type>quarter</type>
@@ -213,7 +213,7 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>G</step><octave>4</octave></pitch>
+        <pitch><step>G</step><octave>3</octave></pitch>
         <duration>6</duration>
         <voice>2</voice>
         <type>half</type>
@@ -523,13 +523,13 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>C</step><octave>4</octave></pitch>
+        <pitch><step>C</step><octave>3</octave></pitch>
         <duration>6</duration>
         <voice>2</voice>
         <type>half</type>
         <dot/>
         <staff>2</staff>
-        <notations><technical><fingering>1</fingering></technical></notations>
+        <notations><technical><fingering>5</fingering></technical></notations>
       </note>
     </measure>
 
@@ -542,20 +542,20 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>G</step><octave>4</octave></pitch>
+        <pitch><step>G</step><octave>3</octave></pitch>
         <duration>2</duration>
         <voice>2</voice>
         <type>quarter</type>
         <staff>2</staff>
-        <notations><technical><fingering>3</fingering></technical></notations>
+        <notations><technical><fingering>1</fingering></technical></notations>
       </note>
       <note>
-        <pitch><step>E</step><octave>4</octave></pitch>
+        <pitch><step>E</step><octave>3</octave></pitch>
         <duration>4</duration>
         <voice>2</voice>
         <type>half</type>
         <staff>2</staff>
-        <notations><technical><fingering>5</fingering></technical></notations>
+        <notations><technical><fingering>3</fingering></technical></notations>
       </note>
     </measure>
 
@@ -568,28 +568,28 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>G</step><octave>4</octave></pitch>
+        <pitch><step>G</step><octave>3</octave></pitch>
         <duration>2</duration>
         <voice>2</voice>
         <type>quarter</type>
         <staff>2</staff>
-        <notations><technical><fingering>3</fingering></technical></notations>
+        <notations><technical><fingering>1</fingering></technical></notations>
       </note>
       <note>
-        <pitch><step>F</step><octave>4</octave></pitch>
-        <duration>2</duration>
-        <voice>2</voice>
-        <type>quarter</type>
-        <staff>2</staff>
-        <notations><technical><fingering>4</fingering></technical></notations>
-      </note>
-      <note>
-        <pitch><step>D</step><octave>4</octave></pitch>
+        <pitch><step>F</step><octave>3</octave></pitch>
         <duration>2</duration>
         <voice>2</voice>
         <type>quarter</type>
         <staff>2</staff>
         <notations><technical><fingering>2</fingering></technical></notations>
+      </note>
+      <note>
+        <pitch><step>D</step><octave>3</octave></pitch>
+        <duration>2</duration>
+        <voice>2</voice>
+        <type>quarter</type>
+        <staff>2</staff>
+        <notations><technical><fingering>4</fingering></technical></notations>
       </note>
     </measure>
 
@@ -602,13 +602,13 @@
       </note>
       <backup><duration>6</duration></backup>
       <note>
-        <pitch><step>C</step><octave>4</octave></pitch>
+        <pitch><step>C</step><octave>3</octave></pitch>
         <duration>6</duration>
         <voice>2</voice>
         <type>half</type>
         <dot/>
         <staff>2</staff>
-        <notations><technical><fingering>1</fingering></technical></notations>
+        <notations><technical><fingering>5</fingering></technical></notations>
       </note>
       <barline location="right">
         <bar-style>light-heavy</bar-style>

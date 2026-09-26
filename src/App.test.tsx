@@ -22,14 +22,18 @@ vi.hoisted(() => {
 });
 
 /**
- * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the ten
+ * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the fourteen
  * pitches cicha-noc.musicxml uses, so a test can play the piece as written.
  */
 const CODE_FOR_PITCH: Record<number, string> = {
+  48: 'KeyZ',
+  50: 'KeyX',
+  52: 'KeyC',
+  53: 'KeyV',
+  55: 'KeyB',
+  57: 'KeyN',
   60: 'KeyQ',
-  62: 'KeyW',
   64: 'KeyE',
-  65: 'KeyR',
   67: 'KeyT',
   69: 'KeyY',
   71: 'KeyU',
