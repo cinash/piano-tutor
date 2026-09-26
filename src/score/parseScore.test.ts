@@ -31,6 +31,21 @@ describe('parseScore', () => {
     expect(cichaNoc).toEqual(cichaNocSnapshot);
   });
 
+  it('reads the key signature, and no <key> as none', () => {
+    const note = `<note>
+      <pitch><step>F</step><octave>4</octave></pitch>
+      <duration>8</duration><voice>1</voice><type>whole</type><staff>1</staff>
+    </note>`;
+
+    expect(cichaNoc.fifths).toBe(0);
+    expect(
+      parseScore(
+        scoreWithNotes(`<attributes><key><fifths>-1</fifths></key></attributes>${note}`),
+      ).fifths,
+    ).toBe(-1);
+    expect(parseScore(scoreWithNotes(note)).fifths).toBe(0);
+  });
+
   it('groups a chord into a single event with multiple notes', () => {
     const score = parseScore(
       scoreWithNotes(`

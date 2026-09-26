@@ -12,17 +12,18 @@
   top: 0;
   box-sizing: border-box;
   border: 1px solid #000;
+  /* Labels sit at the foot of a key: on a white one, below the black keys that overlap its top. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 4px;
 }
 
 .piano-key--white {
   height: 100%;
   background: #fff;
   z-index: 1;
-  /* The name sits below the black keys that overlap the top of this one. */
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 4px;
   font-size: 10px;
   color: #555;
 }
@@ -31,6 +32,49 @@
   height: 60%;
   background: #111;
   z-index: 2;
+  color: #fff;
+}
+
+/* Where the hand goes next, just before it moves: a dashed outline in its colour. */
+.piano-key--next-right {
+  border: 2px dashed #d97706;
+}
+
+.piano-key--next-left {
+  border: 2px dashed #0f766e;
+}
+
+.piano-key__next-finger {
+  font-size: 12px;
+  font-weight: bold;
+  opacity: 0.45;
+}
+
+/* Above the note name on a white key, at the foot of a black one. */
+.piano-key__finger {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.piano-key--white .piano-key__finger {
+  color: #000;
+}
+
+/* Where each hand rests: a light tint of its colour, the expected key's strong one aside. */
+.piano-key--position-right.piano-key--white {
+  background: #fef3c7;
+}
+
+.piano-key--position-right.piano-key--black {
+  background: #92400e;
+}
+
+.piano-key--position-left.piano-key--white {
+  background: #ccfbf1;
+}
+
+.piano-key--position-left.piano-key--black {
+  background: #134e4a;
 }
 
 .piano-key--expected-right.piano-key--white {

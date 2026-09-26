@@ -1,0 +1,97 @@
+import { nextIndexAfter } from '../engine/advance';
+import type { Loop } from '../engine/types';
+import type { Finger, Note, Score } from '../score/types';
+
+/** A note with its finger — and so one key of a hand's position. */
+export type FingerKey = Note & { finger: Finger };
+
+const FINGERS: readonly Finger[] = [1, 2, 3, 4, 5];
+const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+const pitchClass = (pitch: number) => ((pitch % 12) + 12) % 12;
+
+/**
+ * Each hand's five keys — the right hand's first — fixed by that hand's next fingered
+ * note, in the order practice will reach the events: forward from `index`, wrapping at
+ * the loop's end as the engine does, for one pass. See DECISIONS.md.
+ */
+export function handPositions(score: Score, index: number, loop?: Loop): FingerKey[] {
+  const upcoming = upcomingNotes(score, index, loop);
+  const scale = scaleOf(score);
+
+  return HANDS.flatMap((hand) => {
+    const anchor = upcoming.find((note) => note.hand === hand);
+    return anchor ? positionFrom(anchor, scale) : [];
+  });
+}
+
+/**
+ * Where each hand goes next, only when the event at `index` holds that hand's last note
+ * before it moves: its note there is fingered, and the hand's following fingered note, in
+ * the same order `handPositions` walks, fixes a different position. See DECISIONS.md.
+ */
+export function nextHandPositions(score: Score, index: number, loop?: Loop): FingerKey[] {
+  const upcoming = upcomingNotes(score, index, loop);
+  const scale = scaleOf(score);
+  const playing = score.events[index]?.notes ?? [];
+
+  return HANDS.flatMap((hand) => {
+    const [current, following] = upcoming.filter((note) => note.hand === hand);
+    if (!following || !playing.includes(current)) return [];
+    const next = positionFrom(following, scale);
+    // Positions are fixed by where finger 1 lands, so its key is enough to compare.
+    return next[0]?.pitch === positionFrom(current, scale)[0]?.pitch ? [] : next;
+  });
+}
+
+const HANDS = ['right', 'left'] as const;
+
+function scaleOf(score: Score): number[] {
+  return MAJOR_SCALE.map((degree) => pitchClass(degree + score.fifths * 7));
+}
+
+function upcomingNotes(score: Score, index: number, loop?: Loop): FingerKey[] {
+  const notes: FingerKey[] = [];
+  const visited = new Set<number>();
+  for (
+    let i = index;
+    // Out of range past the end, and at -1 when a loop starts past the score's last event.
+    score.events[i] && !visited.has(i);
+    i = nextIndexAfter({ nextEventIndex: i, loop }, score)
+  ) {
+    visited.add(i);
+    notes.push(
+      ...score.events[i].notes.filter(
+        (note): note is FingerKey => note.finger !== undefined,
+      ),
+    );
+  }
+  return notes;
+}
+
+/**
+ * The five keys a finger on `anchor` fixes, one scale degree per finger: the right hand
+ * counts up from its thumb, the left from its little finger. None when the anchor is
+ * outside the key, where there is no degree to count from.
+ */
+function positionFrom(anchor: FingerKey, scale: number[]): FingerKey[] {
+  if (!scale.includes(pitchClass(anchor.pitch))) return [];
+
+  return FINGERS.map((finger) => {
+    const degrees =
+      anchor.hand === 'right' ? finger - anchor.finger : anchor.finger - finger;
+    return {
+      pitch: stepScale(anchor.pitch, degrees, scale),
+      hand: anchor.hand,
+      finger,
+    };
+  });
+}
+
+function stepScale(pitch: number, degrees: number, scale: number[]): number {
+  const direction = Math.sign(degrees);
+  for (let remaining = Math.abs(degrees); remaining > 0;) {
+    pitch += direction;
+    if (scale.includes(pitchClass(pitch))) remaining--;
+  }
+  return pitch;
+}

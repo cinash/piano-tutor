@@ -43,6 +43,8 @@ export function parseScore(xml: string): Score {
     divisions,
     timeSignatures,
     events: groupIntoEvents(notes, divisions),
+    // The first key only: a key change later in the piece is not followed — see DECISIONS.md.
+    fifths: Number(part.querySelector('key > fifths')?.textContent ?? 0),
     measureCount: part.querySelectorAll('measure').length,
   };
 }

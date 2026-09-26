@@ -15,6 +15,7 @@ import { downloadJson } from './downloadJson';
 import type { Loop } from './engine/types';
 import { KeyboardRangePicker } from './keyboard/KeyboardRangePicker';
 import { PianoKeyboard } from './keyboard/PianoKeyboard';
+import { handPositions, nextHandPositions } from './keyboard/handPosition';
 import { ReplayMidiSource } from './midi/ReplayMidiSource';
 import { VirtualKeyboardSource } from './midi/VirtualKeyboardSource';
 import type { MidiInputDescriptor } from './midi/WebMidiSource';
@@ -111,6 +112,15 @@ export function App() {
   // engine is waiting for otherwise. The filtered score, which nextEventIndex indexes.
   const staffTarget =
     demoStep?.startTime ?? score.events[view.engine.nextEventIndex]?.startTime;
+
+  // Where the hands sit: practice's place, or while the demo plays, the first event at
+  // or after its place, so a silence shows where the next note is. The demo plays the
+  // whole piece, so it has no loop to wrap at; after its last note there is no event,
+  // and -1 finds no position, as past the end does.
+  const positionIndex = demoStep
+    ? score.events.findIndex((event) => event.startTime >= demoStep.startTime)
+    : view.engine.nextEventIndex;
+  const positionLoop = demoStep ? undefined : view.engine.loop;
 
   const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);
@@ -474,13 +484,16 @@ export function App() {
         selected={keyboardPreset}
         onChange={setKeyboardPreset}
       />
-      {/* While the demo runs the keyboard shows what is sounding and nothing else:
-          the keys the engine waits for would be a second instruction at the same time. */}
+      {/* While the demo runs the keyboard shows what is sounding and where the hands
+          sit, but not the keys the engine waits for: those would be a second
+          instruction at the same time. */}
       <PianoKeyboard
         lowNote={keyboardPreset.low}
         highNote={keyboardPreset.high}
         heldNotes={demoStep?.pitches ?? view.engine.heldNotes}
         expectedNotes={demoStep ? [] : notesAt(score, view.engine.nextEventIndex)}
+        handPositions={handPositions(score, positionIndex, positionLoop)}
+        nextHandPositions={nextHandPositions(score, positionIndex, positionLoop)}
       />
       <AttemptHistory records={attempts} />
       <div>

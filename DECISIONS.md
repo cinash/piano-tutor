@@ -105,6 +105,11 @@ that finger goes on, which is what a player who does not already know the piece 
 before they can start at all. Neither cue is redundant, so `FallingNotes` was left
 untouched: colour there stays the primary cue and the numeral the secondary one.
 
+Step 27 put the finger on the keyboard too: each expected key shows its finger number,
+bold, above the note name, and carries `data-finger`. The queue still answers "what is
+coming" and keeps its finger colours; the keyboard now also says which finger goes on
+the key in front of you, so a player reading only the keyboard is no longer missing it.
+
 `PianoKeyboard` takes the expected `Note[]` rather than a set of pitches, even though it
 only reads `pitch` today. `Note` already carries `hand`, so the hand colours planned next
 add an attribute and nothing else; a `Set<number>` would have to become a
@@ -141,6 +146,10 @@ and is the one a cold player would otherwise have to guess at.
 Held still wins over both hand colours, for the reason in the entry above. Such a key
 keeps reporting its `data-hand` regardless: the attribute tracks the lookup, the colour
 tracks what you are doing.
+
+The finger numbers step 27 added to the keyboard are plain numerals in black on a white
+key and white on a black one, not the queue's finger colours: a key already carries its
+hand's colour, and a second colour system on the same key would compete with it.
 
 ## Key labels are sharps only, and only on the white keys
 
@@ -763,6 +772,11 @@ That position is a second time on `DemoStep`, and the two are different question
 marks beats, so it wants the second and would be wrong at any tempo but one if it were
 handed the first.
 
+Step 27 added a third answer the demo drives: where the hands sit. The shaded hand
+positions follow the demo, so a child watching it sees the hands move before playing the
+passage themselves. That belongs with "where are we": a resting tint asks for nothing.
+The expected-note highlight still stays with practice.
+
 ## Notes are sent as they fall due, never scheduled ahead
 
 Web MIDI's `send(data, timestamp)` would let the whole piece be handed to the browser in
@@ -801,6 +815,10 @@ state, no new attribute and no new precedence rule were needed; and during a dem
 the only marks on the keyboard should be what is sounding, not a chord telling the player to
 do something else at the same time.
 
+Step 27 relaxed that last rule for the hand positions alone: the light tint of where each
+hand rests follows the demo as well, because it tells the player nothing to press. The
+expected keys stay empty.
+
 ## Folding the finger queue away is view state in `App.tsx`, and never reaches the engine
 
 The queue is a pure view of `score.events` — step 4 built it that way and nothing since has
@@ -828,3 +846,43 @@ string for `'true'`, so a missing key, a cleared store, or anything a different 
 this app or a hand-edited store might have left there reads as unfolded — the same "anything
 unrecognised means the default" rule `loadAttempts()` follows, reached without a parse step
 because a single boolean does not need one.
+
+## Where each hand sits is five keys fixed by one fingered note
+
+A hand's position is its five keys, worked out from one note of the score: the finger on
+that note fixes the others, one degree of the key's major scale per finger — up from the
+thumb for the right hand, up from the little finger for the left. So a thumb on F in F major
+puts finger 4 on B-flat, and in Cicha Noc's C major every position is five white keys. The
+key comes from `Score.fifths`, read from the first `<key>` only — a key change later in a
+piece is not followed — and 0 when a score has none.
+
+The note that fixes it is the hand's next fingered note, found in the order practice will
+reach the events: forward from the current one, and with a loop set, wrapping at its end
+through the engine's own `nextIndexAfter`, for one pass. So a hand that is resting shows
+where it comes in next, and a hand that does not play in the looped bars shows nothing
+rather than a move the loop never reaches. The lookahead `upNext` reads is linear on
+purpose (see "Loop selection" above); this one is not, because a position is an instruction
+on screen rather than leniency about a wrong note.
+
+Three cases no piece here has are settled by the simplest rule rather than built for. A
+note outside the key cannot be counted from, so when it is the note fixing the position the
+hand has none; when it lies under another finger — the raised seventh of a minor key — the
+number goes on the scale's key instead, a known wrong shade until a minor-key piece needs
+the rule that lets a hand's own upcoming notes place their fingers. A same-hand chord takes
+its first fingered note as the parser orders them — and the outline below compares that
+note with the chord's second one rather than with the hand's next event, to be revisited
+with the first piece that has one. Where both hands' positions share a key,
+the keyboard shows the right hand's, which `handPositions` lists first.
+
+The key to press keeps its strong hand colour; the rest of the position takes a lighter
+tint of it, in a white-key and a black-key variant like the expected colours, and each key
+of it carries its finger number. Held still wins over both.
+
+Where the hand goes next is outlined only on its last note before the move — when the
+event about to be played holds the hand's note and the hand's following fingered note, in
+the same loop-aware order, fixes a different position. Drawn all the time there would almost
+always be one, and the keyboard would carry two positions per hand throughout. The owner
+chose the outline over a line of text under the keyboard, which would take the child's eyes
+off the keys. It is a dashed border in the hand's colour with a faint finger number above
+the current one, so a key in both positions shows both. Practice is untimed, so one note's
+warning is enough; a clock in practice would want it earlier.

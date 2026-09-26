@@ -9,6 +9,7 @@ const SCORE: Score = {
   title: 'fixture',
   divisions: 4,
   timeSignatures: [{ beats: 4, beatType: 4, measure: 1 }],
+  fifths: 0,
   measureCount: 12,
   events: [
     {

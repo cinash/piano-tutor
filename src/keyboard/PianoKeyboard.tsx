@@ -1,5 +1,6 @@
 import './PianoKeyboard.css';
 import type { Note } from '../score/types';
+import type { FingerKey } from './handPosition';
 import { computeKeyboardLayout } from './keyboardLayout';
 import { noteName } from './noteName';
 
@@ -8,6 +9,8 @@ export interface PianoKeyboardProps {
   highNote: number;
   heldNotes: ReadonlySet<number>;
   expectedNotes: readonly Note[];
+  handPositions: readonly FingerKey[];
+  nextHandPositions: readonly FingerKey[];
 }
 
 export function PianoKeyboard({
@@ -15,6 +18,8 @@ export function PianoKeyboard({
   highNote,
   heldNotes,
   expectedNotes,
+  handPositions,
+  nextHandPositions,
 }: PianoKeyboardProps) {
   const layout = computeKeyboardLayout(lowNote, highNote);
 
@@ -24,13 +29,25 @@ export function PianoKeyboard({
         {layout.map((key) => {
           const held = heldNotes.has(key.note);
           const expected = expectedNotes.find((note) => note.pitch === key.note);
-          // A key that is both renders as held — see DECISIONS.md. Decided here rather
-          // than left to the order the two rules happen to sit in the stylesheet.
+          // The right hand's first where both hands would share a key — see DECISIONS.md.
+          const position = handPositions.find(
+            (fingerKey) => fingerKey.pitch === key.note,
+          );
+          const finger = expected?.finger ?? position?.finger;
+          const next = nextHandPositions.find(
+            (fingerKey) => fingerKey.pitch === key.note,
+          );
+          // Held wins, then expected, then the hand's position — see DECISIONS.md.
+          // Decided here rather than left to the order the rules happen to sit in the
+          // stylesheet.
           const stateClass = held
             ? ' piano-key--held'
             : expected
               ? ` piano-key--expected-${expected.hand}`
-              : '';
+              : position
+                ? ` piano-key--position-${position.hand}`
+                : '';
+          const nextClass = next ? ` piano-key--next-${next.hand}` : '';
           return (
             <div
               key={key.note}
@@ -38,9 +55,15 @@ export function PianoKeyboard({
               data-held={held}
               data-expected={Boolean(expected)}
               data-hand={expected?.hand}
-              className={`piano-key piano-key--${key.color}${stateClass}`}
+              data-position-hand={position?.hand}
+              data-finger={finger}
+              data-next-hand={next?.hand}
+              data-next-finger={next?.finger}
+              className={`piano-key piano-key--${key.color}${stateClass}${nextClass}`}
               style={{ left: `${key.leftPercent}%`, width: `${key.widthPercent}%` }}
             >
+              {next && <span className="piano-key__next-finger">{next.finger}</span>}
+              {finger && <span className="piano-key__finger">{finger}</span>}
               {/* White keys only — see DECISIONS.md. */}
               {key.color === 'white' && noteName(key.note)}
             </div>

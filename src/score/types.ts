@@ -28,5 +28,6 @@ export interface Score {
   divisions: number; // ppq from the MusicXML, kept for reference/debugging
   timeSignatures: TimeSignature[];
   events: ScoreEvent[]; // flattened, in performance order, rests omitted
+  fifths: number; // key signature: sharps if positive, flats if negative; 0 when the score has no <key>
   measureCount: number;
 }
