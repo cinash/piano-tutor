@@ -80,8 +80,9 @@ across the repository to get past `format:check` — format the files you touche
 
 ## Always review with two subagents
 
-When you finish a piece of work — a story, a bug fix, a refactor — launch **two review subagents in
-parallel** before you commit the work as done or open a pull request. Launch both in a single
+This section is the **code** pair; a planning document goes to the plan pair further down, which
+the section on planning documents defines. When you finish a piece of work — a story, a bug fix, a
+refactor — launch **two review subagents in parallel** before you commit the work as done or open a pull request. Launch both in a single
 message so they run concurrently, and give each one the original request and the diff under review.
 
 - `functionality-reviewer` — does the change do what was requested?
@@ -119,7 +120,8 @@ cause in the same finding, and acting on the wrong half redesigns something that
 Fix what the reviewers confirm **before** you commit the work as done or open a pull request — but
 sort what came back first, because the two kinds cost very different amounts and only one of them
 should hold the work up. Each reviewer labels its findings **blocking** or **non-blocking**, and
-its brief in `.claude/agents/` defines where that line sits for it.
+its brief in `.claude/agents/` defines where that line sits for it; the two plan reviewers add a
+third, **ask**, which the planning section below defines.
 
 Fix the blocking findings now. Take a non-blocking one only where the fix is genuinely a line or
 two; otherwise write it down and leave it. Say which bucket each finding went into. Without that
@@ -150,6 +152,106 @@ its own terms: whether the fixes are correct, whether they introduced anything n
 clean-code reviewer — whether a simplification genuinely simplified or merely relocated the
 complexity. Do not hand over the previous findings as a checklist to confirm; a reviewer told what
 the last one concluded stops looking.
+
+## Planning documents go through a different gate
+
+A **planning document** — a `prompts/stepN.md` brief, a planned section of `prompts/README.md`,
+any document that commits the project to something before it is built — is reviewed by this gate
+rather than by the code pair above. `npm run ci` still runs and still has to pass; what changes is
+who reviews, and what counts as finished.
+
+Not because the code reviewers cannot read prose. The record shows they can: four rounds on the
+steps 9-14 plan, three on steps 6-8, and among what they found there was a gate that would have
+passed on the very bug its step existed to prevent. What they do not do is **offer the owner a
+choice**. Step 9 is the episode. Round 1 cut a `keyboardRangeForScore()` derivation whose branches
+could not run — correct, and it still stands — and the width left behind was a constant nobody had
+consulted anyone about. Asked directly, four octaves or five or all 88, the player said
+configurable, and the step was rewritten (`9ff142f`, `prompts/step9.md:14`). That question was put
+by hand, by an author who happened to think of it. This gate is that question made routine.
+
+### Which gate applies
+
+Take the first that matches.
+
+1. **Decides what will be built** — a brief in `prompts/` or `.claude/prompts/`, a planned or
+   deliberately-not-planned section of `prompts/README.md`, a `DECISIONS.md` entry that commits the
+   project forward rather than recording a choice already made: **this gate**.
+2. **Changes how the work is done** — this file, a reviewer brief in `.claude/agents/`, a skill in
+   `.claude/skills/`: **this gate**. A rule commits the project as surely as a plan does, and each
+   brief carries a clause for judging one.
+3. **Describes what already exists** — `README.md`'s instructions, a `DECISIONS.md` entry that only
+   records, the wording of `MANUAL-CHECKS.md`: no gate of its own. It rides along in the code gate
+   when it ships with code, and is an ordinary edit when it does not.
+4. **Code**: the sections above, unchanged.
+
+Gate the brief **before** the code it plans is written; that is the whole of its value. A single
+change carrying both a brief and its implementation is one that should have been split, and the
+plan gate cannot do its job on it — an **ask** it returns is a question the code has already
+answered. Where one arrives anyway, run the code gate and say in the report that the plan went
+ungated.
+
+There is a floor: a typo, a link, a formatting fix, or moving a step from Planned to Shipped
+decides nothing and earns no round. Two things no tool checks — that every link in
+`prompts/README.md` resolves, and that its table matches what has actually shipped. Both are by
+hand, and the second is worth a script the day someone tires of it.
+
+### The two plan reviewers
+
+Launch **both in parallel, in a single message**, before the brief is handed to an implementing
+agent, and give each the original request and the document. `plan-tradeoff-reviewer` asks whether
+this is the right thing to build; `plan-gap-reviewer` asks what the document does not say, what it
+says twice, and whose question that is. **The Opus rule above applies unchanged.** Their briefs
+live in `.claude/agents/` and both apply `.claude/skills/planning-docs/SKILL.md`, which is the
+standard for **writing** a brief in the first place, not only for reviewing one.
+
+### Findings: ask, blocking, non-blocking
+
+**`## Acting on the findings` above governs both gates.** Fix the blocking ones now, take a
+non-blocking one only where the fix is genuinely a line or two, say which bucket each finding went
+into, and write down the ones you reject with the reasoning rather than dropping them.
+
+Blocking means here what it means there — **a finding whose fix changes what gets built, or who
+decides it**. A stale line number, a sentence that could be clearer, a paragraph that only restates
+the one above: all real, all worth taking, none of them blocking. Inflating a label costs a whole
+extra round of two Opus reviewers, so do not.
+
+Plan reviewers add a third, and it is the one they exist for.
+
+**ask** — the choice belongs to the owner: taste, priorities, what they are willing to live with,
+what music or hardware they will supply. **Do not answer it yourself**, and do not settle it with a
+sensible default and a footnote. Put them as **one numbered list, five at most across both
+reviewers**, merged and ranked by what a wrong answer would cost; anything that does not fit is
+carried to the next batch rather than dropped. `SKILL.md` says how to phrase them.
+
+### Finishing: a plan may ship with a question open
+
+This replaces "green CI" as the finishing condition — `npm run ci` still has to pass, it is simply
+no longer what says the work is done. A brief is finished when every **ask** has been answered, or,
+where the step's instructions hold unchanged under either answer, is recorded in it as a named
+precondition saying what happens under each. `step22.md` is the worked example: it cannot start
+until a second piece exists, and it says what happens whether the owner authors one or the project
+transcribes public-domain material.
+
+That escape is only for a question of that shape. An **ask** whose answer would rewrite the step is
+not made finished by writing it down; it waits, and a brief carrying one does not go to an
+implementing agent.
+
+### Re-running, and stopping
+
+Re-run both whenever the document changed materially since the last round — blocking findings you
+acted on, an answer the owner gave, or a precondition you recorded yourself. All three leave a
+document nobody has reviewed. A round with no blocking findings and no unrecorded **ask** ends the
+loop.
+
+**Three rounds, as for code.** Round 3 of the steps 9-14 plan is why it is not two: both reviewers
+returned a blocking finding there, one of them a gate that would have passed on the bug its step
+existed to prevent. At the cap, hand the document back to whoever asked for it with the open points
+named. For a plan that hand-back is not a failure — it is how the remaining asks get answered.
+
+An empty plan review is a weaker result than an empty code review: say which futures were played
+forward and which alternatives were weighed, or the emptiness means nothing.
+
+forward and which alternatives were weighed, or the emptiness means nothing.
 
 ## House rules for the code itself
 

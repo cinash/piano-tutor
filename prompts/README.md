@@ -4,6 +4,12 @@ One file per step. Each is the brief that was — or will be — handed to an im
 and each outlives the work as the record of what was actually asked, alongside `DECISIONS.md`
 for the non-obvious choices and `MANUAL-CHECKS.md` for what only a real piano can confirm.
 
+Before a brief is handed over it goes through the planning gate in `CLAUDE.md`: two reviewers
+that argue with the plan rather than with code — one about whether it is the right thing to
+build, one about what it leaves unsaid — and that put what only the owner can decide back to
+them rather than settling it. `.claude/skills/planning-docs/SKILL.md` is the standard they
+judge a brief against, and the guide for writing one.
+
 ## Shipped
 
 | Step                            | What it added                                       |
