@@ -985,15 +985,28 @@ plays, arrive with the batch that brings Nos. 1 and 2.
 
 Step 28's first batch recognised pp. 20-29 and compared the pupil's part of Nos. 8, 9 and 12-31
 with the LilyPond files, which were checked on the same scan (`scripts/beyer/calibrate.py`:
-both played through with repeats written out, note by note, aligned). Of 2,538 notes, 94.2%
-agree in pitch and rhythm and 96.1% in pitch; 7 of the 22 pieces agree entirely. Nos. 10 and 11
-are left out, the LilyPond files' being other pieces. None of it is committed as a piece.
+both played through with repeats written out, note by note, aligned, over whichever side has
+more notes, so a note added counts as much as one dropped). Of 2,538 notes the recognition read
+2,726; 87.7% agree in pitch and rhythm and 89.4% in pitch. Nos. 10 and 11 are left out, the
+LilyPond files' being other pieces, and none of it is committed as a piece.
 
-The errors are of a few kinds: a whole note missed in the left hand (Nos. 8, 26, 29), a dot
-missed (Nos. 9, 26), a time signature missed so that every bar is misread (No. 24, whose words
-sit between the staves), and a closing repeat sign missed, which loses a third of Nos. 16 and 18.
-No. 15's LilyPond file repeats bars 1-8 where Peters repeats 9-16; the recognition has it right.
-The import pass's bar check - a voice that does not add up, or a staff left empty - flags a bar
-in 14 of the 15 pieces with any difference and in none of the 7 without; the one it misses is
-No. 16, whose only error is the repeat sign. A missed repeat is invisible to every automated
-check here, and is the one thing a proofreader of these pieces cannot skip.
+Two of the differences are the LilyPond files', not the recognition's: No. 15's repeats bars
+1-8 where Peters repeats 9-16, and No. 30's has no repeat where Peters repeats 9-16, so the
+library's No. 30 plays 16 bars where the book has 24. Leaving both out, 88.9% of 2,318 notes
+agree in pitch and rhythm and 90.6% in pitch, and 5 of the 20 pieces agree entirely.
+
+Most of what is wrong is a repeat sign: a forward repeat at bar 9 missed in Nos. 8, 19, 20, 22
+and 23, so their bars 1-8 are played again, and a closing one missed in Nos. 16 and 18, so
+their second half is played once. The rest is a whole note missed in the left hand (Nos. 8,
+26, 29), a dot missed (Nos. 9, 26), and a time signature missed, so that every bar of No. 24 -
+whose words sit between the staves - is misread. The import pass's bar check (a voice that does
+not add up, or a staff left empty) flags those bars and no bar of a piece without errors, but a
+repeat sign is invisible to it: Nos. 16 and 20 carry no flag at all. Every piece's repeat signs
+have to be read against the scan by a person.
+
+The manifest records No. 18's left-hand diagram as c e f g, 5 3 2 1: the scan ends just below
+that staff's top line, and the digits and the stems left above it are those of the diagrams
+beside Nos. 19 and 20. The Vitest check over the library is the part of step 28's gate that
+holds before any file comes from the scan; the listing of the manifest's pieces, the hands each
+kind plays, and `<rights>` naming the edition and pages are asserted with the first batch that
+commits one.

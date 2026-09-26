@@ -1,6 +1,7 @@
 {
   "edition": "Edition Peters Nr. 2721, ed. Adolf Ruthardt, Leipzig [1895], plate 8033",
   "imslp": "IMSLP #81208",
+  "numbering": "Peters, running to 109; its Nos. 10 and 11 are not the pieces in beyer_op101_no10 and no11",
   "scan": {
     "url": "https://archive.org/download/imslp-im-klavierspiel-op101-beyer-ferdinand/PMLP31149-F_Beyer-Op101.pdf",
     "bytes": 10301776,
@@ -65,7 +66,10 @@
     "18": {
       "kind": "both-hands",
       "pupil": [[25, 6, 7]],
-      "positions": { "right": { "C5": 1, "D5": 2, "E5": 3, "G5": 5 } }
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "G5": 5 },
+        "left": { "C4": 5, "E4": 3, "F4": 2, "G4": 1 }
+      }
     },
     "19": {
       "kind": "both-hands",

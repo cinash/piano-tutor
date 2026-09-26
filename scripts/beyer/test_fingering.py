@@ -121,6 +121,21 @@ class PrintedFingersAreAnchors(unittest.TestCase):
 
         self.assertEqual(fingers(root), ['1', '2', '3', '4', '5', None, None, None])
 
+    def test_a_hand_whose_printed_fingers_contradict_each_other_is_not_fingered_by_the_rule_alone(self):
+        # C5 printed 3 and D5 printed 1 in one chord fit no window; E5 and F5 follow unprinted
+        root = ET.fromstring(
+            '<score-partwise><part><measure>'
+            '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff>'
+            '<notations><technical><fingering>3</fingering></technical></notations></note>'
+            '<note><chord/><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff>'
+            '<notations><technical><fingering>1</fingering></technical></notations></note>'
+            '<note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff></note>'
+            '<note><pitch><step>F</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff></note>'
+            '</measure></part></score-partwise>')
+        notes = list(root.iter('note'))
+
+        self.assertEqual(add_fingering(root), notes[2:])
+
     def test_notes_no_window_reaches_are_returned_unfingered(self):
         # a sixth in the right hand, and a C printed 1 beside an E printed 2 in the left
         root = ET.fromstring(

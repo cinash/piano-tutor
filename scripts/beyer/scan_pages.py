@@ -23,7 +23,8 @@ def pages(data):
         kids = re.search(rb'/Kids\s*\[([^\]]*)\]', node)
         if kids is None:
             yield node
-        for kid in re.findall(rb'(\d+) 0 R', kids.group(1) if kids else b''):
+            return
+        for kid in re.findall(rb'(\d+) 0 R', kids.group(1)):
             yield from leaves(int(kid))
 
     catalog = body(int(re.search(rb'/Root (\d+) 0 R', data).group(1)))
