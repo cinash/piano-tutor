@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:beyer": "python3 -B beyer_op101_musicxml/verify_fingering.py beyer_op101_musicxml && python3 -B -m unittest discover -s scripts/beyer",
+    "test:beyer": "python3 beyer_op101_musicxml/verify_fingering.py beyer_op101_musicxml && python3 -m unittest discover -s scripts/beyer",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

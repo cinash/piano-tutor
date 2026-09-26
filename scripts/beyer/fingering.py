@@ -77,7 +77,7 @@ def choose_windows(events):
     return path[::-1]
 
 
-def child(parent, tag):
+def find_or_add(parent, tag):
     found = parent.find(tag)
     return found if found is not None else ET.SubElement(parent, tag)
 
@@ -92,7 +92,8 @@ def add_fingering(root):
             for note in notes:
                 step = diatonic(note) - base
                 finger = step + 1 if hand == 'RH' else 5 - step
-                child(child(child(note, 'notations'), 'technical'), 'fingering').text = str(finger)
+                technical = find_or_add(find_or_add(note, 'notations'), 'technical')
+                find_or_add(technical, 'fingering').text = str(finger)
 
 
 if __name__ == '__main__':

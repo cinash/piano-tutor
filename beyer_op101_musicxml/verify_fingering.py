@@ -40,7 +40,7 @@ def fingering_per_hand(root):
 
 def main(directory):
     files = sorted(p for p in Path(directory).iterdir() if p.suffix in ('.musicxml', '.xml'))
-    kept = []
+    passed = []
     for path in files:
         root = ET.parse(path).getroot()
         num = etude_number(path, root)
@@ -48,9 +48,9 @@ def main(directory):
         ok = c['RH'] > 0 and c['LH'] > 0
         print(f"{path.name:45} No. {num!s:>4}  RH fingerings: {c['RH']:4}  LH fingerings: {c['LH']:4}  {'OK' if ok else 'REJECTED'}")
         if ok:
-            kept.append(num)
-    print(f"\nKept {len(kept)} of {len(files)}: etudes {sorted(n for n in kept if n is not None)}")
-    return len(kept) == len(files)
+            passed.append(num)
+    print(f"\nPassed {len(passed)} of {len(files)}: etudes {sorted(n for n in passed if n is not None)}")
+    return len(passed) == len(files)
 
 
 if __name__ == '__main__':

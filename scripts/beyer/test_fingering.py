@@ -1,4 +1,4 @@
-"""Run with: python3 -B -m unittest discover -s scripts/beyer"""
+"""Run with: python3 -m unittest discover -s scripts/beyer"""
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path

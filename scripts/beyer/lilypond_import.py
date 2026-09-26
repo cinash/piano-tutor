@@ -31,7 +31,7 @@ RIGHTS = (
     "computed by piano-tutor's scripts/beyer/fingering.py, not copied from the book."
 )
 STEPS = 'cdefgab'
-TYPES = {'1': 'whole', '2': 'half', '4': 'quarter', '8': 'eighth', '16': '16th'}
+TYPES = {'1': 'whole', '2': 'half', '4': 'quarter'}
 TOKEN = re.compile(r'''\\[a-zA-Z]+|"[^"]*"|\d+/\d+|\d+\.*|[a-zA-Z]+[',]*|-\.|\S''')
 
 
