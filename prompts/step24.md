@@ -3,8 +3,8 @@
 Moves every left-hand note of `cicha-noc.musicxml` down one octave and draws the left-hand
 staff in bass clef. Touches `cicha-noc.musicxml`, its parse snapshot
 `src/score/fixtures/cicha-noc.snapshot.json`, the tests that name left-hand pitches
-(`src/App.test.tsx`, `e2e/hand-colours.spec.ts`, `e2e/one-hand-practice.spec.ts`, and any
-other the suite turns up), a comment in `src/config.ts`, the step 21 entry in `DECISIONS.md`
+(`src/App.test.tsx`, `src/score/parseScore.test.ts`, `e2e/virtualKeyboard.ts`,
+`e2e/hand-colours.spec.ts`, `e2e/one-hand-practice.spec.ts`, and any other the suite turns up), a comment in `src/config.ts`, the step 21 entry in `DECISIONS.md`
 and items 3 and 11 of `MANUAL-CHECKS.md`. No code under `src/` changes behaviour and no
 dependency is added. Independent of steps 25 and 26. One branch, `step-24-left-hand-octave`,
 off `main`.
@@ -37,8 +37,9 @@ dyad becomes C5 over C3. The left hand then spans C3-C4 and the right hand E4-F5
 left-hand note is below every right-hand note in the piece.
 
 The `<rights>` text and the `<software>` line say the file is a transcription of the owner's ABC.
-That stops being exactly true, so add to `<rights>` that the left hand was moved down an octave
-and into bass clef at the owner's request, after transcription.
+That stops being exactly true. Add to `<rights>` that the left hand was moved down an octave and
+into bass clef at the owner's request, after transcription, and make `<software>` read
+"Transcribed from the owner's ABC notation for piano-tutor, left hand moved down an octave".
 
 Alternatives weighed:
 
@@ -62,7 +63,10 @@ Alternatives weighed:
   hand's new pitches from `VirtualKeyboardSource`'s bottom row (`BASE_NOTE = 48`, C3 on `KeyZ`),
   or `playPerfectly` will fail with a missing key.
 - `e2e/one-hand-practice.spec.ts:24` plays 67 as "m3 b1, the left hand's first note"; that note
-  is now 55. Check `e2e/virtualKeyboard.ts` covers the bottom row too.
+  is now 55, and the comment at lines 40-43 ("instead of the left's") goes stale with it.
+  `e2e/virtualKeyboard.ts`'s `KEY_FOR_PITCH` has only 64, 67 and 69; add `55: 'b'` (G3).
+- `src/score/parseScore.test.ts:52-63`, the bar-19 test, asserts `{ pitch: 60, hand: 'left' }`
+  with the comment "C5 over C4"; it becomes 48, C3.
 - **The parse snapshot changes on purpose.** Regenerate it and check that the diff holds only
   staff-2 pitches, each exactly 12 lower.
 - **The staff's height is measured, not assumed** (`src/score/StaffView.css`, "~277px engraving",
@@ -70,10 +74,12 @@ Alternatives weighed:
   if the 300px pane now cuts the staff off, `e2e/staff.spec.ts`'s "none of the staff is cut off
   below" fails, and the fix is the height and its entry, not a change to the notes.
 - The element snapshots in `e2e/*-snapshots/` should not move: the finger queue shows fingers,
-  not pitches, and the keyboard snapshot is taken with nothing marked. If one moves, stop and
+  not pitches, and the keyboard snapshot marks only m1 b1's right-hand G4, which does not change. If one moves, stop and
   report it rather than re-blessing it.
 - The keyboard presets' comment (`src/config.ts:9-10`) says each range contains "C4-F5"; it is
-  now C3-F5, which all three presets still contain.
+  now C3-F5, which all three presets still contain. `DECISIONS.md:86` says "this score's C4-F5
+  range" and `prompts/README.md`'s step 21 paragraph says "both hands in treble clef"; both
+  change with it.
 
 ## In scope
 
@@ -84,17 +90,33 @@ The octave and clef change in the MusicXML, its provenance line, and the tests, 
 
 - **Any change to the keyboard, the hand colours or the parser.** They are right; this is a data
   fix.
-- **Changing the arrangement in any other way** — rhythm, harmony, fingering. That is the owner's
-  to supply, as step 21 was.
+- **Changing the arrangement in any other way** — rhythm or harmony. That is the owner's to
+  supply, as step 21 was. Fingering is the one exception under consideration; see the open
+  question below.
 - **Any other piece.** Step 22 is still waiting for a second one.
+
+## Open question for the owner — the left hand's fingering in bars 19-22
+
+Bars 3-8 carry real left-hand fingering (E 5, G 3, A 2, thumb on C). Bars 19-22 do not: bar 19
+puts the thumb on C, the lowest note of the phrase, with finger 3 on the G above it in bar 20, and
+bar 21 has D on 2 under F on 4. In a left hand the thumb is the highest finger and 2 sits above 4,
+so this reads as a slip in the source, and moving the notes down an octave keeps it. The finger
+queue shows those numbers to the child on every event.
+
+- **(a) Correct it here** to a plain left-hand C position (C3 5, D3 4, E3 3, F3 2, G3 1), so bars
+  19-22 read 5 / 1 3 / 1 2 4 / 5. Recommended. If wrong, one bar's numbers are edited back.
+- **(b) Leave the owner's numbers**, and the child practises a fingering that fights the hand.
+- **(c) Wait for the owner to regenerate the arrangement**, and this step waits with it.
+
+The answer changes what this step edits, so it is settled before the brief is handed over.
 
 ## What this makes harder later
 
 Nothing is one-way. Stored attempts hold counters and a loop range, not pitches
-(`src/progress/types.ts`), so history recorded against the old pitches stays valid and
-comparable. Recordings made on the piano against the old left hand (`fixtures/example-replay.json`
-and any the owner has on disk) replay as wrong notes in bars 3-4 onwards; that is expected, not a
-regression. **If the owner regenerates the arrangement**, it replaces the file wholesale as step 21
+(`src/progress/types.ts`), so history recorded against the old pitches stays valid, but nothing
+in a record says which version of the piece it was: the merge date is the only dividing line, and
+the `DECISIONS.md` entry should give it. Any recording the owner made on the piano against the old
+left hand replays as wrong notes from bar 3; that is expected, not a regression. **If the owner regenerates the arrangement**, it replaces the file wholesale as step 21
 did, and this step's new test (below) goes with it if the new left hand crosses the right on
 purpose.
 
@@ -109,7 +131,7 @@ arrangements of the piece are written rather than the owner's ABC.
 ## Gate
 
 - **Layer 1, in `src/score/parseScore.test.ts`. This is the check that fails without the step.**
-  Over `cichaNocScore`, the highest left-hand pitch is lower than the lowest right-hand pitch. It
+  Over the file's parsed score (the test file's local `cichaNoc`), the highest left-hand pitch is lower than the lowest right-hand pitch. It
   names the complaint directly, where the snapshot only says "something changed".
 - The regenerated snapshot, reviewed as above.
 - **Layer 3**, the rewritten `e2e/hand-colours.spec.ts`: G4 marked `right` in bar 1; G3 marked

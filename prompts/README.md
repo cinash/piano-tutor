@@ -131,8 +131,8 @@ step 14 made for hands, and the obvious step after this one.
 
 Three separate reports, kept as three separate steps by the owner's choice; none depends on
 another, so they can be built in any order. Step 24 is a data fix, not a code one: the keyboard
-drew the left hand's notes at their pitch, and the step 21 transcription had put them at the
-right hand's pitches.
+drew the left hand's notes at their pitch, and the owner's ABC, faithfully transcribed in step 21,
+had them at the right hand's pitches.
 
 ## Deliberately not planned
 

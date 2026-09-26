@@ -24,9 +24,10 @@ computer keyboard is not remembered.
 
 **Remember the device's name, not its id.** Step 19 already matches the output port to the
 selected input by name (`findMidiOutput`, `src/midi/WebMidiSource.ts:48`), because the name is
-what identifies the instrument; Chrome's port ids are opaque and are not promised to survive a
-browser restart or a different USB socket. If two connected inputs share the remembered name, the
-first one is taken, which is what `findMidiOutput` does too.
+what identifies the instrument. The Web MIDI spec does ask browsers to keep a port's `id` stable
+across sessions, so an id would work too; the name is chosen for consistency with step 19, and for
+one piano it is at least as robust. If two connected inputs share the remembered name (some
+platforms prefix a second identical device), the first one is taken, as `findMidiOutput` does.
 
 **Stored the way the queue fold is.** `src/devices/lastPianoStore.ts` holds
 `loadLastPiano(): string | null`, `saveLastPiano(name: string)` and `forgetLastPiano()`, under
@@ -36,15 +37,29 @@ which piano is plugged into this computer is not progress, and on another comput
 wrong.
 
 **When it is written and when it is forgotten.** It is saved when the player picks a device from
-the dropdown. It is forgotten when the player presses **Disconnect** while the piano is connected:
-that is the player saying "not this one", and an auto-connect that undid it on the next load would
-be the app arguing back. It is **not** forgotten when the piano is unplugged; the unplug path
+the dropdown. It is forgotten whenever the player presses **Disconnect**, whatever is connected at
+the time: the button means "connect nothing", and an auto-connect that undid it would be the app
+arguing back. That includes pressing it while on the computer keyboard with the piano remembered
+and plugged in; otherwise that press would leave the app attached to nothing with the piano listed,
+and the next device-list refresh would connect it out of nowhere. It is **not** forgotten when the piano is unplugged; the unplug path
 already calls `disconnect()` (`App.tsx`, the device-list effect), and remembering through it is
 what makes plugging back in reconnect.
 
-**Only when nothing else is connected.** If the player has chosen the computer keyboard or a
-replay, plugging the piano in does not take over. Check `sourceRef.current === null` at the moment
-of connecting, not React state, because the check runs in the device-list callback.
+**When it fires: on a device-list refresh, and only when nothing is attached.** The one trigger is
+`refreshInputs` in the device-list effect (`App.tsx`), which already runs on load and on every
+`statechange`. After it has listed the connected inputs, if `sourceRef.current === null` and a
+remembered name is among them, it connects to that input. It uses the list it has just fetched,
+not `webMidiInputs` state, which has not re-rendered yet, and checks the ref rather than React
+state for the same reason. Not a separate effect on `webMidiInputs`: `setWebMidiInputs` stores a
+new array on every refresh, so such an effect would re-run on unrelated port events and is a
+second place to reason about. If the player has chosen the computer keyboard or a replay, plugging
+the piano in does not take over. Given the Disconnect rule above, "nothing attached and the piano
+remembered and listed" arises only on load and after an unplug.
+
+**A failed open is not retried.** If `start()` rejects, for example because another program such
+as `amidi` holds the port, `attach` shows the error and returns to "Not connected" but leaves
+`sourceRef.current` set, so the guard above does not try again until the player picks something.
+That is intended: a retry loop against a port someone else holds would repeat the error.
 
 Rejected: **remembering the computer keyboard too**, by the owner's choice; and **auto-connecting
 to any single MIDI device when nothing is remembered**, because a first visit should still show
@@ -55,11 +70,12 @@ the dropdown, and "the only device" is often "Midi Through".
 - **The unplug path and the button share `disconnect`.** Forget the piano in the button's handler
   (`onDisconnect` on `DevicePicker`), not inside `disconnect()`, or an unplug forgets the piano and
   replugging no longer reconnects.
-- **Stale closures.** `refreshInputs` runs inside an effect keyed on `disconnect`, and
-  `connectWebMidi` reads `webMidiInputs` from the render it was made in. Connect from the freshly
-  listed inputs, not from state that has not re-rendered yet. An effect on `webMidiInputs` that
-  connects when nothing is attached is one way; make sure it does not fire a second connect while
-  the first `start()` is in flight.
+- **Stale closures.** `refreshInputs` lives in an effect keyed only on `disconnect`, so it holds
+  the first render's `attach` and `connectWebMidi`, and `connectWebMidi` looks the name up in
+  `webMidiInputs` state. Connect through something stable (`attach` with the listed input's id and
+  name), and prove it with the replug test, which is the case a stale closure breaks. `attach`
+  sets `sourceRef.current` synchronously, so a second refresh during `start()` cannot connect
+  twice.
 - **Connecting resets practice and drops the loop** (`DECISIONS.md`, "Restart keeps the loop range;
   connecting a device drops it"). A replug mid-session therefore starts the attempt again. That is
   what a manual reconnect does today, and it stays.
@@ -113,6 +129,8 @@ without the step.**
   "Connected: Digital Piano MIDI 1" with no selection made.
 - Choosing a device from the dropdown stores its name.
 - Pressing Disconnect clears it, and a fresh render stays "Not connected".
+- With the computer keyboard connected and the remembered piano listed, pressing Disconnect clears
+  the name, and a following `statechange` leaves the app "Not connected".
 - Unplug (input `state` set to `disconnected`, `statechange` fired): "Not connected", and the name
   is still stored. Plug back in: connected again, with no click.
 - With the computer keyboard connected, plugging the remembered piano in leaves the computer

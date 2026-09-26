@@ -2,7 +2,8 @@
 
 Changes how the staff pane follows its cursor: instead of scrolling only when the marker reaches
 the right edge, it glides so the marker sits about one third of the way across the pane. Touches
-`src/score/StaffView.tsx`, `src/score/StaffView.css`, `e2e/staff-cursor.spec.ts`, the "The cursor
+`src/score/StaffView.tsx`, `src/score/StaffView.css`, the OSMD stub in `src/testSetup.ts`,
+`e2e/staff-cursor.spec.ts`, the "The cursor
 scrolls its own pane, not the page" entry in `DECISIONS.md` and item 11 of `MANUAL-CHECKS.md`. No
 dependency. Independent of steps 24 and 26. One branch, `step-25-staff-scroll`, off `main`.
 
@@ -16,7 +17,7 @@ never more than a note or two visible ahead of it.
 ## This replaces a recorded decision
 
 `DECISIONS.md`'s "The cursor scrolls its own pane, not the page" chose
-`scrollIntoView({ block: 'nearest' })` (`src/score/StaffView.tsx:74`) because it "scrolls the pane
+`scrollIntoView({ block: 'nearest' })` (`src/score/StaffView.tsx:77`) because it "scrolls the pane
 only as far as it must". Minimal scrolling is exactly what the player does not want. The other
 half of that entry, that the page never moves, still stands and is kept.
 
@@ -45,8 +46,11 @@ not do without a second check. Setting `scrollLeft` is then smooth or instant by
 Alternatives weighed:
 
 - **Keep `scrollIntoView` and pass `inline: 'center'`.** Rejected. It centres rather than holding
-  a third, and it scrolls every scrollable ancestor, which is why OSMD's own `followCursor` was
-  left off in the first place.
+  a third, and like today's call it can scroll ancestors of the pane, which setting `scrollLeft`
+  cannot.
+- **Keep `scrollIntoView` with `inline: 'start'` and `scroll-padding-inline-start: 33.333%` on
+  the pane.** Roughly equal: no rect arithmetic, and the third sits in CSS beside the glide. Not
+  taken, because it keeps the ancestor scrolling this step otherwise removes.
 - **Scroll only once the marker passes the third, and never back.** Rejected. Restart and the loop
   wrap move the marker backwards, and "never back" would leave it off-screen; and telling
   backwards from forwards means remembering where it was, which the "reset and re-scan, never
@@ -64,7 +68,14 @@ Alternatives weighed:
   not by the page's timers, so poll for the settled position with `expect.poll` rather than
   asserting it once.
 - **jsdom has no layout**, and OSMD is stubbed there (`DECISIONS.md`, "OSMD is stubbed in jsdom").
-  The position is proved in Playwright, not in `StaffView.test.tsx`.
+  The position is proved in Playwright, not in `StaffView.test.tsx`. The stub's cursor
+  (`src/testSetup.ts:18`) has only `cursorElement: { scrollIntoView }`, and it still reaches the
+  scroll line, so every jsdom test rendering `<App />` throws until the stub gains a
+  `getBoundingClientRect`.
+- **The marker moves twice on each note.** OSMD redraws it at the next note at once, then the pane
+  glides it back to the third, so in wait-mode it hops right and slides back left. flowkey's
+  cursor stays still while the music moves. An instant jump would pin it; the owner chose the
+  glide, and it is one CSS rule to change, so the manual check asks.
 
 ## In scope
 
@@ -95,8 +106,13 @@ ahead of the marker) and why the target is recomputed rather than tracked.
 - **Layer 3, in `e2e/staff-cursor.spec.ts`. This is the check that fails without the step.** After
   the existing test has let the demo run some fifteen bars, poll until the cursor's left edge,
   measured from the pane's left edge, is within 10% of the pane's width of one third. Under
-  `block: 'nearest'` it sits near the right edge, so this fails today.
-- Add: after Restart, the pane polls back to `scrollLeft` 0.
+  `block: 'nearest'` it sits near the right edge, so this fails today. Measure only while
+  `scrollLeft < scrollWidth - clientWidth`: near the end of the piece the browser clamps the
+  scroll and the marker legitimately sits right of the third. Assert that condition first, and
+  if fifteen bars is too close to the end at the test viewport, run the demo for less.
+- Add: press Stop (`listen-to-piece`), and the pane polls back to `scrollLeft` 0, since the
+  cursor returns to m1 b1, where practice was waiting. Not Restart: it does not stop the demo, and
+  the cursor goes on following it.
 - Keep the existing `scrollLeft > 0` and `toBeInViewport` assertions, and assert that
   `window.scrollY` has not changed across the run.
 - `npm run ci` green proves where the pane settles. It does not prove the glide feels right.
@@ -105,8 +121,9 @@ ahead of the marker) and why the target is recomputed rather than tracked.
 
 In item 11, replace "the pane should scroll right on its own as the cursor reaches its edge" with:
 the cursor should settle about a third of the way across and the music should glide past it, with
-several notes always visible ahead; say whether the glide trails the cursor visibly when Listen
-plays at 150%.
+several notes always visible ahead; say whether the marker's hop-then-slide on each note reads
+well or whether an instant jump would be calmer, and whether the glide trails the cursor visibly
+when Listen plays at 150%.
 
 ## Finally
 
