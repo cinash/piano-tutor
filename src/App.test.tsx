@@ -339,3 +339,130 @@ describe('folding the finger queue away', () => {
     expect(screen.queryByTestId('falling-notes')).toBeNull();
   });
 });
+
+describe('remembering the piano', () => {
+  const PIANO = 'Digital Piano MIDI 1';
+  let piano: FakeMidiInput;
+  let access: ReturnType<typeof fakeMidiAccess>;
+
+  beforeEach(() => {
+    piano = new FakeMidiInput('id-1', PIANO);
+    access = fakeMidiAccess({ inputs: [piano] });
+    stubRequestMidiAccess(access);
+  });
+
+  const rememberPiano = (name: string) =>
+    localStorage.setItem('piano-tutor.last-piano.v1', name);
+  const rememberedPiano = () => localStorage.getItem('piano-tutor.last-piano.v1');
+
+  /** Plugs the piano in or out the way the browser reports it: a state, then an event. */
+  function setPianoState(state: FakeMidiInput['state']) {
+    piano.state = state;
+    act(() => access.fireStateChange());
+  }
+
+  /**
+   * Plugs in a second device and waits for the dropdown to list it. The refresh that
+   * lists it is one that would have connected the piano, so once it shows, a test can
+   * assert that nothing was connected.
+   */
+  async function refreshDeviceList() {
+    access.inputs.set('id-2', new FakeMidiInput('id-2', 'Midi Through Port-0'));
+    act(() => access.fireStateChange());
+    await screen.findByRole('option', { name: 'Midi Through Port-0' });
+  }
+
+  it('connects to the remembered piano on load, with no selection made', async () => {
+    rememberPiano(PIANO);
+    render(<App />);
+    await screen.findByText(`Connected: ${PIANO}`);
+  });
+
+  it('remembers the piano chosen from the dropdown', async () => {
+    render(<App />);
+    await screen.findByRole('option', { name: PIANO });
+    fireEvent.change(screen.getByTestId('webmidi-device-select'), {
+      target: { value: 'id-1' },
+    });
+    await screen.findByText(`Connected: ${PIANO}`);
+
+    expect(rememberedPiano()).toBe(PIANO);
+  });
+
+  it('keeps the piano remembered when switching to the computer keyboard', async () => {
+    rememberPiano(PIANO);
+    render(<App />);
+    await screen.findByText(`Connected: ${PIANO}`);
+
+    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
+    await screen.findByText('Connected: computer keyboard');
+
+    expect(rememberedPiano()).toBe(PIANO);
+  });
+
+  it('forgets the piano on Disconnect, so the next load stays disconnected', async () => {
+    rememberPiano(PIANO);
+    const { unmount } = render(<App />);
+    await screen.findByText(`Connected: ${PIANO}`);
+
+    fireEvent.click(screen.getByTestId('disconnect-button'));
+    expect(rememberedPiano()).toBeNull();
+    unmount();
+
+    render(<App />);
+    await screen.findByRole('option', { name: PIANO });
+    expect(screen.getByText('Not connected')).toBeDefined();
+  });
+
+  it('forgets the piano on Disconnect from the computer keyboard too', async () => {
+    rememberPiano(PIANO);
+    render(<App />);
+    await screen.findByText(`Connected: ${PIANO}`);
+    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
+    await screen.findByText('Connected: computer keyboard');
+
+    fireEvent.click(screen.getByTestId('disconnect-button'));
+    expect(rememberedPiano()).toBeNull();
+
+    // The piano is still listed, so a refresh that still remembered it would connect it.
+    await refreshDeviceList();
+    expect(screen.getByText('Not connected')).toBeDefined();
+  });
+
+  it('keeps the piano through an unplug, and reconnects when it is plugged back in', async () => {
+    rememberPiano(PIANO);
+    render(<App />);
+    await screen.findByText(`Connected: ${PIANO}`);
+
+    setPianoState('disconnected');
+    await screen.findByText('Not connected');
+    expect(rememberedPiano()).toBe(PIANO);
+
+    setPianoState('connected');
+    await screen.findByText(`Connected: ${PIANO}`);
+  });
+
+  it('leaves the computer keyboard connected when the piano is plugged in', async () => {
+    rememberPiano(PIANO);
+    piano.state = 'disconnected';
+    render(<App />);
+    fireEvent.click(screen.getByTestId('use-virtual-keyboard'));
+    await screen.findByText('Connected: computer keyboard');
+
+    setPianoState('connected');
+    await screen.findByRole('option', { name: PIANO });
+
+    expect(screen.getByText('Connected: computer keyboard')).toBeDefined();
+  });
+
+  it('stays disconnected when the remembered piano is not plugged in', async () => {
+    rememberPiano('Some Other Piano');
+    render(<App />);
+    await screen.findByRole('option', { name: PIANO });
+
+    expect(screen.getByText('Not connected')).toBeDefined();
+    expect((screen.getByTestId('webmidi-device-select') as HTMLSelectElement).value).toBe(
+      '',
+    );
+  });
+});

@@ -279,8 +279,30 @@ cost of measure numbers after bar 12 not matching the owner's own source.
 
 If the currently connected input disappears from the enumerated device list (unplugged),
 the app stops the source and clears held notes rather than trying to keep the UI in a
-"waiting to reconnect" state. Reconnecting is just picking the device again once it
-reappears in the dropdown.
+"waiting to reconnect" state. Since step 26, plugging it back in reconnects it on its own:
+the unplug leaves the piano remembered, and the device-list refresh that sees it return
+connects to it — see "The last piano is remembered by name, and reconnected whenever it is
+listed and nothing is attached".
+
+## The last piano is remembered by name, and reconnected whenever it is listed and nothing is attached
+
+Picking a device from the dropdown stores its name in `localStorage` under
+`piano-tutor.last-piano.v1` (`src/devices/lastPianoStore.ts`). The name rather than the port
+id, for consistency with the output port, which step 19 already finds by name; where two
+inputs share it, the first is taken. On every device-list refresh — the page load and every
+`statechange` — if nothing is attached and an input of that name is connected, the app
+connects to it without a click. So a reload reconnects, and so does plugging the piano back
+in after an unplug; but plugging it in while the computer keyboard or a replay is connected
+does not take over.
+
+Only the Disconnect button forgets it, whatever was connected when it was pressed: the button
+means "connect nothing", and an auto-connect that undid it would be the app arguing back.
+Switching to the computer keyboard keeps it, because that is a stand-in, and an unplug keeps
+it, which is what makes the replug reconnect. The computer keyboard itself is never
+remembered. A failed open is not retried until the next reload or the next choice, so a
+port another program holds shows its error once rather than in a loop. It is not part of
+exported progress: which piano is plugged into this computer is not progress, and on another
+computer it would be wrong.
 
 ## Practice engine: the roll window and note-off debounce don't gate `advance()`, but early-note grace does
 
