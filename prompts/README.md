@@ -120,13 +120,21 @@ replay picker is dev-only.
 Recording which piece an attempt was of is deliberately not part of it — the same trade
 step 14 made for hands, and the obvious step after this one.
 
+## Planned — slowing the demo down
+
+| Step                         | What it adds                            |
+| ---------------------------- | --------------------------------------- |
+| [23](step23.md) Listen speed | Play the demo at 50%–150% of `DEMO_BPM` |
+
+Reopens half of the tempo decision below, in the open: the demo gets five speed presets
+and practice stays untimed.
+
 ## Deliberately not planned
 
-**Tempo and speed control.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo
-is out of scope by decision in `step5.md`. Wanting it back is a decision to reverse in the
-open, not a gap to fill quietly. Step 17's demo has to pick a speed to play at and so carries
-one fixed constant, but that is a property of the demonstration: practice stays untimed and
-there is still no control.
+**Tempo in practice.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo is
+out of scope by decision in `step5.md`. Step 23 brings speed back for the Listen demo only;
+practice stays untimed wait-mode, and the owner confirmed they do not want a timed mode.
+Wanting one later is a decision to reverse in the open, not a gap to fill quietly.
 
 **Recording which hand an attempt used.** Kept out of step 14, which says why. Its own step,
 if the mixing turns out to matter in practice.

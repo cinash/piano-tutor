@@ -92,7 +92,7 @@ Two things will not fall out of that on their own:
   same reason: `AttemptRecord` has an optional `loop?` and `isAttemptRecordArray` tolerates
   an absent optional field, so a `piece?: string` would be backward compatible and is not
   hard — it is simply a second thing, with a column, an import path and an export format of
-  its own. It is the obvious step 23 and the mixing will be more annoying than the hands
+  its own. It is the obvious next step and the mixing will be more annoying than the hands
   version was. Note it in the report; do not build it here.
 - **A file picker for the player's own MusicXML**, per the section above.
 - **Per-piece anything else** — no per-piece tempo, keyboard width, hand selection or loop
