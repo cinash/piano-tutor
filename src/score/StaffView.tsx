@@ -25,8 +25,15 @@ export function StaffView({ targetStartTime }: StaffViewProps) {
 
     // autoResize defaults on and attaches a window resize listener that 2.1.3 never
     // removes, so a discarded instance would redraw into the container the cleanup
-    // below emptied. Off, and the lifecycle is ours.
-    const osmd = new OpenSheetMusicDisplay(container, { autoResize: false });
+    // below emptied. Off, and the lifecycle is ours. One horizontal system, so the pane
+    // scrolls sideways rather than wrapping the piece onto lines that fall below it; no
+    // credits, because on a single line OSMD centres the title over the whole piece's
+    // width, out of view, and the band it takes above the staff pushes the staff down.
+    const osmd = new OpenSheetMusicDisplay(container, {
+      autoResize: false,
+      renderSingleHorizontalStaffline: true,
+      drawCredits: false,
+    });
     let cancelled = false;
 
     void osmd.load(cichaNocXml).then(() => {

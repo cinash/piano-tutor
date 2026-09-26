@@ -555,9 +555,14 @@ matters is reacting to a measurement rather than a guess.
 
 ## The staff is a fixed-height pane, and it sits above the loop picker
 
-Engraved at the window's width the whole piece is some 640 px tall, which would push the
-finger queue most of the way down the window — the staff is a third cue beside the queue
-and the keyboard, not a replacement, so it is bounded to 320 px and scrolls. The height is
+Engraved at the window's width the whole piece wraps onto several systems some 640 px tall,
+which would push the finger queue most of the way down the window — and a pane bounded
+below that cut the lower systems off. The staff is a third cue beside the queue and the
+keyboard, not a replacement, so OSMD renders it as a single horizontal system
+(`renderSingleHorizontalStaffline`) that scrolls sideways, in a pane bounded to 300 px: the
+~277 px system plus room for a horizontal scrollbar. Credits are off, because on one line
+OSMD centres the title over the whole piece's width, out of view, while the band it takes
+still pushes the staff down. The height is
 also a whole number on purpose: OSMD's is fractional (639.5 px here), and half a pixel of
 it would land the queue and the keyboard on a half-pixel boundary, failing their committed
 screenshots on antialiasing alone. It sits above the _loop picker_ rather than directly
@@ -629,12 +634,13 @@ the cursor is hidden, because there is no next note to mark.
 
 ## The cursor scrolls its own pane, not the page
 
-A twenty-two-bar piece lays out over several systems and the staff pane is 320 px, so a marker
-below the fold marks nothing. OSMD has its own `followCursor`, but it calls
+A twenty-two-bar piece on a single system is far wider than the window, so a marker past
+the right edge of the pane marks nothing. OSMD has its own `followCursor`, but it calls
 `scrollIntoView({ block: 'center' })`, which centres the cursor in _every_ scrollable
 ancestor — including the document, so each note played would drag the whole page about,
 and the keyboard is already the element that falls off the bottom. It is left off, and the
-seek calls `scrollIntoView({ block: 'nearest' })` on the cursor element itself instead:
+seek calls `scrollIntoView({ block: 'nearest' })` on the cursor element itself instead
+(`inline` defaults to `'nearest'` too, which is the axis that matters):
 that scrolls the pane only as far as it must, and does nothing at all while the marker is
 already visible.
 

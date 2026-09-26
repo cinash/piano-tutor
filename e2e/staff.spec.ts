@@ -10,7 +10,13 @@ test('the staff draws the piece', async ({ page }) => {
 
   // OSMD tags each staff line group `staffline`, which is its own class. VexFlow's
   // `vf-`-prefixed ones are a private API and would move under a version bump.
-  expect(await staff.locator('.staffline').count()).toBeGreaterThan(1);
+  // One per hand: the piece is a single system, not several stacked ones.
+  await expect(staff.locator('.staffline')).toHaveCount(2);
 
-  await expect(staff.getByText('Cicha Noc')).toBeVisible();
+  // The pane scrolls sideways through the piece, and none of the staff is cut off below.
+  const size = await staff.evaluate((el) => ({
+    overflowsSideways: el.scrollWidth > el.clientWidth,
+    overflowsDownwards: el.scrollHeight > el.clientHeight,
+  }));
+  expect(size).toEqual({ overflowsSideways: true, overflowsDownwards: false });
 });
