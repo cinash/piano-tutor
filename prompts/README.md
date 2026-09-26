@@ -109,9 +109,10 @@ we are, the queue says what to play, and nothing is asked for during a demonstra
 
 ## Planned — more than one piece
 
-| Step                             | What it adds                             |
-| -------------------------------- | ---------------------------------------- |
-| [22](step22.md) Choose the piece | Buttons that change which piece you play |
+| Step                             | What it adds                                   |
+| -------------------------------- | ---------------------------------------------- |
+| [22](step22.md) Choose the piece | Buttons that change which piece you play       |
+| [28](step28.md) Beyer, scanned   | All of Op. 101 recognised, proofread, fingered |
 
 Step 21 replaced the one piece; this one stops it being the only one. **It cannot be built
 until a second piece exists, and the owner has to supply it** — `step22.md` says why, and
@@ -125,6 +126,10 @@ replay picker is dev-only.
 
 Recording which piece an attempt was of is deliberately not part of it — the same trade
 step 14 made for hands, and the obvious step after this one.
+
+Step 28 makes step 22's public-domain alternative real without choosing it: it turns the Peters
+scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches, and bundles none of it.
+Whether step 22's second piece is one of them stays the owner's answer.
 
 ## Deliberately not planned
 
