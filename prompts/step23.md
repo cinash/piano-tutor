@@ -3,7 +3,9 @@
 Adds a speed control to step 17's Listen demo: 50%, 75%, 100%, 125% or 150% of the demo's
 one fixed tempo. Touches `src/config.ts`, `App.tsx`, `App.test.tsx`, `e2e/listen.spec.ts`,
 the "Tempo is out of scope" entry in `DECISIONS.md` and item 9 of `MANUAL-CHECKS.md`. No
-new dependency. One branch, `step-23-listen-speed`, off `main`.
+new dependency. Independent of step 22, which is waiting on a second piece — build it first
+if 22 is still waiting, and re-check the `App.tsx:154` citation if 22 lands first. One
+branch, `step-23-listen-speed`, off `main`.
 
 ## Goal
 
@@ -44,8 +46,9 @@ The presets go in `src/config.ts` as `DEMO_SPEED_PRESETS`, beside `KEYBOARD_PRES
 because that file is "the presets the player can change", and these now are. `DEMO_BPM`
 stays where it is: it is still the constant the percentages are taken of, not something
 the player sets, and the comment above it that says it is not in `config.ts` stays true.
-Each preset is `{ label: '75%', speed: 0.75 }`, the same shape of labelled value as
-`KeyboardPreset`, so the control can find a preset by its label as
+Each preset is a `DemoSpeedPreset`, `{ label: '75%', speed: 0.75 }`, with
+`DEFAULT_DEMO_SPEED` the 100% one, the same shape of labelled value as `KeyboardPreset` and
+`DEFAULT_KEYBOARD_PRESET`, so the control can find a preset by its label as
 `KeyboardRangePicker` does.
 
 ## Confirmed decision — the speed is not remembered
@@ -62,11 +65,14 @@ schedule once when it creates the `DemoPlayer`, so no retiming code is needed. T
 control stays enabled while the demo runs, so a child who hears the demo is too fast can
 pick 50% at once and press Stop, then Listen, rather than having to stop first to find the
 control unlocked. The cost is that a change made mid-demo is not heard until the next
-Listen; the owner chose that behaviour over retiming or locking.
+Listen; the owner chose that behaviour over retiming or locking. A middle way was considered — a
+speed change stopping the running demo, so the next Listen is visibly at the new speed —
+and not taken, because it is not what the owner picked; the manual check should say
+whether a child is confused by it.
 
 ## The control
 
-A `<select>` with a visible `<label>` reading "Speed", as `KeyboardRangePicker` has, and `data-testid="demo-speed-select"`, placed after the
+A `<select>` with a visible `<label>` reading "Speed", as `KeyboardRangePicker` has, with `demo-speed-select` as both its `id` and its `data-testid`, placed after the
 Listen button **on the Restart row** and under the same `active.kind !== 'none'`
 condition. Putting it on that row matters for the same reason it mattered in step 17: the
 element snapshots (`DECISIONS.md`) break on any vertical shift of what sits below. If one
@@ -108,6 +114,9 @@ rejected because a `<select>` is the idiom the app already uses for a list of pr
   one constant on purpose (`step22.md`, Out of scope), so a per-piece base tempo is a later
   step's decision, taken once a piece that needs one exists.
 - **Any change to `demo.ts`**: its schedule already takes the BPM.
+- **Listen playing only the loop range**, so a slowed demo covers just the hard bars.
+  Considered, and a different feature: it changes the schedule, Stop and the cursor.
+  Nothing here makes it harder later.
 
 ## What this makes harder later
 
@@ -118,17 +127,17 @@ percentages. **Timed practice, if it is ever reopened:** the obvious control is 
 five percentages, and `DEMO_SPEED_PRESETS` would want renaming and its "applies on the
 next Listen" rule revisiting — a small, reversible change. **A play-along mode**, where the demo sounds while the child plays: that
 would need the demo and practice to share a clock, which step 17 deliberately kept apart.
-A speed setting on the demo neither helps nor blocks that. Whether to build it is its own
-question.
+A speed setting on the demo neither helps nor blocks that.
 
 ## Decisions to record in `DECISIONS.md`
 
-Amend the "Tempo is out of scope" entry rather than adding a new one. The demo's speed is
+Amend the "Tempo is out of scope" entry rather than adding a new one, and retitle it so
+the heading no longer says tempo is out of scope — for example "Practice is untimed; the
+Listen demo has speed presets". The demo's speed is
 now one of five player presets, which are percentages of `DEMO_BPM`, reset on load and
 applied on the next Listen. Practice is still untimed because the owner does not want a
 timed mode, and wait-mode already lets a player go as fast as they can. The speed is not
-recorded with attempts, by the owner's choice: the demo creates none, and tying an attempt
-to the last demo heard was judged too loose a signal to keep.
+recorded with attempts, because the owner chose not to record it: the demo creates none.
 
 ## Gate
 
@@ -146,8 +155,10 @@ to the last demo heard was judged too loose a signal to keep.
   Listen, poll until G4 is held, then assert once that G4 is still the only held pitch at a
   deadline of 1.8 s measured from the click (take `Date.now()` before clicking and wait out
   the remainder), not 1.8 s after the poll. At 100% the demo moves to A4 at 1364 ms, so
-  this fails without the feature. The margin on the other side is about 900 ms before A4
-  falls due at 2727 ms, which a slow runner is unlikely to use up but could. Leave the existing test at the default speed as it is.
+  this fails without the feature. The margins are about 436 ms on the side that fails without
+  the feature (less whatever `start()` spends looking for a port, which is little with no
+  output) and about 900 ms before A4 falls due at 2727 ms, which a slow runner is unlikely
+  to use up but could. Leave the existing test at the default speed as it is.
 - No committed screenshot, and do not re-bless the element snapshots. The control's
   placement exists so that they do not move.
 - `npm run ci` green proves the timing of the schedule and the highlighting. It does not
