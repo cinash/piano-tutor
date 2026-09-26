@@ -333,8 +333,10 @@ export function App() {
           }
           // Nothing attached means a page load or an unplug, since Disconnect forgets
           // the piano. The ref, not React state, because the list has not re-rendered.
-          const piano = connected.find((input) => input.name === loadLastPiano());
-          if (sourceRef.current === null && piano) {
+          if (sourceRef.current !== null) return;
+          const remembered = loadLastPiano();
+          const piano = connected.find((input) => input.name === remembered);
+          if (piano) {
             attach(
               new WebMidiSource(piano.id),
               { kind: 'webmidi', deviceName: piano.name },
