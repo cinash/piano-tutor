@@ -12,11 +12,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:beyer": "python3 -B beyer_op101_musicxml/verify_fingering.py beyer_op101_musicxml && python3 -B -m unittest discover -s scripts/beyer",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:versions": "node scripts/check-version-lockstep.mjs",
-    "ci": "npm run check:versions && npm run lint && npm run format:check && npm run build && npm run test && npm run test:e2e"
+    "ci": "npm run check:versions && npm run lint && npm run format:check && npm run build && npm run test && npm run test:beyer && npm run test:e2e"
   },
   "dependencies": {
     "opensheetmusicdisplay": "2.1.3",

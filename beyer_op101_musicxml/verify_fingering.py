@@ -1,4 +1,4 @@
-"""Verify Beyer Op. 101 MusicXML files carry fingering for both hands; delete the ones that do not."""
+"""Verify Beyer Op. 101 MusicXML files carry fingering for both hands; exit 1 if any does not."""
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -49,10 +49,9 @@ def main(directory):
         print(f"{path.name:45} No. {num!s:>4}  RH fingerings: {c['RH']:4}  LH fingerings: {c['LH']:4}  {'OK' if ok else 'REJECTED'}")
         if ok:
             kept.append(num)
-        else:
-            path.unlink()
     print(f"\nKept {len(kept)} of {len(files)}: etudes {sorted(n for n in kept if n is not None)}")
+    return len(kept) == len(files)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1] if len(sys.argv) > 1 else 'beyer_op101_musicxml')
+    sys.exit(0 if main(sys.argv[1] if len(sys.argv) > 1 else 'beyer_op101_musicxml') else 1)
