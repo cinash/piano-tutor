@@ -1,7 +1,8 @@
 .staff-view {
-  /* Bounded, not natural: the whole piece engraves to ~640px and would push the queue
-     down the window. The height is a whole number on purpose — see DECISIONS.md. */
-  height: 320px;
+  /* Bounded, not natural: the piece is one system that scrolls sideways, and this is its
+     ~277px engraving plus room for a horizontal scrollbar. The height is a whole number
+     on purpose — see DECISIONS.md. */
+  height: 300px;
   overflow: auto;
   margin-bottom: 12px;
 }

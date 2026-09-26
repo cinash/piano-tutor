@@ -30,3 +30,21 @@ test('the cursor moves when a note is played, and returns to the start on Restar
 
   await expect.poll(() => cursorPosition(cursor)).toBe(start);
 });
+
+// The piece is one system far wider than the window, so a mark past the pane's right edge
+// has to bring the pane with it. The demo is the quickest way to move the mark there, and
+// its setTimeout clock can be run forward rather than waited out.
+test('the staff scrolls sideways to keep the cursor in view', async ({ page }) => {
+  await page.clock.install();
+  await connectVirtualKeyboard(page);
+
+  const staff = page.getByTestId('staff');
+  const cursor = staff.locator('img');
+  await expect(cursor).toBeVisible();
+
+  await page.getByTestId('listen-to-piece').click();
+  await page.clock.runFor(40_000); // some fifteen bars at 66 bpm
+
+  await expect.poll(() => staff.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+  await expect(cursor).toBeInViewport();
+});
