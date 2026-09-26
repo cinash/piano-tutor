@@ -5,13 +5,16 @@ the finger that rests on it, and outlines where the hand goes next just before i
 all worked out from the fingering and key signature the score already carries. Adds
 `src/keyboard/handPosition.ts` and `src/keyboard/handPosition.test.ts`; touches
 `src/score/types.ts`, `src/score/parseScore.ts`, `src/score/parseScore.test.ts`, the parse snapshot
-`src/score/fixtures/cicha-noc.snapshot.json`, `src/keyboard/PianoKeyboard.tsx`,
-`src/keyboard/PianoKeyboard.css`, `src/keyboard/PianoKeyboard.test.tsx`, `src/App.tsx`,
-`src/App.test.tsx`, a new `e2e/hand-position.spec.ts`, `e2e/virtualKeyboard.ts`, the committed
-keyboard screenshot `e2e/note-names.spec.ts-snapshots/piano-keyboard-chromium-linux.png`,
-`DECISIONS.md` and item 3 of `MANUAL-CHECKS.md`. No dependency. Independent of step 22. One
-branch, `step-27-hand-position`, off `main`, in **four commits**, each passing `npm run ci` and
-each through the code review on its own (below).
+`src/score/fixtures/cicha-noc.snapshot.json`, the five test files that build a `Score` by hand
+(`src/engine/advance.test.ts`, `src/practice/practiceView.test.ts`, `src/practice/demo.test.ts`,
+`src/practice/positionReadout.test.ts`, `src/score/filterScoreByHand.test.ts`),
+`src/keyboard/PianoKeyboard.tsx`, `src/keyboard/PianoKeyboard.css`,
+`src/keyboard/PianoKeyboard.test.tsx`, `src/App.tsx`, `src/App.test.tsx`, a new
+`e2e/hand-position.spec.ts`, the committed keyboard screenshot
+`e2e/note-names.spec.ts-snapshots/piano-keyboard-chromium-linux.png`, `DECISIONS.md` and item 3
+of `MANUAL-CHECKS.md`. No dependency. Independent of step 22. One branch,
+`step-27-hand-position`, off `main`, in **three commits**, each passing `npm run ci` and each
+through the code review on its own (below).
 
 ## Goal
 
@@ -39,30 +42,30 @@ Asked the four open questions of the first draft, the owner answered:
 3. **The idle hand always shows where it comes in next.** Rejected: showing it only in the bar
    before it enters, or only while it plays.
 4. **During Listen, the positions follow the demo**, so the child can watch the hands move before
-   playing. Step 17 blanked the expected keys during the demo because they are "a second
-   instruction at the same time" (`App.tsx:477`); a resting tint is not an instruction to press
-   anything, so that reason does not carry over. The expected keys stay blank during the demo as
-   before.
+   playing. This reverses step 17's rule that during a demonstration the only marks on the
+   keyboard are what is sounding (`App.tsx:477`; DECISIONS.md, "The demo sounds one event at a
+   time"). That rule kept the expected keys off because they are "a second instruction at the same
+   time"; a resting tint is not an instruction to press anything. The expected keys stay blank
+   during the demo as before.
 
-## Four commits
+## Three commits
 
 Each stands on its own and each passes `npm run ci`, so each gets its own review:
 
 1. **The finger on the key to press.** Each expected key shows its `note.finger` and carries
    `data-finger`. No derivation, no stepping rule and none of the traps below — a numeral read from
    the `expectedNotes` the keyboard already receives — and most of the value of "which finger".
-2. **The key signature in the score.** `Score` gains `fifths: number`, read from the first
-   `<key><fifths>`; Cicha Noc reads 0, and its parse snapshot gains the field. Nothing reads it yet.
-3. **The position.** `handPosition.ts`, the tint, the numbers on the other four keys, and the
-   wiring in `App.tsx`, the demo included.
-4. **The outline of the next position.**
+2. **The position.** `Score.fifths`, `handPosition.ts`, the tint, the numbers on the other four
+   keys, and the wiring in `App.tsx`, the demo and the loop included. The key signature lands here
+   rather than alone, because on its own it is a field nothing reads.
+3. **The outline of the next position.**
 
 ## How a position is worked out
 
 The parser already reads every `<fingering>` into `Note.finger` (`src/score/parseScore.ts:166`),
 and every note in `cicha-noc.musicxml` has one. A finger on a key fixes the other four by
 stepping from it **one degree of the key's scale** per finger — the seven pitch classes of the
-major scale that `fifths` names, which a minor key shares:
+major scale that `fifths` names:
 
 - **Right hand:** finger 1 is lowest. Finger _k_ sits _k − f_ scale degrees from a note played by
   finger _f_.
@@ -70,16 +73,36 @@ major scale that `fifths` names, which a minor key shares:
 
 So in F major a thumb on F puts finger 4 on B♭, and in D major a thumb on D puts 3 on F♯. In C
 major (`fifths` 0) it steps along the white keys, and Cicha Noc's positions are exactly those the
-white-key rule gave. A note outside the key — an accidental — cannot be stepped from: that hand has
-**no position** at that point rather than a guessed one.
+white-key rule gave. **`Score.fifths` is a required `number`**, read from the first
+`<key><fifths>`, and 0 when a score has no `<key>` — no sharps or flats written, and
+what `parseScore.test.ts`'s `scoreWithNotes()` helper produces. The five test files above that
+build a `Score` literal gain `fifths: 0`. Rejected: an optional field defaulted in
+`handPosition.ts`, which spreads "no key means C" to every reader.
 
-Rejected: **letting the hand's own upcoming notes fill the fingers they name**, stepping only for
-the rest. It is right for accidentals too, but is more code for a case no piece here has.
+A note outside the key — an accidental — cannot be stepped from: when it is the note fixing the
+position, that hand has **no position** at that point rather than a guessed one. When it is not —
+the raised seventh of a minor key, say G♯ in A minor under a finger the anchor stepped to — the
+rule puts that finger's number on the key in the scale (G), where the hand does not play. That is
+a known wrong shade, not a gap, and it is recorded in `DECISIONS.md` for the first piece that has
+one. Rejected for now: **letting the hand's own upcoming notes fill the fingers they name**,
+stepping only for the rest, which fixes it. It is more code, and no piece here has an accidental;
+the first minor-key piece is where to build it.
 
-**Which note fixes the position:** that hand's next fingered note at or after the current index.
-That is where the hand should be, so an idle hand shows where it comes in next, and a move shows as
-the shaded row jumping the moment the last note of the old position is played. Worked through the
-piece, the bars where each hand **plays** in each position:
+**Which note fixes the position:** that hand's next fingered note, walking the events in the order
+practice will reach them — from the current index forward, and with a loop set, from the loop's
+end back to its first event, as `nextIndexAfter` does (`src/engine/advance.ts:108`), for one full
+pass. So with bars 1-2 looped, the left hand, which does not play there, has no position, and the
+right hand's E4 is followed by G4 again rather than bar 5's D5. `handPosition.ts` takes the loop
+alongside the score and index; it does not export or reuse the engine's private function, whose
+input is an `EngineState`. The demo plays the whole filtered score, so during the demo no loop is
+passed. Rejected: **walking linearly**, as `upNext` does in `src/practice/practiceView.ts:64`
+(DECISIONS.md, "Loop selection: setting a loop doesn't jump playback, only changes where it
+wraps"). That lookahead asks whether a pitch is plausibly what was meant next; a position asks
+where the hand actually goes next, and a wrong one is an instruction on screen. Looping a
+two-bar phrase is the natural drill in this piece, and nearly every phrase ends on the note
+before a move.
+
+Worked through the piece without a loop, the bars where each hand **plays** in each position:
 
 | Hand  | Bars              | Position | Anchored on |
 | ----- | ----------------- | -------- | ----------- |
@@ -90,9 +113,12 @@ piece, the bars where each hand **plays** in each position:
 | Left  | 7                 | F3-C4    | thumb on C4 |
 | Left  | 19-22             | C3-G3    | 5 on C3     |
 
-Bar 7 to bar 8 is a real move and back: the thumb reaches up to C4 and the hand returns for G3 on 3. Where each hand is **shown** is wider: the left hand from bar 1, and on C3-G3 through the whole
-middle of the piece, bars 9-18, while it rests. The right hand has no note after bar 19, so its
-tint disappears for bars 20-22. Both are what the owner chose.
+Bar 7 is drawn as a move to F3-C4 and back. A teacher might call the thumb on C4 a one-key
+extension of E3-B3 instead; keeping the current position for a note one key outside it is the
+fallback if the manual check finds bar 7's jumps read as noise. Where each hand is **shown** is
+wider: the left hand from bar 1, and on C3-G3 through the whole middle of the piece, bars 9-18,
+while it rests. The right hand has no note after bar 19, so its tint disappears for bars 20-22.
+Both are what the owner chose.
 
 Rejected: **one position per phrase**, which needs a notion of phrase the score does not carry.
 **Fingering generated by the app** for notes that have none: this piece has none missing, and it is
@@ -100,12 +126,16 @@ a research problem of its own.
 
 ## The next position
 
-A hand's **next position** is the first position, among its fingered notes after the one fixing
-the current position, that differs from the current one. It is drawn **only when the note about to
-be played is the last one before the move** — the hand's next note fixes the current position and
-the note after it fixes a different one. In Cicha Noc that is the right hand's E4 in bar 2 (next:
-B4-F5), its B4 in bar 6 (next: A4-E5), the left hand's E3 in bar 4 (next: F3-C4), its second C4 in
-bar 7 (next: E3-B3), and so on. After the note is played the tint jumps onto the outline.
+A hand's next position is drawn **only when that hand has a note in the event about to be played,
+and the hand's following fingered note** (in the same loop-aware order) **fixes a different
+position**. That following position is what is outlined. If the following note fixes no position
+(an accidental), there is no outline. An idle hand never carries one: it gets its outline at the
+note before its move, like the playing hand.
+
+In Cicha Noc, without a loop, that is the right hand's E4 in bar 2 (next: B4-F5), its B4 in bar 6
+(next: A4-E5), the left hand's E3 in bar 4 (next: F3-C4), its second C4 in bar 7 (next: E3-B3),
+and so on. After the note is played the tint jumps onto the outline. With bars 1-2 looped, E4 has
+no outline, because G4 follows it in the same position.
 
 Rejected: **the next position drawn all the time.** There is almost always one, so the keyboard
 would carry two positions per hand throughout — four in this piece, with both hands shown. The
@@ -116,14 +146,18 @@ owner saw the outline mock-up at the moment just before a move, which is when it
 - **The position:** a **light tint of the hand's colour** (amber for right, teal for left, lighter
   than the existing expected-key colours, and clear of the held sky blue) on its five keys, each
   showing its finger number, bold, **above** the note name step 13 put at the bottom of every white
-  key. The expected key keeps its strong hand colour and its number; a held key keeps its held
-  colour and its number. Keys between the five that no finger rests on are not tinted.
+  key. A black key in a position (B♭ in F major) takes a black-key variant of the tint, as the
+  expected-key colours already have one each, and its number sits at the bottom of the black key,
+  in a colour readable on it. The expected key keeps its strong hand colour and its number; a held
+  key keeps its held colour and its number. Keys between the five that no finger rests on are not
+  tinted.
 - **The next position:** a **dashed outline** in the hand's colour on its five keys, each showing
   its finger number faint, above the current number where a key is in both (B4 in bar 2 shows 5 and
   a faint 1).
 - The swatches under the keyboard stay as they are: tint and outline are the swatch's hue, and the
   numbers say what they are. The exact shades are the implementer's, judged by the owner at the
-  manual check.
+  manual check. Cicha Noc has no black key in a position, so the black-key variant is seen only
+  in the Layer 2 test until a piece has one.
 
 Rejected: **the finger number replacing the note name** on positioned keys. It avoids a crowded
 bottom strip on keys as narrow as 1/52 of the keyboard at 88 keys, but takes the name away exactly
@@ -134,18 +168,20 @@ The tests read `data-` attributes, as the existing ones do: `data-finger` and `d
 (`'left'` or `'right'`, as `data-hand`) for the position, `data-next-finger` and `data-next-hand`
 for the outline.
 
-`handPosition.ts` is a pure function of a score and an event index, returning each hand's current
-and next position as `{ pitch, hand, finger }[]`. `PianoKeyboard` gains props for the two lists.
-`App.tsx` computes them from the **filtered** score, so "Left hand" practice shows only the left
-hand. The index is `nextEventIndex` in practice. **During the demo** it is the first event whose
-`startTime` is at or after `demoStep.startTime` — a `DemoStep` carries `startTime`, not an index
-(`src/practice/demo.ts:17`) — so the silent steps between events show the hand where its next
-note will be. Past the end of the piece both lists are empty.
+`handPosition.ts` is a pure function of a score, an event index and an optional loop, returning
+each hand's current and next position as `{ pitch, hand, finger }[]`. `PianoKeyboard` gains props
+for the two lists. `App.tsx` computes them from the **filtered** score, so "Left hand" practice
+shows only the left hand. In practice the index is `nextEventIndex` and the loop is the engine's.
+**During the demo** the index is the first event whose `startTime` is at or after
+`demoStep.startTime` — a `DemoStep` carries `startTime`, not an index (`src/practice/demo.ts:17`)
+— so the silent steps between events show the hand where its next note will be. When the demo ends
+or is stopped, `demoStep` goes null and the positions return to practice's index in the same
+render. Past the end of the piece both lists are empty.
 
 ## Traps, and what this step does about each
 
-- **Accidentals** give no position, as above. None occurs in this piece; a Layer 1 case over a
-  hand-built score pins it.
+- **Accidentals**, above: none in this piece; a Layer 1 case over a hand-built score pins the
+  no-position case.
 - **A key change mid-piece.** `fifths` is read from the first `<key>` only. Cicha Noc has one; a
   piece with a change steps by the first key throughout. Recorded in `DECISIONS.md`.
 - **A same-hand chord** fixes the position twice, possibly inconsistently. None here, and nothing
@@ -156,15 +192,11 @@ note will be. Past the end of the piece both lists are empty.
   first. Recorded beside the chord rule.
 - **A position that runs off the keyboard.** The narrowest preset starts at C2 and the lowest
   position here is C3-G3; a key outside the range is simply not drawn.
-- **Loop wrap.** "Next note at or after the index" is linear, as `upNext` is
-  (`src/practice/practiceView.ts:64`, DECISIONS.md, "deliberately linear"): on the last event of a
-  loop an idle hand, or an outline, may show a position from beyond the loop. Accepted, for the
-  same reason.
-- **The demo's own stop.** When the demo ends or is stopped, `demoStep` goes null and the
-  positions return to practice's index in the same render, as the keyboard's held keys already do.
 - **Note names and the screenshot.** Step 13 owns the committed keyboard screenshot, taken at page
-  load at the default preset. Commits 3 and 4 each change what it shows, so each re-takes it. It
-  does not cover the 88-key preset, where the strip is narrowest; the manual check does.
+  load at the default preset, where G4 (finger 3) is the expected key and no outline is drawn.
+  Commit 1 (the 3 on G4) and commit 2 (the tint and the other numbers) each change it, so each
+  re-takes it; commit 3 does not. It does not cover the 88-key preset, where the strip is
+  narrowest; the manual check does.
 
 ## Out of scope
 
@@ -179,25 +211,32 @@ note will be. Past the end of the piece both lists are empty.
 ## What this makes harder later
 
 No persisted state, no exported format, no `localStorage` key: nothing here is one-way. The
-`fifths` field joins `Score`, which nothing stores. Three futures were played forward. **More
-pieces (step 22)** are where the accidental, key-change, chord and shared-key rules are tested;
-each is written down above rather than invented then. **A harder arrangement** (broken chords,
-stretches) turns re-anchoring on every note into the tint and outline changing on almost every
-note; the escape is a hide toggle like step 18's, a new stored setting, which is its own step.
-**Tempo in practice returning:** the outline appears one note before the move, which under a clock
-may be too late; it would then want to appear earlier.
+`fifths` field joins `Score`, which nothing stores. Four futures were played forward. **More
+pieces (step 22)** are where the accidental, minor-key, key-change, chord and shared-key rules are
+tested; each is written down above rather than invented then. **A piece with no fingering** —
+public-domain MusicXML often has none — makes this whole step silently show nothing, and no test
+notices; step 22's check that a bundled piece is fingered on every note is where that belongs.
+**A harder arrangement** (broken chords, stretches) turns re-anchoring on every note into the tint
+and outline changing on almost every note; the escape is a hide toggle like step 18's, a new
+stored setting, which is its own step. **Tempo in practice returning:** the outline appears one
+note before the move, which under a clock may be too late; it would then want to appear earlier.
 
 ## Decisions to record in `DECISIONS.md`
 
 A new entry: a hand's position is five keys fixed by one fingered note, stepping by the key
-signature's scale; an accidental gives no position; `fifths` is the first key's; the position comes
-from the hand's next fingered note, so an idle hand shows where it comes in; the next position is
-outlined only on the last note before a move; positions follow the demo, the expected keys do not;
-the key to press keeps the strong colour and the rest a light one; a same-hand chord anchors on its
-first fingered note and a shared key shows the right hand's number, both until a piece needs
-otherwise. Amend "The keyboard says which key, the falling-note queue says which finger" (line 99)
-and "The keyboard is coloured by hand, the queue by finger" (line 126): the keyboard now carries
-finger numbers too, as plain numerals, and the queue keeps its finger colours.
+signature's scale; `fifths` is the first key's, and 0 without one; an accidental anchor gives no
+position, and an accidental under another finger is shaded on the scale's key — a known wrong
+shade until a minor-key piece arrives; the position comes from the hand's next fingered note in
+loop-aware order, so an idle hand shows where it comes in and a looped phrase shows no move that
+does not happen; the next position is outlined only on the hand's last note before a move;
+positions follow the demo, the expected keys do not; the key to press keeps the strong colour and
+the rest a light one; a same-hand chord anchors on its first fingered note and a shared key shows
+the right hand's number, both until a piece needs otherwise.
+
+Amend four entries: "The keyboard says which key, the falling-note queue says which finger" (line 99) and "The keyboard is coloured by hand, the queue by finger" (line 126), because the keyboard
+now carries finger numbers too, as plain numerals, and the queue keeps its finger colours;
+"Listening is not practising" (line 736) and "The demo sounds one event at a time" (line 782),
+because during the demo the keyboard now also shows where the hands sit.
 
 ## Gate
 
@@ -206,28 +245,39 @@ Each commit names the check that fails without it.
 **Commit 1**, `PianoKeyboard.test.tsx`: an expected key shows its finger, carries `data-finger`, and
 keeps its strong expected class.
 
-**Commit 2**, `parseScore.test.ts`: Cicha Noc parses with `fifths` 0, and a hand-built score with
-`<fifths>-1</fifths>` with −1.
+**Commit 2.**
 
-**Commit 3**, `src/keyboard/handPosition.test.ts` against the parsed `cicha-noc` score: at the first
-event, right hand E4-B4 on 1-5 and left hand E3-B3 on 5-1; at bar 5's first event the right hand is
-B4-F5; at bar 7 the left is F3-C4 and at bar 8 E3-B3 again; past the last event, nothing. **The
-bar-5 case fails if positions are taken from a hand's first note instead of its next one**, and
-the bar-7 case fails if the left hand is numbered like the right. Over hand-built scores: in F
-major (`fifths` −1) finger 4 above a thumb on F lands on B♭ — **the case that fails under white-key
-stepping** — and an accidental anchor gives no position. `PianoKeyboard.test.tsx`: the five keys of
-a position carry `data-position-hand` and `data-finger`, the black keys between them neither, the
-expected key keeps its strong class and number, a held key keeps its `data-finger`. `App.test.tsx`:
-with "Left hand" selected no key carries `data-position-hand="right"`; while the demo runs, the
-keys carry positions and none is marked expected. `e2e/hand-position.spec.ts` over the virtual
-keyboard (extend `KEY_FOR_PITCH` in `e2e/virtualKeyboard.ts` with E3 and A3 for bars 3-4): at start
-the right hand's five keys show 1-5, and after playing through bar 4 they have moved to B4-F5.
+- `parseScore.test.ts`: Cicha Noc parses with `fifths` 0; a hand-built score with
+  `<fifths>-1</fifths>` parses with −1; one with no `<key>` with 0.
+- `src/keyboard/handPosition.test.ts` against the parsed `cicha-noc` score: at the first event,
+  right hand E4-B4 on 1-5 and left hand E3-B3 on 5-1; at bar 5's first event the right hand is
+  B4-F5; at bar 7 the left is F3-C4 and at bar 8 E3-B3 again; past the last event, nothing. **The
+  bar-5 case fails if positions are taken from a hand's first note instead of its next one**, and
+  the bar-7 case fails if the left hand is numbered like the right. With bars 1-2 looped: at the
+  first event, no left-hand position — **the case that fails under a linear walk**. Over hand-built
+  scores: in F major (`fifths` −1) finger 4 above a thumb on F lands on B♭ — **the case that fails
+  under white-key stepping** — and an accidental anchor gives no position.
+- `PianoKeyboard.test.tsx`: the five keys of a position carry `data-position-hand` and
+  `data-finger`, the black keys between them neither, the expected key keeps its strong class and
+  number, a held key keeps its `data-finger`, and a black key in a position carries both.
+- `App.test.tsx`: with "Left hand" selected no key carries `data-position-hand="right"`. With the
+  demo started and run forward to bar 5, as the existing case does at `App.test.tsx:177`
+  (`advanceTimersByTime(12_728)`), the right hand's position is B4-F5 and no key is marked expected
+  — **the case that fails if the demo wiring is missing**, since at the demo's first step it and
+  practice agree. After Stop, the right hand's position is E4-B4 again.
+- `e2e/hand-position.spec.ts` over the virtual keyboard: at start the right hand's five keys show
+  1-5; after playing bar 1 they still do; after playing bar 2's E4 they have moved to B4-F5. No new
+  keys are needed in `e2e/virtualKeyboard.ts`.
 
-**Commit 4**, `handPosition.test.ts`: at bar 1's first event the right hand has no next position;
-at bar 2's E4 it is B4-F5 on 1-5; at bar 7's second C4 the left hand's is E3-B3. `PianoKeyboard`:
-the outlined keys carry `data-next-hand` and `data-next-finger`, and B4 carries both `data-finger`
-5 and `data-next-finger` 1. The e2e spec: after playing bar 1, B4-F5 is outlined, and after
-playing E4 the outline is gone and the tint is on B4-F5.
+**Commit 3.**
+
+- `handPosition.test.ts`: at bar 1's first event the right hand has no next position; at bar 2's
+  E4 it is B4-F5 on 1-5; at bar 7's second C4 the left hand's is E3-B3; with bars 1-2 looped, bar
+  2's E4 has none.
+- `PianoKeyboard.test.tsx`: the outlined keys carry `data-next-hand` and `data-next-finger`, and a
+  key in both carries `data-finger` and `data-next-finger`.
+- The e2e spec: after playing bar 1, B4-F5 is outlined and B4 carries `data-finger` 5 and
+  `data-next-finger` 1; after playing E4 the outline is gone and the tint is on B4-F5.
 
 Nothing in the suite knows whether the numbers are readable or whether the key to press still
 stands out among the tinted ones; that is manual.
@@ -238,7 +288,8 @@ Item 3, which already checks the keyboard's marking by hand: while playing Cicha
 confirm the shaded keys match where the hand actually sits, that the outline shows each move in
 time to see it coming, that the key to press still stands out among the tinted ones, and — at the
 **88 keys** preset — that the finger numbers and note names are both readable at the distance the
-child sits from the screen. Press Listen and confirm the shaded positions move with the demo.
+child sits from the screen. Loop bars 1-2 and confirm no outline appears on E4. Press Listen and
+confirm the shaded positions move with the demo.
 
 ## Finally
 
