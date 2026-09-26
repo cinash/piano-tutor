@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import './StaffView.css';
 import { cichaNocXml } from './cichaNoc';
 
+/** Where the pane holds the cursor: more of the music ahead of it than behind, as flowkey does. */
+const CURSOR_FRACTION_FROM_LEFT = 1 / 3;
+
 export interface StaffViewProps {
   /**
    * Where to mark, in quarter-note beats from the start of the piece — the `startTime`
@@ -71,10 +74,15 @@ export function StaffView({ targetStartTime }: StaffViewProps) {
     }
     cursor.show();
 
-    // OSMD's own followCursor centres the cursor in every scrollable ancestor, which
-    // drags the whole page about on each note; 'nearest' scrolls the staff pane only as
-    // far as it must, and not at all while the marker is already visible.
-    cursor.cursorElement.scrollIntoView({ block: 'nearest' });
+    // Only the pane's own scrollLeft, so the page never moves — OSMD's followCursor
+    // scrolls every ancestor. The browser clamps the value at either end of the piece,
+    // and the stylesheet decides whether it glides.
+    const pane = containerRef.current;
+    if (!pane) return;
+    const offset =
+      cursor.cursorElement.getBoundingClientRect().left -
+      pane.getBoundingClientRect().left;
+    pane.scrollLeft += offset - pane.clientWidth * CURSOR_FRACTION_FROM_LEFT;
   }, [renderedOsmd, targetStartTime]);
 
   return <div ref={containerRef} className="staff-view" data-testid="staff" />;

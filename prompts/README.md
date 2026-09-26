@@ -27,6 +27,7 @@ judge a brief against, and the guide for writing one.
 | 21 The owner's own piece        | `cicha-noc.musicxml` replaced by the owner's ABC    |
 | [23](step23.md) Listen speed    | Demo speed presets, 50%–150%; practice untimed      |
 | [24](step24.md) Left hand lower | Left hand an octave down, bass clef, fingering      |
+| [25](step25.md) Staff scroll    | The marker held a third of the way in, gliding      |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -127,7 +128,6 @@ step 14 made for hands, and the obvious step after this one.
 
 | Step                               | What it repairs                                   |
 | ---------------------------------- | ------------------------------------------------- |
-| [25](step25.md) Staff scroll       | The marker held a third of the way in, gliding    |
 | [26](step26.md) Remember the piano | Reconnect to the last piano when it is plugged in |
 
 Three separate reports, kept as three separate steps by the owner's choice; none depends on

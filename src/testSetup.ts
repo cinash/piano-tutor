@@ -15,7 +15,7 @@ vi.mock('opensheetmusicdisplay', () => ({
       reset: () => {},
       next: () => {},
       iterator: { EndReached: true },
-      cursorElement: { scrollIntoView: () => {} },
+      cursorElement: { getBoundingClientRect: () => new DOMRect() },
     };
   },
 }));

@@ -6,3 +6,11 @@
   overflow: auto;
   margin-bottom: 12px;
 }
+
+/* The pane glides to hold the cursor a third of the way in, unless the system asks for
+   less motion; StaffView.tsx only sets scrollLeft. */
+@media (prefers-reduced-motion: no-preference) {
+  .staff-view {
+    scroll-behavior: smooth;
+  }
+}
