@@ -12,18 +12,18 @@
   top: 0;
   box-sizing: border-box;
   border: 1px solid #000;
+  /* Labels sit at the foot of a key: on a white one, below the black keys that overlap its top. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 4px;
 }
 
 .piano-key--white {
   height: 100%;
   background: #fff;
   z-index: 1;
-  /* The name sits below the black keys that overlap the top of this one. */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 4px;
   font-size: 10px;
   color: #555;
 }
@@ -32,11 +32,6 @@
   height: 60%;
   background: #111;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 4px;
   color: #fff;
 }
 
