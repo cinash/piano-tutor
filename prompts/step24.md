@@ -1,10 +1,10 @@
 # Step 24 — The left hand plays an octave lower
 
-Moves every left-hand note of `cicha-noc.musicxml` down one octave and draws the left-hand
-staff in bass clef. Touches `cicha-noc.musicxml`, its parse snapshot
+Moves every left-hand note of `cicha-noc.musicxml` down one octave, draws the left-hand staff in
+bass clef, and corrects the left hand's fingering in bars 19-22. Touches `cicha-noc.musicxml`, its parse snapshot
 `src/score/fixtures/cicha-noc.snapshot.json`, the tests that name left-hand pitches
 (`src/App.test.tsx`, `src/score/parseScore.test.ts`, `e2e/virtualKeyboard.ts`,
-`e2e/hand-colours.spec.ts`, `e2e/one-hand-practice.spec.ts`, and any other the suite turns up), a comment in `src/config.ts`, the step 21 entry in `DECISIONS.md`
+`e2e/hand-colours.spec.ts`, `e2e/one-hand-practice.spec.ts`, and any other the suite turns up), a comment in `src/config.ts`, the step 21 paragraph of `prompts/README.md`, the step 21 entry in `DECISIONS.md`
 and items 3 and 11 of `MANUAL-CHECKS.md`. No code under `src/` changes behaviour and no
 dependency is added. Independent of steps 25 and 26. One branch, `step-24-left-hand-octave`,
 off `main`.
@@ -29,17 +29,12 @@ Music Plus's "easy piano in C major"). For an arrangement whose left hand echoes
 than accompanying it, the standard shape is the same phrase an octave down.
 
 So every `<note>` with `<staff>2</staff>` has its `<octave>` lowered by one, and
-`<clef number="2">` becomes `<sign>F</sign><line>4</line>`. Nothing else in the file changes: the
-same rhythms, the same bars, the same fingering on every note. An octave shift keeps every
-interval, so a fingering that was playable before is playable now. Bar 3 becomes G3 A3 G3 E3,
+`<clef number="2">` becomes `<sign>F</sign><line>4</line>`. The rhythms and bars stay the same,
+and so does every fingering except the left hand's in bars 19-22 (next section): an octave shift
+keeps every interval, so bars 3-8's left-hand fingering stays right. Bars 3-4 become G3 A3 G3 / E3,
 bar 7 becomes C4 C4, the closing bars 19-22 become C3 / G3 E3 / G3 F3 D3 / C3, and bar 19's
 dyad becomes C5 over C3. The left hand then spans C3-C4 and the right hand E4-F5, so every
 left-hand note is below every right-hand note in the piece.
-
-The `<rights>` text and the `<software>` line say the file is a transcription of the owner's ABC.
-That stops being exactly true. Add to `<rights>` that the left hand was moved down an octave and
-into bass clef at the owner's request, after transcription, and make `<software>` read
-"Transcribed from the owner's ABC notation for piano-tutor, left hand moved down an octave".
 
 Alternatives weighed:
 
@@ -51,6 +46,25 @@ Alternatives weighed:
 - **Rewrite the left hand as chord accompaniment** (C, F and G triads), the most common easy
   arrangement. Rejected. That is composing a different arrangement, and the owner said they
   would supply a new one themselves if this is not enough.
+
+## Confirmed decision — the left hand's fingering in bars 19-22 is corrected
+
+Bars 3-8 carry real left-hand fingering (E 5, G 3, A 2, thumb on C). Bars 19-22 did not: bar 19
+put the thumb on C, the lowest note of the phrase, with finger 3 on the G above it in bar 20, and
+bar 21 had D on 2 under F on 4. In a left hand the thumb is the highest finger and 2 sits above 4,
+so it read as a slip in the source, and the octave move alone would have kept it. Asked, the owner
+chose to correct it to a plain left-hand C position (C3 5, D3 4, E3 3, F3 2, G3 1), so the
+left-hand `<fingering>` in bars 19-22 reads **5 / 1 3 / 1 2 4 / 5**. The alternatives offered were
+leaving the owner's numbers, and waiting for a regenerated arrangement. Bars 3-8's left-hand
+fingering and every right-hand fingering stay as they are.
+
+### Provenance
+
+The `<rights>` text and the `<software>` line say the file is a transcription of the owner's ABC.
+That stops being exactly true. Add to `<rights>` that the left hand was moved down an octave and
+into bass clef, and its fingering in bars 19-22 corrected, at the owner's request, after
+transcription, and make `<software>` read
+"Transcribed from the owner's ABC notation for piano-tutor, left hand moved down an octave, bars 19-22 left-hand fingering corrected".
 
 ## Traps
 
@@ -66,15 +80,18 @@ Alternatives weighed:
   is now 55, and the comment at lines 40-43 ("instead of the left's") goes stale with it.
   `e2e/virtualKeyboard.ts`'s `KEY_FOR_PITCH` has only 64, 67 and 69; add `55: 'b'` (G3).
 - `src/score/parseScore.test.ts:52-63`, the bar-19 test, asserts `{ pitch: 60, hand: 'left' }`
-  with the comment "C5 over C4"; it becomes 48, C3.
+  and `finger: 1`, with the comment "C5 over C4"; it becomes `{ pitch: 48, hand: 'left', finger: 5 }`,
+  C3. That makes it a named check on the fingering correction too, for bar 19 at least.
+  `DECISIONS.md:23` ("a C5 over C4") goes stale with it, and so does the "ten pitches" comment at
+  `src/App.test.tsx:25-26`.
 - **The parse snapshot changes on purpose.** Regenerate it and check that the diff holds only
   staff-2 pitches, each exactly 12 lower, and the left-hand fingers of bars 19-22. If a
   `falling-notes` element snapshot shows those events, it moves on purpose too; say so when
   re-blessing it.
 - **The staff's height is measured, not assumed** (`src/score/StaffView.css`, "~277px engraving",
   and `DECISIONS.md`). Bass clef changes the ledger lines under the lower staff. Measure it again;
-  if the 300px pane now cuts the staff off, `e2e/staff.spec.ts`'s "none of the staff is cut off
-  below" fails, and the fix is the height and its entry, not a change to the notes.
+  if the 300px pane now cuts the staff off, the `overflowsDownwards` assertion in
+  `e2e/staff.spec.ts`'s "the staff draws the piece" fails, and the fix is the height and its entry, not a change to the notes.
 - The element snapshots in `e2e/*-snapshots/` should not move: the finger queue shows fingers,
   not pitches, and the keyboard snapshot marks only m1 b1's right-hand G4, which does not change. If one moves, stop and
   report it rather than re-blessing it.
@@ -96,17 +113,6 @@ The octave and clef change in the MusicXML, its provenance line, and the tests, 
   19-22's left hand. That is the owner's to supply, as step 21 was.
 - **Any other piece.** Step 22 is still waiting for a second one.
 
-## Confirmed decision — the left hand's fingering in bars 19-22 is corrected
-
-Bars 3-8 carry real left-hand fingering (E 5, G 3, A 2, thumb on C). Bars 19-22 did not: bar 19
-put the thumb on C, the lowest note of the phrase, with finger 3 on the G above it in bar 20, and
-bar 21 had D on 2 under F on 4. In a left hand the thumb is the highest finger and 2 sits above 4,
-so it read as a slip in the source, and the octave move alone would have kept it. Asked, the owner
-chose to correct it to a plain left-hand C position (C3 5, D3 4, E3 3, F3 2, G3 1), so the
-left-hand `<fingering>` in bars 19-22 reads **5 / 1 3 / 1 2 4 / 5**. The alternatives offered were
-leaving the owner's numbers, and waiting for a regenerated arrangement. Bars 3-8's left-hand
-fingering and every right-hand fingering stay as they are. Add this to the `<rights>` note too.
-
 ## What this makes harder later
 
 Nothing is one-way. Stored attempts hold counters and a loop range, not pitches
@@ -123,7 +129,10 @@ Amend the step 21 entry rather than adding one: it says "C4-F5", "both hands wri
 clef" and "the left hand echoes it on the same pitches". Say instead that the left hand echoes an
 octave lower, in bass clef, moved there by this step because the same-pitch echo put the left hand
 to the right of the right on the keyboard, and that this follows how two-hand beginner
-arrangements of the piece are written rather than the owner's ABC.
+arrangements of the piece are written rather than the owner's ABC. Say too that the left hand's
+fingering in bars 19-22 was corrected to a left-hand C position, because as written it was
+right-hand fingering, and that its "a fingering on every single note" is still true but no longer
+all the owner's.
 
 ## Gate
 
@@ -141,8 +150,10 @@ arrangements of the piece are written rather than the owner's ABC.
 
 Item 3: bar 19's dyad is now "C5 and C3", and the left-hand echo in bars 3-4 should be marked to
 the left of where the right hand played bars 1-2. Item 11: the staves read "treble over bass",
-which no longer matches the owner's ABC, and a sentence saying so and why; the owner reads the
-staff against the ABC with that one difference, and says whether the lower echo sounds right.
+and a sentence saying the file now differs from the owner's ABC in three ways, and why: the left
+hand's clef, its octave, and its fingering in bars 19-22 (5 / 1 3 / 1 2 4 / 5). The owner reads
+the staff against the ABC with those differences, and says whether the lower echo sounds right and
+whether the corrected fingering sits well under the hand.
 
 ## Finally
 

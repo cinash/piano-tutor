@@ -72,8 +72,12 @@ the dropdown, and "the only device" is often "Midi Through".
   replugging no longer reconnects.
 - **Stale closures.** `refreshInputs` lives in an effect keyed only on `disconnect`, so it holds
   the first render's `attach` and `connectWebMidi`, and `connectWebMidi` looks the name up in
-  `webMidiInputs` state. Connect through something stable (`attach` with the listed input's id and
-  name), and prove it with the replug test, which is the case a stale closure breaks. `attach`
+  `webMidiInputs` state. Call `attach` from inside `refreshInputs` with the listed input's id
+  and name, rather than making `attach` a `useCallback` (which would drag `handleEvent` along):
+  the first render's `attach` is safe, because it touches only refs, state setters and the stable
+  `stopDemo`, and `handleEvent` reads through refs. If `react-hooks/exhaustive-deps` then warns, a
+  disable comment on that line saying so is acceptable; `npm run ci` does not fail on warnings, so
+  look for it. Prove it with the replug test, which is the case a stale closure breaks. `attach`
   sets `sourceRef.current` synchronously, so a second refresh during `start()` cannot connect
   twice.
 - **Connecting resets practice and drops the loop** (`DECISIONS.md`, "Restart keeps the loop range;
