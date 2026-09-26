@@ -25,6 +25,7 @@ judge a brief against, and the guide for writing one.
 | [17](step17.md) Listen          | Keys lighting up to the piece; the sound took 19    |
 | [19](step19.md) Output port     | The demo's port, matched to the piano by name       |
 | 21 The owner's own piece        | `cicha-noc.musicxml` replaced by the owner's ABC    |
+| [23](step23.md) Listen speed    | Demo speed presets, 50%–150%; practice untimed      |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -119,15 +120,6 @@ replay picker is dev-only.
 
 Recording which piece an attempt was of is deliberately not part of it — the same trade
 step 14 made for hands, and the obvious step after this one.
-
-## Planned — slowing the demo down
-
-| Step                         | What it adds                            |
-| ---------------------------- | --------------------------------------- |
-| [23](step23.md) Listen speed | Play the demo at 50%–150% of `DEMO_BPM` |
-
-Reopens half of the tempo decision below, in the open: the demo gets five speed presets
-and practice stays untimed.
 
 ## Deliberately not planned
 

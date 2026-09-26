@@ -230,6 +230,35 @@ describe('listening to the piece', () => {
     expect(other.sent).toEqual([]);
   });
 
+  it('plays the demo at the chosen speed', async () => {
+    const output = new FakeMidiOutput('Digital Piano MIDI 1');
+    await renderConnectedApp();
+    stubRequestMidiAccess(fakeMidiAccess({ outputs: [output] }));
+    fireEvent.change(screen.getByTestId('demo-speed-select'), {
+      target: { value: '50%' },
+    });
+    await clickListen();
+
+    // m1 b2.5's A4 falls due at 1364 ms at 100%, and at twice that at 50%.
+    act(() => vi.advanceTimersByTime(1_400));
+    expect(output.sent).not.toContainEqual([0x90, 69, 80]);
+
+    act(() => vi.advanceTimersByTime(1_400)); // 2800 ms in
+    expect(output.sent).toContainEqual([0x90, 69, 80]);
+  });
+
+  it('keeps a running demo at the speed it started with when the speed changes', async () => {
+    const output = new FakeMidiOutput('Digital Piano MIDI 1');
+    await startListening(output);
+
+    fireEvent.change(screen.getByTestId('demo-speed-select'), {
+      target: { value: '50%' },
+    });
+    act(() => vi.advanceTimersByTime(1_400)); // past A4 at 100%, short of it at 50%
+
+    expect(output.sent).toContainEqual([0x90, 69, 80]);
+  });
+
   it('plays silently rather than reporting an error when there is no output port', async () => {
     const { container } = await startListening();
 

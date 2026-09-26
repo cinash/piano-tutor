@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
-import { DEFAULT_KEYBOARD_PRESET, KEYBOARD_PRESETS, type KeyboardPreset } from './config';
+import {
+  DEFAULT_DEMO_SPEED,
+  DEFAULT_KEYBOARD_PRESET,
+  DEMO_SPEED_PRESETS,
+  KEYBOARD_PRESETS,
+  type DemoSpeedPreset,
+  type KeyboardPreset,
+} from './config';
 import type { ActiveSource } from './devices/DevicePicker';
 import { DevicePicker } from './devices/DevicePicker';
 import { downloadJson } from './downloadJson';
@@ -91,6 +98,9 @@ export function App() {
   // What the demo is sounding and where in the piece it has reached, and null when no
   // demo is running.
   const [demoStep, setDemoStep] = useState<DemoStep | null>(null);
+  // Not remembered across a reload, and read only when Listen is pressed, so a change
+  // while the demo plays is heard from the next one — see DECISIONS.md.
+  const [demoSpeed, setDemoSpeed] = useState<DemoSpeedPreset>(DEFAULT_DEMO_SPEED);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
@@ -151,7 +161,7 @@ export function App() {
     // The filtered score, so "Left hand" plus Listen demonstrates the left hand alone.
     // A null is the schedule running out, and ends the demo the same way Stop does.
     const player = new DemoPlayer(
-      buildDemoSchedule(score, DEMO_BPM),
+      buildDemoSchedule(score, DEMO_BPM * demoSpeed.speed),
       // The selected input's name is the output's name too, on this instrument.
       active.kind === 'webmidi' ? active.deviceName : null,
       (step) => (step ? setDemoStep(step) : stopDemo()),
@@ -162,6 +172,13 @@ export function App() {
     // Nothing sounding yet, at the start of the piece where the demo is about to begin.
     setDemoStep({ atMs: 0, startTime: 0, pitches: new Set() });
     void player.start();
+  }
+
+  function handleDemoSpeedChange(event: ChangeEvent<HTMLSelectElement>) {
+    const preset = DEMO_SPEED_PRESETS.find(
+      (candidate) => candidate.label === event.target.value,
+    );
+    if (preset) setDemoSpeed(preset);
   }
 
   useEffect(() => {
@@ -367,7 +384,22 @@ export function App() {
           </button>{' '}
           <button type="button" onClick={handleListen} data-testid="listen-to-piece">
             {demoStep ? 'Stop' : 'Listen'}
-          </button>
+          </button>{' '}
+          {/* On this row, not its own: anything below that moves breaks the element
+              snapshots. */}
+          <label htmlFor="demo-speed-select">Speed</label>{' '}
+          <select
+            id="demo-speed-select"
+            data-testid="demo-speed-select"
+            value={demoSpeed.label}
+            onChange={handleDemoSpeedChange}
+          >
+            {DEMO_SPEED_PRESETS.map((preset) => (
+              <option key={preset.label} value={preset.label}>
+                {preset.label}
+              </option>
+            ))}
+          </select>
         </>
       )}
       <StaffView targetStartTime={staffTarget} />

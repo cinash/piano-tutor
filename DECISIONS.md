@@ -45,7 +45,7 @@ downloads as exactly the array `ReplayMidiSource` and the Layer 2 mutators expec
 turning a recorded bug into a test is a straight drop into `fixtures/` with no
 translation step.
 
-## Tempo is out of scope for this milestone; the falling-note view will not animate on a clock
+## Practice is untimed; the Listen demo has speed presets; the falling-note view will not animate on a clock
 
 The user descoped the tempo slider for now. Since wait-mode has no time limit and tempo
 was its only other consumer, the falling-note view (step 4) will show the upcoming
@@ -59,6 +59,16 @@ while the demo is playing, and practice itself is still untimed and still waits 
 The constant lives in the demo's own module rather than in `src/config.ts`, which holds
 the presets the player can change — a demo constant sitting there would read as a knob
 somebody had forgotten to wire up.
+
+Step 23 reopened this for the demo only. Its speed is now one of five player presets in
+`src/config.ts` — 50%, 75%, 100%, 125% and 150% — which are percentages of `DEMO_BPM`
+rather than BPM values, so they keep their meaning if a later piece has a different base
+tempo; `DEMO_BPM` itself is still the demo's constant and stays where it is. The speed
+resets to 100% on every load, and a change is read when Listen is next pressed rather
+than retiming a demo already running. Practice is still untimed: the owner was asked and
+does not want a timed mode, and wait-mode already lets a player who knows the piece go as
+fast as they can. The speed is not recorded with attempts, by the owner's choice — the
+demo creates none.
 
 ## On-screen keyboard width is a player-configurable preset, not derived from the score
 
