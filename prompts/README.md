@@ -121,6 +121,21 @@ replay picker is dev-only.
 Recording which piece an attempt was of is deliberately not part of it — the same trade
 step 14 made for hands, and the obvious step after this one.
 
+## Planned — three reports from the player
+
+| Step                               | What it repairs                                   |
+| ---------------------------------- | ------------------------------------------------- |
+| [24](step24.md) Left hand lower    | Left hand an octave down, bass clef, fingering    |
+| [25](step25.md) Staff scroll       | The marker held a third of the way in, gliding    |
+| [26](step26.md) Remember the piano | Reconnect to the last piano when it is plugged in |
+
+Three separate reports, kept as three separate steps by the owner's choice; none depends on
+another, so they can be built in any order. They share text, though — 24 and 25 both rewrite
+`MANUAL-CHECKS.md` item 11 and 24 and 26 both edit `src/App.test.tsx` — so whichever merges
+second rebases onto the first. Step 24 is a data fix, not a code one: the keyboard
+drew the left hand's notes at their pitch, and the owner's ABC, faithfully transcribed in step 21,
+had them at the right hand's pitches.
+
 ## Deliberately not planned
 
 **Tempo in practice.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo is
