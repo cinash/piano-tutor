@@ -15,6 +15,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set()}
         expectedNotes={[]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
 
@@ -29,6 +30,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set([60, 64])}
         expectedNotes={[]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
 
@@ -51,6 +53,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set([62, 64])}
         expectedNotes={[note(60), note(64)]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
     const state = (pitch: number) => {
@@ -72,6 +75,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set([64])}
         expectedNotes={[note(64, 'left')]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
 
@@ -95,6 +99,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set()}
         expectedNotes={[note(48, 'left'), note(55, 'left'), note(67, 'right')]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
     const hand = (pitch: number) =>
@@ -114,6 +119,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set()}
         expectedNotes={[{ pitch: 67, hand: 'right', finger: 3 }]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
     const key = (pitch: number) => container.querySelector(`[data-note="${pitch}"]`);
@@ -138,6 +144,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set([67])}
         expectedNotes={[{ pitch: 69, hand: 'right', finger: 3 }]}
         handPositions={position}
+        nextHandPositions={[]}
       />,
     );
     const key = (pitch: number) => container.querySelector(`[data-note="${pitch}"]`);
@@ -158,6 +165,37 @@ describe('PianoKeyboard', () => {
     expect(marks(67)).toEqual(['right', '2']);
   });
 
+  it('outlines the next position, numbering a key in both with both fingers', () => {
+    const right = (pitches: number[]) =>
+      pitches.map((pitch, i) => ({
+        pitch,
+        hand: 'right' as const,
+        finger: (i + 1) as Finger,
+      }));
+    const { container } = render(
+      <PianoKeyboard
+        lowNote={60}
+        highNote={77}
+        heldNotes={new Set()}
+        expectedNotes={[]}
+        handPositions={right([64, 65, 67, 69, 71])} // E4-B4
+        nextHandPositions={right([71, 72, 74, 76, 77])} // B4-F5
+      />,
+    );
+    const key = (pitch: number) => container.querySelector(`[data-note="${pitch}"]`);
+    const marks = (pitch: number) => [
+      key(pitch)?.getAttribute('data-finger'),
+      key(pitch)?.getAttribute('data-next-hand'),
+      key(pitch)?.getAttribute('data-next-finger'),
+    ];
+
+    expect(marks(74)).toEqual([null, 'right', '3']);
+    expect(key(74)?.className).toContain('piano-key--next-right');
+    expect(marks(71)).toEqual(['5', 'right', '1']); // B4: 5 now, 1 next
+    expect(key(71)?.textContent).toBe('15B4'); // the faint next number above
+    expect(marks(64)).toEqual(['1', null, null]);
+  });
+
   it('names every white key and leaves the black keys bare', () => {
     const { container } = render(
       <PianoKeyboard
@@ -166,6 +204,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set()}
         expectedNotes={[]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
     const labels = (color: 'white' | 'black') =>
@@ -185,6 +224,7 @@ describe('PianoKeyboard', () => {
         heldNotes={new Set()}
         expectedNotes={[]}
         handPositions={[]}
+        nextHandPositions={[]}
       />,
     );
 

@@ -35,6 +35,21 @@
   color: #fff;
 }
 
+/* Where the hand goes next, just before it moves: a dashed outline in its colour. */
+.piano-key--next-right {
+  border: 2px dashed #d97706;
+}
+
+.piano-key--next-left {
+  border: 2px dashed #0f766e;
+}
+
+.piano-key__next-finger {
+  font-size: 12px;
+  font-weight: bold;
+  opacity: 0.45;
+}
+
 /* Above the note name on a white key, at the foot of a black one. */
 .piano-key__finger {
   font-size: 14px;

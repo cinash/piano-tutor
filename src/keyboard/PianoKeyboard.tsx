@@ -10,6 +10,7 @@ export interface PianoKeyboardProps {
   heldNotes: ReadonlySet<number>;
   expectedNotes: readonly Note[];
   handPositions: readonly FingerKey[];
+  nextHandPositions: readonly FingerKey[];
 }
 
 export function PianoKeyboard({
@@ -18,6 +19,7 @@ export function PianoKeyboard({
   heldNotes,
   expectedNotes,
   handPositions,
+  nextHandPositions,
 }: PianoKeyboardProps) {
   const layout = computeKeyboardLayout(lowNote, highNote);
 
@@ -32,6 +34,9 @@ export function PianoKeyboard({
             (fingerKey) => fingerKey.pitch === key.note,
           );
           const finger = expected?.finger ?? position?.finger;
+          const next = nextHandPositions.find(
+            (fingerKey) => fingerKey.pitch === key.note,
+          );
           // Held wins, then expected, then the hand's position — see DECISIONS.md.
           // Decided here rather than left to the order the rules happen to sit in the
           // stylesheet.
@@ -51,9 +56,14 @@ export function PianoKeyboard({
               data-hand={expected?.hand}
               data-position-hand={position?.hand}
               data-finger={finger}
-              className={`piano-key piano-key--${key.color}${stateClass}`}
+              data-next-hand={next?.hand}
+              data-next-finger={next?.finger}
+              className={`piano-key piano-key--${key.color}${stateClass}${
+                next ? ` piano-key--next-${next.hand}` : ''
+              }`}
               style={{ left: `${key.leftPercent}%`, width: `${key.widthPercent}%` }}
             >
+              {next && <span className="piano-key__next-finger">{next.finger}</span>}
               {finger && <span className="piano-key__finger">{finger}</span>}
               {/* White keys only — see DECISIONS.md. */}
               {key.color === 'white' && noteName(key.note)}

@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { cichaNocScore } from '../score/cichaNoc';
 import { filterScoreByHand } from '../score/filterScoreByHand';
 import type { Note, Score } from '../score/types';
-import { handPositions } from './handPosition';
+import { handPositions, nextHandPositions } from './handPosition';
 
 const firstEventOf = (measure: number) =>
   cichaNocScore.events.findIndex((event) => event.measure === measure);
+
+const eventWithId = (id: string) =>
+  cichaNocScore.events.findIndex((event) => event.id === id);
 
 /** Each hand's keys as [pitch, finger] pairs, lowest key first. */
 function keysOf(positions: ReturnType<typeof handPositions>, hand: Note['hand']) {
@@ -119,5 +122,40 @@ describe('handPositions', () => {
   it('gives no position when the note it would step from is outside the key', () => {
     // F#4 in C major.
     expect(handPositions(oneNote(66, 0), 0)).toEqual([]);
+  });
+});
+
+describe('nextHandPositions', () => {
+  it('outlines nothing while the hand stays where it is', () => {
+    expect(nextHandPositions(cichaNocScore, 0)).toEqual([]); // m1's G4, then A4: E4-B4 both
+  });
+
+  it("outlines the hand's next position on its last note before it moves", () => {
+    // m2's E4 is the last note on E4-B4; m5's D5 takes the right hand to B4-F5.
+    expect(
+      keysOf(nextHandPositions(cichaNocScore, eventWithId('m2-b1-e1')), 'right'),
+    ).toEqual([
+      [71, 1],
+      [72, 2],
+      [74, 3],
+      [76, 4],
+      [77, 5],
+    ]);
+    // m7's second C4 is the last on F3-C4; m8's G3 takes the left hand back to E3-B3.
+    expect(
+      keysOf(nextHandPositions(cichaNocScore, eventWithId('m7-b3-e1')), 'left'),
+    ).toEqual([
+      [52, 5],
+      [53, 4],
+      [55, 3],
+      [57, 2],
+      [59, 1],
+    ]);
+  });
+
+  it('outlines no move the loop never makes', () => {
+    // Looping m1-2, E4 is followed by m1's G4 again, on the same keys.
+    const loop = { startMeasure: 1, endMeasure: 2 };
+    expect(nextHandPositions(cichaNocScore, eventWithId('m2-b1-e1'), loop)).toEqual([]);
   });
 });

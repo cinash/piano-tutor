@@ -56,3 +56,26 @@ test('a loop the left hand does not play in shows no left-hand position', async 
 
   await expect.poll(() => positionOf(page, 'left')).toEqual([]);
 });
+
+test('the next position is outlined on the last note before the move', async ({
+  page,
+}) => {
+  const outlined = () =>
+    page
+      .locator('[data-next-hand="right"]')
+      .evaluateAll((keys) => keys.map((key) => Number(key.getAttribute('data-note'))));
+  const keyB4 = page.locator('[data-note="71"]');
+
+  await connectVirtualKeyboard(page);
+  await playOpeningMeasure(page);
+
+  // E4 is next, the last note on E4-B4: B4-F5 is outlined, and B4 is in both.
+  await expect.poll(outlined).toEqual([71, 72, 74, 76, 77]);
+  await expect(keyB4).toHaveAttribute('data-finger', '5');
+  await expect(keyB4).toHaveAttribute('data-next-finger', '1');
+
+  await playSecondMeasure(page);
+
+  await expect.poll(outlined).toEqual([]);
+  await expect(keyB4).toHaveAttribute('data-finger', '1');
+});

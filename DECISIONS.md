@@ -875,3 +875,12 @@ the keyboard shows the right hand's, which `handPositions` lists first.
 The key to press keeps its strong hand colour; the rest of the position takes a lighter
 tint of it, in a white-key and a black-key variant like the expected colours, and each key
 of it carries its finger number. Held still wins over both.
+
+Where the hand goes next is outlined only on its last note before the move — when the
+event about to be played holds the hand's note and the hand's following fingered note, in
+the same loop-aware order, fixes a different position. Drawn all the time there would almost
+always be one, and the keyboard would carry two positions per hand throughout. The owner
+chose the outline over a line of text under the keyboard, which would take the child's eyes
+off the keys. It is a dashed border in the hand's colour with a faint finger number above
+the current one, so a key in both positions shows both. Practice is untimed, so one note's
+warning is enough; a clock in practice would want it earlier.

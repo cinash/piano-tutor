@@ -16,12 +16,37 @@ const pitchClass = (pitch: number) => ((pitch % 12) + 12) % 12;
  */
 export function handPositions(score: Score, index: number, loop?: Loop): FingerKey[] {
   const upcoming = upcomingNotes(score, index, loop);
-  const scale = MAJOR_SCALE.map((degree) => pitchClass(degree + score.fifths * 7));
+  const scale = scaleOf(score);
 
-  return (['right', 'left'] as const).flatMap((hand) => {
+  return HANDS.flatMap((hand) => {
     const anchor = upcoming.find((note) => note.hand === hand);
     return anchor ? positionFrom(anchor, scale) : [];
   });
+}
+
+/**
+ * Where each hand goes next, only when the event at `index` holds that hand's last note
+ * before it moves: its note there is fingered, and the hand's following fingered note, in
+ * the same order `handPositions` walks, fixes a different position. See DECISIONS.md.
+ */
+export function nextHandPositions(score: Score, index: number, loop?: Loop): FingerKey[] {
+  const upcoming = upcomingNotes(score, index, loop);
+  const scale = scaleOf(score);
+  const playing = score.events[index]?.notes ?? [];
+
+  return HANDS.flatMap((hand) => {
+    const [current, following] = upcoming.filter((note) => note.hand === hand);
+    if (!following || !playing.includes(current)) return [];
+    const next = positionFrom(following, scale);
+    // Positions are fixed by where finger 1 lands, so its key is enough to compare.
+    return next[0]?.pitch === positionFrom(current, scale)[0]?.pitch ? [] : next;
+  });
+}
+
+const HANDS = ['right', 'left'] as const;
+
+function scaleOf(score: Score): number[] {
+  return MAJOR_SCALE.map((degree) => pitchClass(degree + score.fifths * 7));
 }
 
 function upcomingNotes(score: Score, index: number, loop?: Loop): FingerKey[] {

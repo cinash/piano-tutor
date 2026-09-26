@@ -15,7 +15,7 @@ import { downloadJson } from './downloadJson';
 import type { Loop } from './engine/types';
 import { KeyboardRangePicker } from './keyboard/KeyboardRangePicker';
 import { PianoKeyboard } from './keyboard/PianoKeyboard';
-import { handPositions } from './keyboard/handPosition';
+import { handPositions, nextHandPositions } from './keyboard/handPosition';
 import { ReplayMidiSource } from './midi/ReplayMidiSource';
 import { VirtualKeyboardSource } from './midi/VirtualKeyboardSource';
 import type { MidiInputDescriptor } from './midi/WebMidiSource';
@@ -117,12 +117,10 @@ export function App() {
   // or after its place, so a silence shows where the next note is. The demo plays the
   // whole piece, so it has no loop to wrap at; after its last note there is no event,
   // and -1 finds no position, as past the end does.
-  const positions = demoStep
-    ? handPositions(
-        score,
-        score.events.findIndex((event) => event.startTime >= demoStep.startTime),
-      )
-    : handPositions(score, view.engine.nextEventIndex, view.engine.loop);
+  const positionIndex = demoStep
+    ? score.events.findIndex((event) => event.startTime >= demoStep.startTime)
+    : view.engine.nextEventIndex;
+  const positionLoop = demoStep ? undefined : view.engine.loop;
 
   const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);
@@ -494,7 +492,8 @@ export function App() {
         highNote={keyboardPreset.high}
         heldNotes={demoStep?.pitches ?? view.engine.heldNotes}
         expectedNotes={demoStep ? [] : notesAt(score, view.engine.nextEventIndex)}
-        handPositions={positions}
+        handPositions={handPositions(score, positionIndex, positionLoop)}
+        nextHandPositions={nextHandPositions(score, positionIndex, positionLoop)}
       />
       <AttemptHistory records={attempts} />
       <div>
