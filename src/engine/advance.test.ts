@@ -24,6 +24,7 @@ const SCORE: Score = {
   title: 'fixture',
   divisions: 4,
   timeSignatures: [{ beats: 4, beatType: 4, measure: 1 }],
+  fifths: 0,
   measureCount: 1,
   events: [
     {
@@ -243,6 +244,7 @@ describe('advance — loop wraparound (step 5)', () => {
     title: 'loop fixture',
     divisions: 4,
     timeSignatures: [{ beats: 4, beatType: 4, measure: 1 }],
+    fifths: 0,
     measureCount: 3,
     events: [
       {

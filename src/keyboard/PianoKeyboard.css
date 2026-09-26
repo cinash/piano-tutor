@@ -45,6 +45,23 @@
   color: #000;
 }
 
+/* Where each hand rests: a light tint of its colour, the expected key's strong one aside. */
+.piano-key--position-right.piano-key--white {
+  background: #fef3c7;
+}
+
+.piano-key--position-right.piano-key--black {
+  background: #92400e;
+}
+
+.piano-key--position-left.piano-key--white {
+  background: #ccfbf1;
+}
+
+.piano-key--position-left.piano-key--black {
+  background: #134e4a;
+}
+
 .piano-key--expected-right.piano-key--white {
   background: #fcd34d;
 }

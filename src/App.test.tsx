@@ -143,6 +143,13 @@ function heldPitches(container: HTMLElement) {
     .sort((a, b) => a - b);
 }
 
+/** The keys a hand's position is shaded on, lowest first. */
+function positionPitches(container: HTMLElement, hand: 'left' | 'right') {
+  return Array.from(container.querySelectorAll(`[data-position-hand="${hand}"]`))
+    .map((key) => Number(key.getAttribute('data-note')))
+    .sort((a, b) => a - b);
+}
+
 describe('listening to the piece', () => {
   /**
    * Connects with real timers — waiting for the status line under fake ones would hang
@@ -210,6 +217,20 @@ describe('listening to the piece', () => {
     expect(heldPitches(container)).toEqual([67]); // the demo's G4, not E4
   });
 
+  it('moves the hand positions with the demo, and back to practice on Stop', async () => {
+    const { container } = await startListening();
+
+    act(() => vi.advanceTimersByTime(12_728)); // m5 b3, 14 beats in at 66 bpm
+
+    // Practice is still at m1, where the right hand sits on E4-B4; the demo is at m5.
+    expect(positionPitches(container, 'right')).toEqual([71, 72, 74, 76, 77]); // B4-F5
+    expect(container.querySelectorAll('[data-expected="true"]')).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId('listen-to-piece'));
+
+    expect(positionPitches(container, 'right')).toEqual([64, 65, 67, 69, 71]); // E4-B4
+  });
+
   it('plays through the output named after the piano the player selected', async () => {
     const chosen = new FakeMidiOutput('Digital Piano MIDI 1');
     const other = new FakeMidiOutput('Digital Piano MIDI 2');
@@ -270,6 +291,17 @@ describe('listening to the piece', () => {
     expect(heldPitches(container)).toEqual([67]);
     // Nothing is asked for during a demonstration; the keys shown are the ones sounding.
     expect(container.querySelectorAll('[data-expected="true"]')).toHaveLength(0);
+  });
+});
+
+describe('where the hands sit', () => {
+  it('shows only the hand being practised', () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByTestId('hands-left'));
+
+    expect(positionPitches(container, 'left')).toEqual([52, 53, 55, 57, 59]); // E3-B3
+    expect(positionPitches(container, 'right')).toEqual([]);
   });
 });
 

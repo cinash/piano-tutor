@@ -19,6 +19,11 @@ update it at the end of each step.
    in its echo in bars 3-4, marked to the left of where the right hand played bars 1-2.
    Bar 19 is the one place both hands play at once: confirm its C5 and C3 are marked in
    different colours, and that playing one leaves it marked until the other follows.
+   While playing Cicha Noc through, confirm the lightly shaded keys match where each hand
+   actually sits, that each shaded key's finger number is the finger you would put there,
+   and that the key to press still stands out among them. At the 88 keys preset, confirm
+   the finger numbers and note names are both readable from where the child sits. Press
+   Listen and confirm the shading moves with the demo.
 4. Play a quick run of notes and judge whether the on-screen response feels immediate —
    no perceptible lag between key press and highlight.
 5. Unplug the USB cable while connected; confirm the app doesn't crash and the status

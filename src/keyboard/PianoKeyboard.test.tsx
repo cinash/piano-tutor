@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import type { Hand, Note } from '../score/types';
+import type { Finger, Hand, Note } from '../score/types';
 import { PianoKeyboard } from './PianoKeyboard';
 
 const note = (pitch: number, hand: Hand = 'right'): Note => ({ pitch, hand });
@@ -14,6 +14,7 @@ describe('PianoKeyboard', () => {
         highNote={64}
         heldNotes={new Set()}
         expectedNotes={[]}
+        handPositions={[]}
       />,
     );
 
@@ -27,6 +28,7 @@ describe('PianoKeyboard', () => {
         highNote={64}
         heldNotes={new Set([60, 64])}
         expectedNotes={[]}
+        handPositions={[]}
       />,
     );
 
@@ -48,6 +50,7 @@ describe('PianoKeyboard', () => {
         highNote={64}
         heldNotes={new Set([62, 64])}
         expectedNotes={[note(60), note(64)]}
+        handPositions={[]}
       />,
     );
     const state = (pitch: number) => {
@@ -68,6 +71,7 @@ describe('PianoKeyboard', () => {
         highNote={64}
         heldNotes={new Set([64])}
         expectedNotes={[note(64, 'left')]}
+        handPositions={[]}
       />,
     );
 
@@ -90,6 +94,7 @@ describe('PianoKeyboard', () => {
         highNote={67}
         heldNotes={new Set()}
         expectedNotes={[note(48, 'left'), note(55, 'left'), note(67, 'right')]}
+        handPositions={[]}
       />,
     );
     const hand = (pitch: number) =>
@@ -108,6 +113,7 @@ describe('PianoKeyboard', () => {
         highNote={67}
         heldNotes={new Set()}
         expectedNotes={[{ pitch: 67, hand: 'right', finger: 3 }]}
+        handPositions={[]}
       />,
     );
     const key = (pitch: number) => container.querySelector(`[data-note="${pitch}"]`);
@@ -118,6 +124,40 @@ describe('PianoKeyboard', () => {
     expect(key(65)?.hasAttribute('data-finger')).toBe(false);
   });
 
+  it('tints and numbers the five keys of a hand position, black keys included', () => {
+    // F major under the right hand: F4 G4 A4 B-flat4 C5 on 1-5.
+    const position = [65, 67, 69, 70, 72].map((pitch, i) => ({
+      pitch,
+      hand: 'right' as const,
+      finger: (i + 1) as Finger,
+    }));
+    const { container } = render(
+      <PianoKeyboard
+        lowNote={60}
+        highNote={72}
+        heldNotes={new Set([67])}
+        expectedNotes={[{ pitch: 69, hand: 'right', finger: 3 }]}
+        handPositions={position}
+      />,
+    );
+    const key = (pitch: number) => container.querySelector(`[data-note="${pitch}"]`);
+    const marks = (pitch: number) => [
+      key(pitch)?.getAttribute('data-position-hand'),
+      key(pitch)?.getAttribute('data-finger'),
+    ];
+
+    expect(marks(65)).toEqual(['right', '1']);
+    expect(marks(70)).toEqual(['right', '4']); // a black key in the position
+    expect(key(70)?.className).toContain('piano-key--position-right');
+    expect(marks(66)).toEqual([null, null]); // a black key between, which no finger rests on
+    expect(marks(68)).toEqual([null, null]);
+    // The expected key keeps its strong colour and its number, a held one its number.
+    expect(key(69)?.className).toContain('piano-key--expected-right');
+    expect(marks(69)).toEqual(['right', '3']);
+    expect(key(67)?.className).toContain('piano-key--held');
+    expect(marks(67)).toEqual(['right', '2']);
+  });
+
   it('names every white key and leaves the black keys bare', () => {
     const { container } = render(
       <PianoKeyboard
@@ -125,6 +165,7 @@ describe('PianoKeyboard', () => {
         highNote={72}
         heldNotes={new Set()}
         expectedNotes={[]}
+        handPositions={[]}
       />,
     );
     const labels = (color: 'white' | 'black') =>
@@ -143,6 +184,7 @@ describe('PianoKeyboard', () => {
         highNote={64}
         heldNotes={new Set()}
         expectedNotes={[]}
+        handPositions={[]}
       />,
     );
 

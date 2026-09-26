@@ -105,7 +105,10 @@ function completeCurrentEvent(
  * loop's first event instead, including when the linear move would otherwise have
  * reached the end of the piece.
  */
-function nextIndexAfter({ nextEventIndex, loop }: EngineState, score: Score): number {
+export function nextIndexAfter(
+  { nextEventIndex, loop }: Pick<EngineState, 'nextEventIndex' | 'loop'>,
+  score: Score,
+): number {
   const linearIndex = nextEventIndex + 1;
   const linearEvent = score.events[linearIndex];
 
