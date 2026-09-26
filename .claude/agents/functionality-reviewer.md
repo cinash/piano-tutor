@@ -30,8 +30,9 @@ Answer one question: **does this change do what was requested — all of it, and
 ## Repository-specific traps
 
 - **`npm run ci` is the gate.** It runs the version lockstep check, ESLint, Prettier in check
-  mode, `tsc -b` + build, Vitest and Playwright, stopping at the first failure. Run it, or say
-  plainly that you did not and why. A change that has not been through it is not reviewed.
+  mode, `tsc -b` + build, Vitest, the Beyer Python checks and Playwright, stopping at the first
+  failure. Run it, or say plainly that you did not and why. A change that has not been through it
+  is not reviewed.
 - **A green e2e run is not a working piano.** The container has no access to USB or `/dev/snd`;
   Playwright drives a fake MIDI source. If the request was about real MIDI behaviour, say which
   part of it the automated suite cannot demonstrate, rather than treating green as proof.

@@ -30,6 +30,7 @@ Run these inside the container.
 | `npm run build`        | Type-check with `tsc -b`, then build to `dist/`                |
 | `npm test`             | Vitest, once, no watch                                         |
 | `npm run test:e2e`     | Playwright; starts the dev server itself if one is not running |
+| `npm run test:beyer`   | Python (stdlib) checks of the Beyer files and their fingering  |
 | `npm run lint`         | ESLint                                                         |
 | `npm run format:check` | Prettier in check mode — reports, never rewrites               |
 | `npm run format`       | Prettier, applying the changes                                 |

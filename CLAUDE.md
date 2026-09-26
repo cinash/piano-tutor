@@ -70,9 +70,9 @@ which check establishes that.
 ## Every change goes through `npm run ci`
 
 `npm run ci` is the single gate: version lockstep check, ESLint, Prettier in check mode,
-`tsc -b` and build, Vitest, Playwright — stopping at the first failure. Run it before you call work
-finished. Anything a CI service would eventually run belongs in it, so pointing one at this
-repository later stays a small change.
+`tsc -b` and build, Vitest, the Beyer Python checks, Playwright — stopping at the first failure.
+Run it before you call work finished. Anything a CI service would eventually run belongs in it, so
+pointing one at this repository later stays a small change.
 
 Formatting is deliberately _checked_ rather than applied, so a reformatting commit is always a
 decision someone made rather than a side effect of running the tests. Do not run `npm run format`
