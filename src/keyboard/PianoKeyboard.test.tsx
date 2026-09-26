@@ -101,6 +101,23 @@ describe('PianoKeyboard', () => {
     expect(hand(60)).toBeNull(); // not expected at all
   });
 
+  it('numbers each expected key with the finger that plays it', () => {
+    const { container } = render(
+      <PianoKeyboard
+        lowNote={60}
+        highNote={67}
+        heldNotes={new Set()}
+        expectedNotes={[{ pitch: 67, hand: 'right', finger: 3 }]}
+      />,
+    );
+    const key = (pitch: number) => container.querySelector(`[data-note="${pitch}"]`);
+
+    expect(key(67)?.getAttribute('data-finger')).toBe('3');
+    expect(key(67)?.textContent).toBe('3G4');
+    expect(key(67)?.className).toContain('piano-key--expected-right');
+    expect(key(65)?.hasAttribute('data-finger')).toBe(false);
+  });
+
   it('names every white key and leaves the black keys bare', () => {
     const { container } = render(
       <PianoKeyboard

@@ -105,6 +105,11 @@ that finger goes on, which is what a player who does not already know the piece 
 before they can start at all. Neither cue is redundant, so `FallingNotes` was left
 untouched: colour there stays the primary cue and the numeral the secondary one.
 
+Step 27 put the finger on the keyboard too: each expected key shows its finger number,
+bold, above the note name, and carries `data-finger`. The queue still answers "what is
+coming" and keeps its finger colours; the keyboard now also says which finger goes on
+the key in front of you, so a player reading only the keyboard is no longer missing it.
+
 `PianoKeyboard` takes the expected `Note[]` rather than a set of pitches, even though it
 only reads `pitch` today. `Note` already carries `hand`, so the hand colours planned next
 add an attribute and nothing else; a `Set<number>` would have to become a
@@ -141,6 +146,10 @@ and is the one a cold player would otherwise have to guess at.
 Held still wins over both hand colours, for the reason in the entry above. Such a key
 keeps reporting its `data-hand` regardless: the attribute tracks the lookup, the colour
 tracks what you are doing.
+
+The finger numbers step 27 added to the keyboard are plain numerals in black on a white
+key and white on a black one, not the queue's finger colours: a key already carries its
+hand's colour, and a second colour system on the same key would compete with it.
 
 ## Key labels are sharps only, and only on the white keys
 

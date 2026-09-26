@@ -38,9 +38,13 @@ export function PianoKeyboard({
               data-held={held}
               data-expected={Boolean(expected)}
               data-hand={expected?.hand}
+              data-finger={expected?.finger}
               className={`piano-key piano-key--${key.color}${stateClass}`}
               style={{ left: `${key.leftPercent}%`, width: `${key.widthPercent}%` }}
             >
+              {expected?.finger && (
+                <span className="piano-key__finger">{expected.finger}</span>
+              )}
               {/* White keys only — see DECISIONS.md. */}
               {key.color === 'white' && noteName(key.note)}
             </div>
