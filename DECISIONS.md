@@ -935,3 +935,65 @@ fingered by the rule alone, as before; the LilyPond import stops if that leaves 
 Rejected: `pianoplayer` as the filler, which matched 69-88% of the right hands of Nos. 8-10
 and 20% of No. 38's left, because it shifts the hand by a key where the book keeps it still;
 and the rule without anchors, which the book's Nos. 8 and 9 contradict.
+
+## The rest of Beyer Op. 101 comes from the Edition Peters scan, recognised by Audiveris
+
+Outside MuseScore there is no digital edition of the book beyond No. 31, so step 28 recognises
+a scan: Edition Peters Nr. 2721, ed. Adolf Ruthardt, Leipzig [1895], plate 8033, IMSLP #81208 at
+600 dpi. `beyer_op101_musicxml/manifest.json` identifies it by URL, size and SHA-256 rather
+than committing its 10 MB. Rejected: Schirmer 1919 (IMSLP #164414), public domain but scanned at
+200 dpi monochrome, a third of the resolution on the thin stems and small digits recognition
+most needs; Curci 1947 and Ricordi 1918 (#464235, #610339, #863877), marked Non-PD EU because
+their editors died in 1961 and 1957; Carisch & Jänichen (#569346) and #12916, with no identified
+editor to record; and collecting MuseScore uploads, most behind an account, "all rights
+reserved" by the uploader, and fingered by whoever uploaded them.
+
+The manifest describes the Peters book, and files from it use the Peters numbers, which run
+to 109. Those agree with the LilyPond files' numbers at Nos. 8, 9 and 12-31 and not at 10 and 11: Peters prints "Hänschen klein" and "Der Kuckuck" there, and this directory's
+`beyer_op101_no10` and `no11` hold other pieces.
+
+Audiveris 5.11.0 runs in the dev container without being installed in the image: its Ubuntu
+22.04 `.deb` unpacked into a scratch directory, started through the bundled Java runtime with
+`-Djava.awt.headless=true` and `GDK_SCALE=1`, since the image has neither GTK nor `libXtst`.
+Given `-sheets`, it exports every movement of the partial book under one name, each over the
+last, and on the whole scan it hangs on the title page; so `scripts/beyer/scan_pages.py` copies
+the pages wanted into a PDF of their own, page images unchanged, and that is recognised whole.
+Its fingering switch stays off - it is documented as a guitar feature, and it would read the
+beat counts under the early pieces as fingers - so the book's digits are entered by a person.
+
+A piece is cut from the export by the page and systems the manifest names, not taken as one of
+Audiveris's movements. Audiveris starts a movement at an indented system, and on p. 24 it
+missed the indent under the heading, running Nos. 11, 12 and 13 into one movement.
+
+## A Peters piece is kept twice: the source as printed, and the file the app loads
+
+`scripts/beyer/omr_import.py` writes `source/beyer_op101_noNN.musicxml` - the pupil's part, the
+teacher's after it for a duet, repeat signs, and only the digits the book prints - and derives
+`beyer_op101_noNN.musicxml` from it: the pupil's part alone, since `parseScore` reads only the
+first `<part>`; its repeats written out, as Cicha Noc's are, now for a library; and every other
+note fingered. A correction, to a note or a printed digit, goes into the source, and the derived
+file is regenerated rather than edited. So a better fingering rule, or an app that learns
+repeats, is a regeneration rather than a second recognition, and a generated finger can always
+be told from a printed one. Rejected: committing only the file the app plays. First and second
+endings stop the import until a piece needs them; none of Nos. 8-31 has one.
+
+A left-hand-alone piece, No. 2, is to put its notes on staff 2, which `parseScore` calls the
+left hand, with staff 1 resting. That, and a library check that fingers only the hands a piece
+plays, arrive with the batch that brings Nos. 1 and 2.
+
+## Recognition was measured on Nos. 8-31 before any of it is kept
+
+Step 28's first batch recognised pp. 20-29 and compared the pupil's part of Nos. 8, 9 and 12-31
+with the LilyPond files, which were checked on the same scan (`scripts/beyer/calibrate.py`:
+both played through with repeats written out, note by note, aligned). Of 2,538 notes, 94.2%
+agree in pitch and rhythm and 96.1% in pitch; 7 of the 22 pieces agree entirely. Nos. 10 and 11
+are left out, the LilyPond files' being other pieces. None of it is committed as a piece.
+
+The errors are of a few kinds: a whole note missed in the left hand (Nos. 8, 26, 29), a dot
+missed (Nos. 9, 26), a time signature missed so that every bar is misread (No. 24, whose words
+sit between the staves), and a closing repeat sign missed, which loses a third of Nos. 16 and 18.
+No. 15's LilyPond file repeats bars 1-8 where Peters repeats 9-16; the recognition has it right.
+The import pass's bar check - a voice that does not add up, or a staff left empty - flags a bar
+in 14 of the 15 pieces with any difference and in none of the 7 without; the one it misses is
+No. 16, whose only error is the repeat sign. A missed repeat is invisible to every automated
+check here, and is the one thing a proofreader of these pieces cannot skip.

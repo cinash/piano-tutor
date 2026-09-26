@@ -72,7 +72,7 @@ def windows_for(notes, hand):
 
 def between_printed(onsets, windows):
     """Narrows each unprinted onset to the windows of the printed onsets either side of it."""
-    printed = [i for i, notes in enumerate(onsets) if windows[i] and any(map(printed_finger, notes))]
+    printed = [i for i, notes in enumerate(onsets) if any(map(printed_finger, notes))]
     if not printed:
         return windows
     narrowed = []
@@ -116,7 +116,8 @@ def add_fingering(root):
     for hand, events in events_by_hand(root).items():
         onsets = [notes for _, notes in events]
         reachable = []
-        for notes, windows in zip(onsets, between_printed(onsets, [windows_for(n, hand) for n in onsets])):
+        allowed = between_printed(onsets, [windows_for(notes, hand) for notes in onsets])
+        for notes, windows in zip(onsets, allowed):
             if windows:
                 reachable.append((notes, windows))
             else:

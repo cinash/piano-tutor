@@ -1,0 +1,125 @@
+{
+  "edition": "Edition Peters Nr. 2721, ed. Adolf Ruthardt, Leipzig [1895], plate 8033",
+  "imslp": "IMSLP #81208",
+  "scan": {
+    "url": "https://archive.org/download/imslp-im-klavierspiel-op101-beyer-ferdinand/PMLP31149-F_Beyer-Op101.pdf",
+    "bytes": 10301776,
+    "sha256": "369d3800bc8ad42c97fb4312b92060060a6d42aee4e642c35de797fb65ff23c2"
+  },
+  "pieces": {
+    "8": {
+      "kind": "prima",
+      "pupil": [[21, 1, 2]],
+      "teacher": [[20, 1, 2]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "G5": 5 },
+        "left": { "G4": 2 }
+      }
+    },
+    "9": { "kind": "prima", "pupil": [[21, 3, 6]], "teacher": [[20, 3, 6]] },
+    "10": {
+      "kind": "prima",
+      "pupil": [[23, 1, 3]],
+      "teacher": [[22, 1, 3]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "F5": 4, "G5": 5 },
+        "left": { "G4": 3 }
+      }
+    },
+    "11": {
+      "kind": "prima",
+      "pupil": [[23, 4, 6]],
+      "teacher": [[22, 4, 6]],
+      "positions": {
+        "right": { "G4": 1, "A4": 2, "B4": 3, "C5": 4, "D5": 5 },
+        "left": { "D4": 5, "G4": 2 }
+      }
+    },
+    "12": {
+      "kind": "both-hands",
+      "pupil": [[24, 1, 1]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "F5": 4, "G5": 5 },
+        "left": { "C4": 5, "G4": 1 }
+      }
+    },
+    "13": {
+      "kind": "both-hands",
+      "pupil": [[24, 2, 2]],
+      "positions": {
+        "right": { "C5": 1, "G5": 5 },
+        "left": { "C4": 5, "D4": 4, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "14": {
+      "kind": "both-hands",
+      "pupil": [[24, 3, 3]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "F5": 4, "G5": 5 },
+        "left": { "C4": 5, "D4": 4, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "15": { "kind": "both-hands", "pupil": [[24, 4, 5]] },
+    "16": { "kind": "both-hands", "pupil": [[25, 1, 2]] },
+    "17": { "kind": "both-hands", "pupil": [[25, 3, 5]] },
+    "18": {
+      "kind": "both-hands",
+      "pupil": [[25, 6, 7]],
+      "positions": { "right": { "C5": 1, "D5": 2, "E5": 3, "G5": 5 } }
+    },
+    "19": {
+      "kind": "both-hands",
+      "pupil": [[26, 1, 2]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3 },
+        "left": { "C4": 5, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "20": {
+      "kind": "both-hands",
+      "pupil": [[26, 3, 4]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "G5": 5 },
+        "left": { "C4": 5, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "21": {
+      "kind": "both-hands",
+      "pupil": [[26, 5, 6]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "F5": 4, "G5": 5 },
+        "left": { "C4": 5, "D4": 4, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "22": {
+      "kind": "both-hands",
+      "pupil": [
+        [26, 7, 7],
+        [27, 1, 1]
+      ]
+    },
+    "23": {
+      "kind": "both-hands",
+      "pupil": [[27, 2, 3]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "F5": 4, "G5": 5 },
+        "left": { "C4": 5, "D4": 4, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "24": { "kind": "both-hands", "pupil": [[27, 4, 5]] },
+    "25": { "kind": "both-hands", "pupil": [[27, 6, 7]] },
+    "26": {
+      "kind": "both-hands",
+      "pupil": [[28, 1, 2]],
+      "positions": {
+        "right": { "C5": 1, "D5": 2, "E5": 3, "F5": 4, "G5": 5 },
+        "left": { "C4": 5, "D4": 4, "E4": 3, "F4": 2, "G4": 1 }
+      }
+    },
+    "27": { "kind": "both-hands", "pupil": [[28, 3, 4]] },
+    "28": { "kind": "both-hands", "pupil": [[28, 5, 6]] },
+    "29": { "kind": "both-hands", "pupil": [[29, 1, 2]] },
+    "30": { "kind": "both-hands", "pupil": [[29, 3, 4]] },
+    "31": { "kind": "both-hands", "pupil": [[29, 5, 6]] }
+  }
+}
