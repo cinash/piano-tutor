@@ -995,14 +995,15 @@ as a piece.
 Two of the differences are the LilyPond files', not the recognition's: No. 15's repeats bars
 1-8 where Peters repeats 9-16, and No. 30's has no repeat where Peters repeats 9-16, so the
 library's No. 30 plays 16 bars where the book has 24. Leaving both out, 86.3% agree in pitch and
-rhythm and 87.9% in pitch, and 5 of the 20 pieces agree entirely.
+rhythm and 87.9% in pitch, and 5 of the 20 pieces agree entirely. That also leaves out No. 15's
+own two misreadings - a dot missed in bar 7 and a whole note in bar 11, both flagged.
 
 Most of what is wrong, by notes, is a repeat sign: a forward repeat at bar 9 missed in Nos. 8,
 19, 20, 22 and 23, so their bars 1-8 are played again, and a closing one missed in Nos. 16 and
 18, so their second half is played once. The rest is misread symbols, in 13 of the 20 pieces: a
 whole note missed (the left hand's in Nos. 8, 21, 23, 25, 26 and 29, the right hand's in No. 17), an
-opening note lost (Nos. 13, 22), a dot missed (Nos. 9, 21, 26), notes added or misread (Nos. 18,
-19), and a time signature missed, so that every bar of No. 24 - whose words sit between the
+opening note lost (Nos. 13, 22), a dot missed (Nos. 9, 21, 26), notes added or misread (Nos. 9,
+18, 19), and a time signature missed, so that every bar of No. 24 - whose words sit between the
 staves - is misread. The import pass's bar check (a voice that does not add up, or a staff left
 empty) flags those bars and no bar of a piece without errors, but a repeat sign is invisible to
 it: Nos. 16 and 20 carry no flag at all. Every piece's repeat signs have to be read against the
