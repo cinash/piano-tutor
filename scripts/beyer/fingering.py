@@ -3,7 +3,11 @@
 Each hand rests over five adjacent white-key steps, and a note's finger is its step inside that
 window: the right hand counts 1 from the bottom, the left hand 5. A Viterbi pass picks the window
 for every onset so that the hand moves as rarely as possible, and by as little as possible when it
-has to. A chord wider than a fifth fits no window and raises.
+has to. A finger already on a note - one the book prints - is kept and fixes the window at that
+onset, and a note between two printed fingers is played in the window of one or the other: the
+book prints a digit where the hand moves, so a move it does not print - a thumb passed under, a
+stretch - is not invented. A note no allowed window reaches is left unfingered and returned. A hand
+with no printed finger is fingered by the rule alone.
 
 Usage: python3 scripts/beyer/fingering.py IN.musicxml OUT.musicxml
 """
@@ -48,32 +52,56 @@ def events_by_hand(root):
     return {hand: sorted(events.items()) for hand, events in hands.items()}
 
 
-def choose_windows(events):
-    """The lowest step of the five-step window for each event."""
-    spans = [(min(map(diatonic, notes)), max(map(diatonic, notes))) for notes in events]
-    if any(high - low > 4 for low, high in spans):
-        raise ValueError('a chord wider than a fifth fits no five-finger window')
-    bases = range(min(low for low, _ in spans) - 4, max(high for _, high in spans) + 1)
+def printed_finger(note):
+    text = note.findtext('notations/technical/fingering')
+    return int(text) if text else None
+
+
+def finger_at(base, note, hand):
+    """The finger that plays a note with the hand's window starting at step `base`."""
+    step = diatonic(note) - base
+    return step + 1 if hand == 'RH' else 5 - step
+
+
+def windows_for(notes, hand):
+    """The windows that hold every note of an onset and put each printed finger on its note."""
+    steps = [diatonic(note) for note in notes]
+    return [b for b in range(max(steps) - 4, min(steps) + 1)
+            if all(finger_at(b, n, hand) == printed_finger(n) for n in notes if printed_finger(n))]
+
+
+def between_printed(onsets, windows):
+    """Narrows each unprinted onset to the windows of the printed onsets either side of it."""
+    printed = [i for i, notes in enumerate(onsets) if any(map(printed_finger, notes))]
+    if not printed:
+        return windows
+    narrowed = []
+    for i, allowed in enumerate(windows):
+        if i not in printed:
+            before = max((p for p in printed if p < i), default=printed[0])
+            after = min((p for p in printed if p > i), default=printed[-1])
+            allowed = [b for b in allowed if b in windows[before] + windows[after]]
+        narrowed.append(allowed)
+    return narrowed
+
+
+def choose_windows(onsets):
+    """[(the windows an onset may use, its lowest step)] -> the lowest step of the window for each."""
     move = lambda a, b: 0 if a == b else SHIFT + PER_STEP * abs(a - b)
-    cost = {b: 0 for b in bases}
+    # tie-break: the window's bottom finger on the lowest note played
+    fit = lambda b, low: 0.01 * abs(low - b)
+    windows, low = onsets[0]
+    cost = {b: fit(b, low) for b in windows}
     back = []
-    for low, high in spans:
-        new, came_from = {}, {}
-        for b in bases:
-            if not b <= low <= high <= b + 4:
-                new[b] = float('inf')
-                continue
-            prev = min(bases, key=lambda a: cost[a] + move(a, b))
-            # tie-break: the window's bottom finger on the lowest note played
-            new[b] = cost[prev] + move(prev, b) + 0.01 * abs(low - b)
-            came_from[b] = prev
+    for windows, low in onsets[1:]:
+        came_from = {b: min(cost, key=lambda a: cost[a] + move(a, b)) for b in windows}
+        cost = {b: cost[a] + move(a, b) + fit(b, low) for b, a in came_from.items()}
         back.append(came_from)
-        cost = new
-    b = min(bases, key=lambda a: cost[a])
-    path = []
+    b = min(cost, key=cost.get)
+    path = [b]
     for came_from in reversed(back):
-        path.append(b)
         b = came_from[b]
+        path.append(b)
     return path[::-1]
 
 
@@ -83,20 +111,31 @@ def find_or_add(parent, tag):
 
 
 def add_fingering(root):
-    """Sets <technical><fingering> on every pitched note."""
+    """Fingers every pitched note that has no finger yet; returns the notes no allowed window reaches."""
+    unreachable = []
     for hand, events in events_by_hand(root).items():
-        if not events:
+        onsets = [notes for _, notes in events]
+        reachable = []
+        allowed = between_printed(onsets, [windows_for(notes, hand) for notes in onsets])
+        for notes, windows in zip(onsets, allowed):
+            if windows:
+                reachable.append((notes, windows))
+            else:
+                unreachable += [note for note in notes if printed_finger(note) is None]
+        if not reachable:
             continue
-        chords = [notes for _, notes in events]
-        for notes, base in zip(chords, choose_windows(chords)):
+        path = choose_windows([(windows, min(map(diatonic, notes))) for notes, windows in reachable])
+        for (notes, _), base in zip(reachable, path):
             for note in notes:
-                step = diatonic(note) - base
-                finger = step + 1 if hand == 'RH' else 5 - step
-                technical = find_or_add(find_or_add(note, 'notations'), 'technical')
-                find_or_add(technical, 'fingering').text = str(finger)
+                if printed_finger(note) is None:
+                    technical = find_or_add(find_or_add(note, 'notations'), 'technical')
+                    find_or_add(technical, 'fingering').text = str(finger_at(base, note, hand))
+    return unreachable
 
 
 if __name__ == '__main__':
     tree = ET.parse(sys.argv[1])
-    add_fingering(tree.getroot())
+    unreachable = add_fingering(tree.getroot())
+    if unreachable:
+        print(f'{len(unreachable)} notes fit no five-finger window and are left unfingered', file=sys.stderr)
     tree.write(sys.argv[2], encoding='UTF-8', xml_declaration=True)

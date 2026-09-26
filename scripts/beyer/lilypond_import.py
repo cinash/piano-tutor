@@ -228,7 +228,8 @@ def main():
         if match:
             number = int(match.group(1))
             root = to_musicxml(fetch(path), number)
-            add_fingering(root)
+            if add_fingering(root):
+                raise ValueError(f'No. {number} has notes no five-finger window reaches')
             ET.indent(root)
             ET.ElementTree(root).write(OUT / f'beyer_op101_no{number:02}.musicxml', encoding='UTF-8', xml_declaration=True)
             print(f'No. {number}')

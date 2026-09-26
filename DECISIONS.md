@@ -912,3 +912,103 @@ fingers 2 and then 3 to exercise different fingers; the rule, with nothing else 
 the hand's little finger on it. On the app's keyboard that places the left hand over G4-D5,
 sharing two keys with the right hand's C5-G5. Nos. 10-11 get their left hand from the same
 tie-break (G4 = 5; E-F-G = 5-4-3) and have no printed digits here to check against.
+
+## A finger the book prints is kept, and the five-finger rule fills the notes around it
+
+`scripts/beyer/fingering.py` no longer fingers every note. A note that already carries a
+finger - a digit Edition Peters prints, entered in the file - keeps it, and that finger fixes
+the hand's window at its onset, as step 27's one fingered note fixes the other four keys. The
+rule chooses windows for everything else with the same costs as before, so a file with no
+digits is fingered exactly as it was. This is what the book's left hand in Nos. 8 and 9 needs:
+one repeated G, printed 2 and then 3, which the rule alone fingers 5 because nothing in the
+notes says where the hand sits.
+
+In a hand that carries printed fingers, a note between two of them is played in the window of
+the one before it or the one after it - before the first, in the first one's; after the last,
+in the last one's - and the rule only chooses which, and where the hand moves between them.
+The book prints a digit where the hand moves, so a move it does not print - a thumb passed under,
+a stretch - is not invented: a note neither window reaches stays unfingered and `add_fingering`
+returns it, as does every unprinted note of an onset no window fits at all (a chord wider than
+a fifth, or printed fingers no one window agrees with). A hand with no printed finger anywhere is
+fingered by the rule alone, as before; the LilyPond import stops if that leaves a note bare.
+
+Rejected: `pianoplayer` as the filler, which matched 69-88% of the right hands of Nos. 8-10
+and 20% of No. 38's left, because it shifts the hand by a key where the book keeps it still;
+and the rule without anchors, which the book's Nos. 8 and 9 contradict.
+
+## The rest of Beyer Op. 101 comes from the Edition Peters scan, recognised by Audiveris
+
+Outside MuseScore there is no digital edition of the book beyond No. 31, so step 28 recognises
+a scan: Edition Peters Nr. 2721, ed. Adolf Ruthardt, Leipzig [1895], plate 8033, IMSLP #81208 at
+600 dpi. `beyer_op101_musicxml/manifest.json` identifies it by URL, size and SHA-256 rather
+than committing its 10 MB. Rejected: Schirmer 1919 (IMSLP #164414), public domain but scanned at
+200 dpi monochrome, a third of the resolution on the thin stems and small digits recognition
+most needs; Curci 1947 and Ricordi 1918 (#464235, #610339, #863877), marked Non-PD EU because
+their editors died in 1961 and 1957; Carisch & Jänichen (#569346) and #12916, with no identified
+editor to record; and collecting MuseScore uploads, most behind an account, "all rights
+reserved" by the uploader, and fingered by whoever uploaded them.
+
+The manifest describes the Peters book, and files from it use the Peters numbers, which run
+to 109. Those agree with the LilyPond files' numbers at Nos. 8, 9 and 12-31 and not at 10 and 11: Peters prints "Hänschen klein" and "Der Kuckuck" there, and this directory's
+`beyer_op101_no10` and `no11` hold other pieces.
+
+Audiveris 5.11.0 runs in the dev container without being installed in the image: its Ubuntu
+22.04 `.deb` unpacked into a scratch directory, started through the bundled Java runtime with
+`-Djava.awt.headless=true` and `GDK_SCALE=1`, since the image has neither GTK nor `libXtst`.
+Given `-sheets`, it exports every movement of the partial book under one name, each over the
+last, and on the whole scan it hangs on the title page; so `scripts/beyer/scan_pages.py` copies
+the pages wanted into a PDF of their own, page images unchanged, and that is recognised whole.
+Its fingering switch stays off - it is documented as a guitar feature, and it would read the
+beat counts under the early pieces as fingers - so the book's digits are entered by a person.
+
+A piece is cut from the export by the page and systems the manifest names, not taken as one of
+Audiveris's movements. Audiveris starts a movement at an indented system, and on p. 24 it
+missed the indent under the heading, running Nos. 11, 12 and 13 into one movement.
+
+## A Peters piece is kept twice: the source as printed, and the file the app loads
+
+`scripts/beyer/omr_import.py` writes `source/beyer_op101_noNN.musicxml` - the pupil's part, the
+teacher's after it for a duet, repeat signs, and only the digits the book prints - and derives
+`beyer_op101_noNN.musicxml` from it: the pupil's part alone, since `parseScore` reads only the
+first `<part>`; its repeats written out, as Cicha Noc's are, now for a library; and every other
+note fingered. A correction, to a note or a printed digit, goes into the source, and the derived
+file is regenerated rather than edited. So a better fingering rule, or an app that learns
+repeats, is a regeneration rather than a second recognition, and a generated finger can always
+be told from a printed one. Rejected: committing only the file the app plays. First and second
+endings stop the import until a piece needs them; none of Nos. 8-31 has one.
+
+A left-hand-alone piece, No. 2, is to put its notes on staff 2, which `parseScore` calls the
+left hand, with staff 1 resting. That, and a library check that fingers only the hands a piece
+plays, arrive with the batch that brings Nos. 1 and 2.
+
+## Recognition was measured on Nos. 8-31 before any of it is kept
+
+Step 28's first batch recognised pp. 20-29 and compared the pupil's part of Nos. 8, 9 and 12-31
+with the LilyPond files, which were checked on the same scan. `scripts/beyer/calibrate.py` plays
+both through with repeats written out and aligns them note by note, hand by hand; a hand's
+agreement is counted against whichever of the two has more notes, and those are summed, so a
+note added counts as much as one dropped and neither offsets the other. The LilyPond files hold
+2,538 notes and the recognition read 2,726: 85.3% agree in pitch and rhythm, 87.0% in pitch.
+Nos. 10 and 11 are left out, the LilyPond files' being other pieces, and none of it is committed
+as a piece.
+
+Two of the differences are the LilyPond files', not the recognition's: No. 15's repeats bars
+1-8 where Peters repeats 9-16, and No. 30's has no repeat where Peters repeats 9-16, so the
+library's No. 30 plays 16 bars where the book has 24. Leaving both out, 86.3% agree in pitch and
+rhythm and 87.9% in pitch, and 5 of the 20 pieces agree entirely. That also leaves out No. 15's
+own two misreadings - a dot missed in bar 7 and a whole note in bar 11, both flagged.
+
+Most of what is wrong, by notes, is a repeat sign: a forward repeat at bar 9 missed in Nos. 8,
+19, 20, 22 and 23, so their bars 1-8 are played again, and a closing one missed in Nos. 16 and
+18, so their second half is played once. The rest is misread symbols, in 13 of the 20 pieces: a
+whole note missed (the left hand's in Nos. 8, 21, 23, 25, 26 and 29, the right hand's in No. 17), an
+opening note lost (Nos. 13, 22), a dot missed (Nos. 9, 21, 26), notes added or misread (Nos. 9,
+18, 19), and a time signature missed, so that every bar of No. 24 - whose words sit between the
+staves - is misread. The import pass's bar check (a voice that does not add up, or a staff left
+empty) flags those bars and no bar of a piece without errors, but a repeat sign is invisible to
+it: Nos. 16 and 20 carry no flag at all. Every piece's repeat signs have to be read against the
+scan by a person.
+
+The Vitest check over the library is the part of step 28's gate that holds before any file
+comes from the scan; the listing of the manifest's pieces, the hands each kind plays, and
+`<rights>` naming the edition and pages are asserted with the first batch that commits one.
