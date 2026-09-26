@@ -77,6 +77,8 @@ Alternatives weighed:
   cursor stays still while the music moves. An instant jump would pin it; the owner chose the
   glide, and it is one CSS rule to change, so the manual check asks.
 
+Two comments go stale and change with the code: the one above the scroll call at `src/score/StaffView.tsx:74-76`, which explains `'nearest'`, and `e2e/staff-cursor.spec.ts:34-35` ("a mark past the pane's right edge has to bring the pane with it"), along with that test's name.
+
 ## In scope
 
 The scroll target in `StaffView.tsx`, the one CSS rule, the e2e check, and the amended decision.

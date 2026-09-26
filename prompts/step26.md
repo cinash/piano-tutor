@@ -59,7 +59,7 @@ remembered and listed" arises only on load and after an unplug.
 **A failed open is not retried.** If `start()` rejects, for example because another program such
 as `amidi` holds the port, `attach` shows the error and returns to "Not connected" but leaves
 `sourceRef.current` set, so the guard above does not try again until the player picks something.
-That is intended: a retry loop against a port someone else holds would repeat the error.
+That is intended: a retry loop against a port someone else holds would repeat the error. The stored name survives the failure, so each reload tries once more and shows the error once more until the port is free. Disconnect is not drawn while the status is "Not connected", so forgetting the piano from there takes Use computer keyboard, then Disconnect. That is accepted; do not add a control for it.
 
 Rejected: **remembering the computer keyboard too**, by the owner's choice; and **auto-connecting
 to any single MIDI device when nothing is remembered**, because a first visit should still show

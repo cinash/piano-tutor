@@ -4,7 +4,7 @@ Moves every left-hand note of `cicha-noc.musicxml` down one octave, draws the le
 bass clef, and corrects the left hand's fingering in bars 19-22. Touches `cicha-noc.musicxml`, its parse snapshot
 `src/score/fixtures/cicha-noc.snapshot.json`, the tests that name left-hand pitches
 (`src/App.test.tsx`, `src/score/parseScore.test.ts`, `e2e/virtualKeyboard.ts`,
-`e2e/hand-colours.spec.ts`, `e2e/one-hand-practice.spec.ts`, and any other the suite turns up), a comment in `src/config.ts`, the step 21 paragraph of `prompts/README.md`, the step 21 entry in `DECISIONS.md`
+`e2e/hand-colours.spec.ts`, `e2e/one-hand-practice.spec.ts`, and any other the suite turns up), a comment in `src/config.ts`, the step 21 paragraph of `prompts/README.md`, the step 21 entry and the keyboard-presets entry (line 86) in `DECISIONS.md`
 and items 3 and 11 of `MANUAL-CHECKS.md`. No code under `src/` changes behaviour and no
 dependency is added. Independent of steps 25 and 26. One branch, `step-24-left-hand-octave`,
 off `main`.
@@ -77,7 +77,7 @@ transcription, and make `<software>` read
   hand's new pitches from `VirtualKeyboardSource`'s bottom row (`BASE_NOTE = 48`, C3 on `KeyZ`),
   or `playPerfectly` will fail with a missing key.
 - `e2e/one-hand-practice.spec.ts:24` plays 67 as "m3 b1, the left hand's first note"; that note
-  is now 55, and the comment at lines 40-43 ("instead of the left's") goes stale with it.
+  is now 55, and the comment at lines 39-40 ("instead of the left's") goes stale with it.
   `e2e/virtualKeyboard.ts`'s `KEY_FOR_PITCH` has only 64, 67 and 69; add `55: 'b'` (G3).
 - `src/score/parseScore.test.ts:52-63`, the bar-19 test, asserts `{ pitch: 60, hand: 'left' }`
   and `finger: 1`, with the comment "C5 over C4"; it becomes `{ pitch: 48, hand: 'left', finger: 5 }`,
@@ -85,15 +85,12 @@ transcription, and make `<software>` read
   `DECISIONS.md:23` ("a C5 over C4") goes stale with it, and so does the "ten pitches" comment at
   `src/App.test.tsx:25-26`.
 - **The parse snapshot changes on purpose.** Regenerate it and check that the diff holds only
-  staff-2 pitches, each exactly 12 lower, and the left-hand fingers of bars 19-22. If a
-  `falling-notes` element snapshot shows those events, it moves on purpose too; say so when
-  re-blessing it.
+  staff-2 pitches, each exactly 12 lower, and the left-hand fingers of bars 19-22.
 - **The staff's height is measured, not assumed** (`src/score/StaffView.css`, "~277px engraving",
   and `DECISIONS.md`). Bass clef changes the ledger lines under the lower staff. Measure it again;
   if the 300px pane now cuts the staff off, the `overflowsDownwards` assertion in
   `e2e/staff.spec.ts`'s "the staff draws the piece" fails, and the fix is the height and its entry, not a change to the notes.
-- The element snapshots in `e2e/*-snapshots/` should not move: the finger queue shows fingers,
-  not pitches, and the keyboard snapshot marks only m1 b1's right-hand G4, which does not change. If one moves, stop and
+- The element snapshots in `e2e/*-snapshots/` should not move: they are all taken in bars 1-4 (`e2e/falling-notes.spec.ts` plays only bars 1-2), where neither pitch nor fingering changes, and the keyboard snapshot marks only m1 b1's right-hand G4. If one moves, stop and
   report it rather than re-blessing it.
 - The keyboard presets' comment (`src/config.ts:9-10`) says each range contains "C4-F5"; it is
   now C3-F5, which all three presets still contain. `DECISIONS.md:86` says "this score's C4-F5
@@ -102,7 +99,7 @@ transcription, and make `<software>` read
 
 ## In scope
 
-The octave and clef change in the MusicXML, its provenance line, and the tests, comments,
+The octave and clef change and the bars 19-22 left-hand fingering in the MusicXML, its provenance lines, and the tests, comments,
 `DECISIONS.md` and `MANUAL-CHECKS.md` text that name the old pitches.
 
 ## Out of scope
@@ -132,7 +129,7 @@ to the right of the right on the keyboard, and that this follows how two-hand be
 arrangements of the piece are written rather than the owner's ABC. Say too that the left hand's
 fingering in bars 19-22 was corrected to a left-hand C position, because as written it was
 right-hand fingering, and that its "a fingering on every single note" is still true but no longer
-all the owner's.
+all the owner's. Give the merge date as the line between attempts recorded against the old left hand and the new one. In the keyboard-presets entry, "this score's C4-F5 range" becomes C3-F5.
 
 ## Gate
 
