@@ -4,7 +4,7 @@ Shades, on the on-screen keyboard, the five keys each hand is placed over, marks
 the finger that rests on it, and outlines where the hand goes next just before it has to move —
 all worked out from the fingering and key signature the score already carries. Adds
 `src/keyboard/handPosition.ts` and `src/keyboard/handPosition.test.ts`; touches
-`src/score/types.ts`, `src/score/parseScore.ts`, `src/score/parseScore.test.ts`, the parse snapshot
+`src/engine/advance.ts`, `src/score/types.ts`, `src/score/parseScore.ts`, `src/score/parseScore.test.ts`, the parse snapshot
 `src/score/fixtures/cicha-noc.snapshot.json`, the five test files that build a `Score` by hand
 (`src/engine/advance.test.ts`, `src/practice/practiceView.test.ts`, `src/practice/demo.test.ts`,
 `src/practice/positionReadout.test.ts`, `src/score/filterScoreByHand.test.ts`),
@@ -93,9 +93,12 @@ practice will reach them — from the current index forward, and with a loop set
 end back to its first event, as `nextIndexAfter` does (`src/engine/advance.ts:108`), for one full
 pass. So with bars 1-2 looped, the left hand, which does not play there, has no position, and the
 right hand's E4 is followed by G4 again rather than bar 5's D5. `handPosition.ts` takes the loop
-alongside the score and index; it does not export or reuse the engine's private function, whose
-input is an `EngineState`. The demo plays the whole filtered score, so during the demo no loop is
-passed. Rejected: **walking linearly**, as `upNext` does in `src/practice/practiceView.ts:64`
+alongside the score and index, and walks with **the engine's own `nextIndexAfter`**, exported and
+its parameter narrowed to `Pick<EngineState, 'nextEventIndex' | 'loop'>` — the two fields it
+reads — so the tint and the engine cannot disagree about where a loop wraps. That adds
+`src/engine/advance.ts` to the files touched. Rejected: a copy of the wrap in
+`handPosition.ts`, which keeps the step out of `src/engine` but lets the two drift apart. The demo plays the whole filtered score, so during the demo no loop is
+passed. Rejected: **walking linearly**, as `upNext` does in `src/practice/practiceView.ts:65`
 (DECISIONS.md, "Loop selection: setting a loop doesn't jump playback, only changes where it
 wraps"). That lookahead asks whether a pitch is plausibly what was meant next; a position asks
 where the hand actually goes next, and a wrong one is an instruction on screen. Looping a
@@ -129,7 +132,7 @@ a research problem of its own.
 A hand's next position is drawn **only when that hand has a note in the event about to be played,
 and the hand's following fingered note** (in the same loop-aware order) **fixes a different
 position**. That following position is what is outlined. If the following note fixes no position
-(an accidental), there is no outline. An idle hand never carries one: it gets its outline at the
+(an accidental), or the hand's note in the event has no finger, there is no outline. An idle hand never carries one: it gets its outline at the
 note before its move, like the playing hand.
 
 In Cicha Noc, without a loop, that is the right hand's E4 in bar 2 (next: B4-F5), its B4 in bar 6
@@ -215,7 +218,9 @@ No persisted state, no exported format, no `localStorage` key: nothing here is o
 pieces (step 22)** are where the accidental, minor-key, key-change, chord and shared-key rules are
 tested; each is written down above rather than invented then. **A piece with no fingering** —
 public-domain MusicXML often has none — makes this whole step silently show nothing, and no test
-notices; step 22's check that a bundled piece is fingered on every note is where that belongs.
+notices. `step22.md` has no check that a bundled piece is fingered on every note yet; it should
+gain one, and a note that a minor-key piece brings the fill-from-upcoming-notes rule with it, in a
+change of its own through the planning gate.
 **A harder arrangement** (broken chords, stretches) turns re-anchoring on every note into the tint
 and outline changing on almost every note; the escape is a hide toggle like step 18's, a new
 stored setting, which is its own step. **Tempo in practice returning:** the outline appears one
@@ -260,14 +265,17 @@ keeps its strong expected class.
 - `PianoKeyboard.test.tsx`: the five keys of a position carry `data-position-hand` and
   `data-finger`, the black keys between them neither, the expected key keeps its strong class and
   number, a held key keeps its `data-finger`, and a black key in a position carries both.
-- `App.test.tsx`: with "Left hand" selected no key carries `data-position-hand="right"`. With the
+- `App.test.tsx`: with "Left hand" selected, E3-B3 carries `data-position-hand="left"` and no key
+  carries `data-position-hand="right"`. With the
   demo started and run forward to bar 5, as the existing case does at `App.test.tsx:177`
   (`advanceTimersByTime(12_728)`), the right hand's position is B4-F5 and no key is marked expected
   — **the case that fails if the demo wiring is missing**, since at the demo's first step it and
   practice agree. After Stop, the right hand's position is E4-B4 again.
 - `e2e/hand-position.spec.ts` over the virtual keyboard: at start the right hand's five keys show
   1-5; after playing bar 1 they still do; after playing bar 2's E4 they have moved to B4-F5. No new
-  keys are needed in `e2e/virtualKeyboard.ts`.
+  keys are needed in `e2e/virtualKeyboard.ts`. With bars 1-2 looped through the existing
+  `selectLoopRange(page, 1, 2)`, no key carries `data-position-hand="left"` — **the case that
+  fails if `App.tsx` does not pass the loop**, since Layer 1 alone tests the walk.
 
 **Commit 3.**
 
@@ -288,7 +296,7 @@ Item 3, which already checks the keyboard's marking by hand: while playing Cicha
 confirm the shaded keys match where the hand actually sits, that the outline shows each move in
 time to see it coming, that the key to press still stands out among the tinted ones, and — at the
 **88 keys** preset — that the finger numbers and note names are both readable at the distance the
-child sits from the screen. Loop bars 1-2 and confirm no outline appears on E4. Press Listen and
+child sits from the screen. Press Listen and
 confirm the shaded positions move with the demo.
 
 ## Finally
