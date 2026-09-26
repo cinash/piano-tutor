@@ -66,13 +66,23 @@ def with_printed_digits(number):
     for measure in root.iter('measure'):
         for note, digit in zip(measure.iter('note'), PRINTED[number].get(measure.get('number'), [])):
             if digit is not None:
-                note.find('notations/technical').append(ET.Element('fingering'))
-                note.find('notations/technical/fingering').text = str(digit)
+                ET.SubElement(note.find('notations/technical'), 'fingering').text = str(digit)
     return root
 
 
-def fingers(root, staff):
-    return [n.findtext('notations/technical/fingering') for n in root.iter('note') if n.findtext('staff') == staff]
+def fingers(root, staff=None):
+    return [n.findtext('notations/technical/fingering') for n in root.iter('note')
+            if staff is None or n.findtext('staff') == staff]
+
+
+def scale_with(printed):
+    """The right hand's C5-C6 scale, with fingers printed on the notes named: {index: finger}."""
+    notes = ''.join(
+        f'<note><pitch><step>{step}</step><octave>{octave}</octave></pitch><duration>1</duration><staff>1</staff>'
+        + (f'<notations><technical><fingering>{printed[i]}</fingering></technical></notations>' if i in printed else '')
+        + '</note>'
+        for i, (step, octave) in enumerate(zip('CDEFGABC', '55555556')))
+    return ET.fromstring(f'<score-partwise><part><measure>{notes}</measure></part></score-partwise>')
 
 
 class PrintedFingersAreAnchors(unittest.TestCase):
@@ -80,12 +90,11 @@ class PrintedFingersAreAnchors(unittest.TestCase):
         for number, finger in ((8, '2'), (9, '3')):
             with self.subTest(number=number):
                 root = with_printed_digits(number)
-                printed = [n.findtext('notations/technical/fingering') for n in root.iter('note')]
+                printed = fingers(root)
 
                 self.assertEqual(add_fingering(root), [])
 
-                after = [n.findtext('notations/technical/fingering') for n in root.iter('note')]
-                self.assertEqual([a for p, a in zip(printed, after) if p], [p for p in printed if p])
+                self.assertTrue(all(after == before for before, after in zip(printed, fingers(root)) if before))
                 self.assertEqual(set(fingers(root, '2')), {finger})
 
     def test_without_the_digits_the_rule_puts_the_little_finger_there(self):
@@ -96,6 +105,21 @@ class PrintedFingersAreAnchors(unittest.TestCase):
                 add_fingering(root)
 
                 self.assertEqual(set(fingers(root, '2')), {'5'})
+
+    def test_a_thumb_passed_under_where_the_book_prints_it_is_followed(self):
+        root = scale_with({0: 1, 3: 1})
+
+        self.assertEqual(add_fingering(root), [])
+
+        self.assertEqual(fingers(root), ['1', '2', '3', '1', '2', '3', '4', '5'])
+
+    def test_a_move_the_book_does_not_print_is_returned_rather_than_guessed(self):
+        root = scale_with({0: 1})
+        notes = list(root.iter('note'))
+
+        self.assertEqual(add_fingering(root), notes[5:])
+
+        self.assertEqual(fingers(root), ['1', '2', '3', '4', '5', None, None, None])
 
     def test_notes_no_window_reaches_are_returned_unfingered(self):
         # a sixth in the right hand, and a C printed 1 beside an E printed 2 in the left
@@ -111,10 +135,9 @@ class PrintedFingersAreAnchors(unittest.TestCase):
             '</measure></part></score-partwise>')
         notes = list(root.iter('note'))
 
-        unreachable = add_fingering(root)
+        self.assertEqual(add_fingering(root), [notes[0], notes[1], notes[4]])
 
-        self.assertEqual(unreachable, [notes[0], notes[1], notes[4]])
-        self.assertEqual([n.findtext('notations/technical/fingering') for n in notes], [None, None, '1', '2', None])
+        self.assertEqual(fingers(root), [None, None, '1', '2', None])
 
 
 if __name__ == '__main__':

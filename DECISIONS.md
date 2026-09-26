@@ -923,11 +923,14 @@ digits is fingered exactly as it was. This is what the book's left hand in Nos. 
 one repeated G, printed 2 and then 3, which the rule alone fingers 5 because nothing in the
 notes says where the hand sits.
 
-An onset no window fits - a chord wider than a fifth, or printed fingers no one window agrees
-with, such as a triad printed 1-2-4 - is not guessed: its unprinted notes stay unfingered and
-`add_fingering` returns them. The rule still moves the hand between two digits when the notes
-need it, so a run the book leaves unmarked gets a hand shift where a player might pass the
-thumb under; only an onset that fits no window at all is refused.
+In a hand that carries printed fingers, a note between two of them is played in the window of
+the one before it or the one after it - before the first, in the first one's; after the last,
+in the last one's - and the rule only chooses which, and where the hand moves between them.
+The book prints a digit where the hand moves, so a move it does not print - a thumb passed under,
+a stretch - is not invented: a note neither window reaches stays unfingered and `add_fingering`
+returns it, as does every unprinted note of an onset no window fits at all (a chord wider than
+a fifth, or printed fingers no one window agrees with). A hand with no printed finger anywhere is
+fingered by the rule alone, as before; the LilyPond import stops if that leaves a note bare.
 
 Rejected: `pianoplayer` as the filler, which matched 69-88% of the right hands of Nos. 8-10
 and 20% of No. 38's left, because it shifts the hand by a key where the book keeps it still;

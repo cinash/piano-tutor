@@ -3,9 +3,11 @@
 Each hand rests over five adjacent white-key steps, and a note's finger is its step inside that
 window: the right hand counts 1 from the bottom, the left hand 5. A Viterbi pass picks the window
 for every onset so that the hand moves as rarely as possible, and by as little as possible when it
-has to. A finger already on a note - one the book prints - is kept, and fixes the window at that
-onset. An onset no window fits - a chord wider than a fifth, or printed fingers no one window
-agrees with - leaves its other notes unfingered, and they are returned rather than guessed.
+has to. A finger already on a note - one the book prints - is kept and fixes the window at that
+onset, and a note between two printed fingers is played in the window of one or the other: the
+book prints a digit where the hand moves, so a move it does not print - a thumb passed under, a
+stretch - is not invented. A note no allowed window reaches is left unfingered and returned. A hand
+with no printed finger is fingered by the rule alone.
 
 Usage: python3 scripts/beyer/fingering.py IN.musicxml OUT.musicxml
 """
@@ -55,15 +57,32 @@ def printed_finger(note):
     return int(text) if text else None
 
 
+def finger_at(base, note, hand):
+    """The finger that plays a note with the hand's window starting at step `base`."""
+    step = diatonic(note) - base
+    return step + 1 if hand == 'RH' else 5 - step
+
+
 def windows_for(notes, hand):
     """The windows that hold every note of an onset and put each printed finger on its note."""
     steps = [diatonic(note) for note in notes]
-    windows = set(range(max(steps) - 4, min(steps) + 1))
-    for note, step in zip(notes, steps):
-        finger = printed_finger(note)
-        if finger is not None:
-            windows &= {step - finger + 1 if hand == 'RH' else step - 5 + finger}
-    return sorted(windows)
+    return [b for b in range(max(steps) - 4, min(steps) + 1)
+            if all(finger_at(b, n, hand) == printed_finger(n) for n in notes if printed_finger(n))]
+
+
+def between_printed(onsets, windows):
+    """Narrows each unprinted onset to the windows of the printed onsets either side of it."""
+    printed = [i for i, notes in enumerate(onsets) if windows[i] and any(map(printed_finger, notes))]
+    if not printed:
+        return windows
+    narrowed = []
+    for i, allowed in enumerate(windows):
+        if i not in printed:
+            before = max((p for p in printed if p < i), default=printed[0])
+            after = min((p for p in printed if p > i), default=printed[-1])
+            allowed = [b for b in allowed if b in windows[before] + windows[after]]
+        narrowed.append(allowed)
+    return narrowed
 
 
 def choose_windows(onsets):
@@ -92,23 +111,24 @@ def find_or_add(parent, tag):
 
 
 def add_fingering(root):
-    """Fingers every pitched note that has no finger yet; returns the notes no window reaches."""
+    """Fingers every pitched note that has no finger yet; returns the notes no allowed window reaches."""
     unreachable = []
     for hand, events in events_by_hand(root).items():
-        onsets = [(notes, windows_for(notes, hand)) for _, notes in events]
-        reachable = [(notes, windows) for notes, windows in onsets if windows]
-        unreachable += [note for notes, windows in onsets if not windows
-                        for note in notes if printed_finger(note) is None]
+        onsets = [notes for _, notes in events]
+        reachable = []
+        for notes, windows in zip(onsets, between_printed(onsets, [windows_for(n, hand) for n in onsets])):
+            if windows:
+                reachable.append((notes, windows))
+            else:
+                unreachable += [note for note in notes if printed_finger(note) is None]
         if not reachable:
             continue
         path = choose_windows([(windows, min(map(diatonic, notes))) for notes, windows in reachable])
         for (notes, _), base in zip(reachable, path):
             for note in notes:
                 if printed_finger(note) is None:
-                    step = diatonic(note) - base
-                    finger = step + 1 if hand == 'RH' else 5 - step
                     technical = find_or_add(find_or_add(note, 'notations'), 'technical')
-                    find_or_add(technical, 'fingering').text = str(finger)
+                    find_or_add(technical, 'fingering').text = str(finger_at(base, note, hand))
     return unreachable
 
 
