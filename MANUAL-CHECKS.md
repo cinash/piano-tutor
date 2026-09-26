@@ -40,7 +40,9 @@ update it at the end of each step.
    restarted and the full texture came back. Then press "Listen" and confirm the piano
    itself plays Cicha Noc while the on-screen keys light up in time with it — expect a
    thinner texture than the printed music, since one event sounds at a time (see
-   `DECISIONS.md`), and say whether 66 BPM is slow enough for a child to follow along.
+   `DECISIONS.md`). Set "Speed" to 50% and say whether it is slow enough for a child to
+   follow along, then to 150% and confirm repeated notes are still heard as separate
+   notes rather than as one smeared note.
    Press "Stop" mid-piece and confirm the instrument falls silent at once, with no note
    left sounding, and that "Attempts" gained nothing from the demonstration. With the piano
    selected in the dropdown the demo plays out of the output of that same name, and

@@ -59,3 +59,20 @@ test('Listen lights the keys through the opening bars, leaving practice where it
   await expect(readout).toHaveText(position ?? '');
   await expect.poll(() => cursorPosition(cursor)).toBe(practiceMark);
 });
+
+test('Listen plays at the speed chosen before it', async ({ page }) => {
+  await connectVirtualKeyboard(page);
+
+  const speed = page.getByTestId('demo-speed-select');
+  await expect(speed).toHaveValue('100%');
+  await speed.selectOption('50%');
+
+  const clickedAt = Date.now();
+  await page.getByTestId('listen-to-piece').click();
+  await pollHeldPitches(page).toEqual([67]);
+
+  // At 100% the demo moves on to A4 at 1364 ms; at 50%, not until 2727 ms. Measured
+  // from the click rather than the poll, which may have used some of the margin.
+  await page.waitForTimeout(1_800 - (Date.now() - clickedAt));
+  expect(await heldPitches(page)).toEqual([67]);
+});
