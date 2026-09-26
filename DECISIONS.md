@@ -659,11 +659,25 @@ A twenty-two-bar piece on a single system is far wider than the window, so a mar
 the right edge of the pane marks nothing. OSMD has its own `followCursor`, but it calls
 `scrollIntoView({ block: 'center' })`, which centres the cursor in _every_ scrollable
 ancestor — including the document, so each note played would drag the whole page about,
-and the keyboard is already the element that falls off the bottom. It is left off, and the
-seek calls `scrollIntoView({ block: 'nearest' })` on the cursor element itself instead
-(`inline` defaults to `'nearest'` too, which is the axis that matters):
-that scrolls the pane only as far as it must, and does nothing at all while the marker is
-already visible.
+and the keyboard is already the element that falls off the bottom. It is left off, and
+the seek sets the staff pane's own `scrollLeft`, which cannot move anything else.
+
+On every move it puts the cursor's left edge a third of the way across the pane: the
+cursor's offset from the pane's left edge, from the two bounding rects, added to
+`scrollLeft`, less a third of `clientWidth`. The browser clamps the value, so at the start
+of the piece the pane stays at 0 and at the end it stops at the last bar, with no special
+case for either. This replaced step 16's `scrollIntoView({ block: 'nearest' })`, which
+scrolled only as far as it must: the marker walked to the right edge and each scroll just
+brought it back into view, and the player saw a note or two ahead of it at most (step 25).
+A third rather than the centre leaves more of the music ahead than behind, as flowkey does.
+
+The target is recomputed from scratch on every move rather than tracked, for the same
+reason as the cursor's own reset and re-scan: Restart, Stop and the loop wrap all move the
+marker backwards, and a rule that only scrolled forwards, or treated backwards moves
+differently, would have to remember where it was. The glide is `scroll-behavior: smooth`
+on `.staff-view` inside `prefers-reduced-motion: no-preference`, so it is off for anyone who
+asks their system for less motion, and a new `scrollLeft` retargets a running glide rather
+than queueing behind it.
 
 ## The demo is played by the piano; the app makes no sound of its own
 
