@@ -46,25 +46,24 @@ def common(a, b):
 
 
 def agreement(expected, recognised):
-    """(notes expected, notes recognised, agreeing in pitch and rhythm, agreeing in pitch) over both hands."""
-    counts = [0, 0, 0, 0]
+    """[notes expected, notes read, the larger of the two, agreeing in pitch and rhythm, agreeing in pitch],
+    summed over the hands, so that no hand's added notes offset another's dropped ones."""
+    counts = [0] * 5
     for hand in expected:
         a, b = expected[hand], recognised[hand]
-        counts[0] += len(a)
-        counts[1] += len(b)
-        counts[2] += common(a, b)
-        counts[3] += common([pitch for pitch, _ in a], [pitch for pitch, _ in b])
+        pitches = [pitch for pitch, _ in a], [pitch for pitch, _ in b]
+        for i, count in enumerate((len(a), len(b), max(len(a), len(b)), common(a, b), common(*pitches))):
+            counts[i] += count
     return counts
 
 
 def row(label, counts):
-    expected, recognised, agree, pitch = counts
-    most = max(expected, recognised)
-    return f'{label:>4} {expected:>6} {recognised:>6} {agree / most:>6.1%} {pitch / most:>6.1%}'
+    expected, read, most, agree, pitch = counts
+    return f'{label:>4} {expected:>6} {read:>6} {agree / most:>6.1%} {pitch / most:>6.1%}'
 
 
 def main(imported, numbers):
-    total = [0, 0, 0, 0]
+    total = [0] * 5
     print(f"{'No.':>4} {'notes':>6} {'read':>6} {'agree':>6} {'pitch':>6}")
     for number in numbers:
         name = f'beyer_op101_no{number:02}.musicxml'
