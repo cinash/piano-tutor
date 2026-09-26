@@ -7,7 +7,9 @@ update it at the end of each step.
    (not a LAN/tailnet address — Web MIDI needs a secure context), and confirm it appears
    in the "Piano" device dropdown.
 2. Select it from the dropdown and confirm the status line reads "Connected: <device
-   name>".
+   name>". Then reload the page and confirm it reads "Connected: <device name>" again
+   with no click — the app remembers the piano by name, and nothing automated can tell
+   whether the P-145 is listed under the same name after a reload.
 3. Play a single note and confirm the matching on-screen key highlights, and un-highlights
    when you release it. Then switch the keyboard to 88 keys and confirm it still tracks
    the right key, and that the on-screen keyboard now matches the P-145 under your hands.
@@ -21,8 +23,9 @@ update it at the end of each step.
    no perceptible lag between key press and highlight.
 5. Unplug the USB cable while connected; confirm the app doesn't crash and the status
    returns to "Not connected".
-6. Reconnect the cable and re-select the device from the dropdown; confirm it works
-   again.
+6. Plug the cable back in and confirm it reconnects on its own, without re-selecting it
+   from the dropdown, and that it works again. Then press "Disconnect", reload, and
+   confirm it stays "Not connected".
 7. Click "Use computer keyboard" and confirm the mapped keys (Z X C V B N M and the row
    above, Q W E R T Y U I O P and the bracket beside it) light up the correct on-screen
    keys.

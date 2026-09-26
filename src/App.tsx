@@ -10,6 +10,7 @@ import {
 } from './config';
 import type { ActiveSource } from './devices/DevicePicker';
 import { DevicePicker } from './devices/DevicePicker';
+import { forgetLastPiano, loadLastPiano, saveLastPiano } from './devices/lastPianoStore';
 import { downloadJson } from './downloadJson';
 import type { Loop } from './engine/types';
 import { KeyboardRangePicker } from './keyboard/KeyboardRangePicker';
@@ -267,6 +268,7 @@ export function App() {
 
   function connectWebMidi(deviceId: string) {
     const device = webMidiInputs.find((input) => input.id === deviceId);
+    if (device) saveLastPiano(device.name);
     attach(
       new WebMidiSource(deviceId),
       { kind: 'webmidi', deviceName: device?.name ?? deviceId },
@@ -329,6 +331,18 @@ export function App() {
           ) {
             disconnect();
           }
+          // Nothing attached means a page load or an unplug, since Disconnect forgets
+          // the piano. The ref, not React state, because the list has not re-rendered.
+          if (sourceRef.current !== null) return;
+          const remembered = loadLastPiano();
+          const piano = connected.find((input) => input.name === remembered);
+          if (piano) {
+            attach(
+              new WebMidiSource(piano.id),
+              { kind: 'webmidi', deviceName: piano.name },
+              piano.id,
+            );
+          }
         })
         .catch((err: unknown) => setError(describeError(err)));
     };
@@ -345,6 +359,9 @@ export function App() {
       cancelled = true;
       unsubscribe?.();
     };
+    // Not attach: the first render's is safe to keep, since it touches only refs, state
+    // setters and the stable stopDemo, and handleEvent reads through refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disconnect]);
 
   function toggleRecording() {
@@ -370,7 +387,12 @@ export function App() {
         onConnectWebMidi={connectWebMidi}
         onConnectVirtual={connectVirtual}
         onLoadReplayFile={(file) => void loadReplayFile(file)}
-        onDisconnect={disconnect}
+        onDisconnect={() => {
+          // Here rather than in disconnect(), which an unplug calls too: replugging
+          // reconnects only because the unplug leaves the piano remembered.
+          forgetLastPiano();
+          disconnect();
+        }}
       />
       {import.meta.env.DEV && active.kind !== 'none' && (
         <button type="button" onClick={toggleRecording} data-testid="toggle-recording">

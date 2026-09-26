@@ -71,13 +71,21 @@ const byId = <T extends { id: string }>(ports: readonly T[]) =>
 export function fakeMidiAccess(
   ports: { inputs?: readonly FakeMidiInput[]; outputs?: readonly FakeMidiOutput[] } = {},
 ) {
+  // App watches statechange to keep its device list current. A test plugs a device in or
+  // out by setting an input's state, then calling fireStateChange().
+  const listeners = new Set<() => void>();
   return {
     inputs: byId(ports.inputs ?? []),
     outputs: byId(ports.outputs ?? []),
-    // App watches statechange to keep its device list current; no test plugs a device
-    // in mid-run, so the listener is accepted and never called.
-    addEventListener() {},
-    removeEventListener() {},
+    addEventListener(_type: string, listener: () => void) {
+      listeners.add(listener);
+    },
+    removeEventListener(_type: string, listener: () => void) {
+      listeners.delete(listener);
+    },
+    fireStateChange() {
+      for (const listener of listeners) listener();
+    },
   };
 }
 
