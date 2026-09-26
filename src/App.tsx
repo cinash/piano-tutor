@@ -115,15 +115,14 @@ export function App() {
 
   // Where the hands sit: practice's place, or while the demo plays, the first event at
   // or after its place, so a silence shows where the next note is. The demo plays the
-  // whole piece, so it has no loop to wrap at; after its last note there is no event.
+  // whole piece, so it has no loop to wrap at; after its last note there is no event,
+  // and -1 finds no position, as past the end does.
   const demoEventIndex = demoStep
     ? score.events.findIndex((event) => event.startTime >= demoStep.startTime)
     : -1;
-  const positions = !demoStep
-    ? handPositions(score, view.engine.nextEventIndex, view.engine.loop)
-    : demoEventIndex === -1
-      ? []
-      : handPositions(score, demoEventIndex);
+  const positions = demoStep
+    ? handPositions(score, demoEventIndex)
+    : handPositions(score, view.engine.nextEventIndex, view.engine.loop);
 
   const openAttemptRef = useRef<number | null>(null);
   const sourceRef = useRef<MidiSource | null>(null);

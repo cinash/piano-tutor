@@ -1,15 +1,9 @@
 import { nextIndexAfter } from '../engine/advance';
 import type { Loop } from '../engine/types';
-import type { Finger, Hand, Note, Score } from '../score/types';
+import type { Finger, Note, Score } from '../score/types';
 
-/** One key of a hand's position: the finger that rests on it. */
-export interface FingerKey {
-  pitch: number;
-  hand: Hand;
-  finger: Finger;
-}
-
-type FingeredNote = Note & { finger: Finger };
+/** A note with its finger — and so one key of a hand's position. */
+export type FingerKey = Note & { finger: Finger };
 
 const FINGERS: readonly Finger[] = [1, 2, 3, 4, 5];
 const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
@@ -30,18 +24,19 @@ export function handPositions(score: Score, index: number, loop?: Loop): FingerK
   });
 }
 
-function upcomingNotes(score: Score, index: number, loop?: Loop): FingeredNote[] {
-  const notes: FingeredNote[] = [];
+function upcomingNotes(score: Score, index: number, loop?: Loop): FingerKey[] {
+  const notes: FingerKey[] = [];
   const visited = new Set<number>();
   for (
     let i = index;
-    i < score.events.length && !visited.has(i);
+    // Out of range past the end, and at -1 when a loop starts past the score's last event.
+    score.events[i] && !visited.has(i);
     i = nextIndexAfter({ nextEventIndex: i, loop }, score)
   ) {
     visited.add(i);
     notes.push(
       ...score.events[i].notes.filter(
-        (note): note is FingeredNote => note.finger !== undefined,
+        (note): note is FingerKey => note.finger !== undefined,
       ),
     );
   }
@@ -53,7 +48,7 @@ function upcomingNotes(score: Score, index: number, loop?: Loop): FingeredNote[]
  * counts up from its thumb, the left from its little finger. None when the anchor is
  * outside the key, where there is no degree to count from.
  */
-function positionFrom(anchor: FingeredNote, scale: number[]): FingerKey[] {
+function positionFrom(anchor: FingerKey, scale: number[]): FingerKey[] {
   if (!scale.includes(pitchClass(anchor.pitch))) return [];
 
   return FINGERS.map((finger) => {

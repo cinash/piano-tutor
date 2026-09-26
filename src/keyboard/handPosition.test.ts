@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { cichaNocScore } from '../score/cichaNoc';
+import { filterScoreByHand } from '../score/filterScoreByHand';
 import type { Note, Score } from '../score/types';
 import { handPositions } from './handPosition';
 
@@ -89,6 +90,14 @@ describe('handPositions', () => {
 
     // The left hand does not play in bars 1-2, so it has no position there.
     expect(keysOf(positions, 'left')).toEqual([]);
+    expect(keysOf(positions, 'right')[0]).toEqual([64, 1]);
+  });
+
+  it("stops at the end of the piece when the loop holds none of the hand's notes", () => {
+    // The right hand's last note is in m19, so a loop over m20-22 has nothing to wrap to.
+    const rightHand = filterScoreByHand(cichaNocScore, 'right');
+    const positions = handPositions(rightHand, 0, { startMeasure: 20, endMeasure: 22 });
+
     expect(keysOf(positions, 'right')[0]).toEqual([64, 1]);
   });
 
