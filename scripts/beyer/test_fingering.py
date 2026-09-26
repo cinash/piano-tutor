@@ -8,10 +8,7 @@ from fingering import add_fingering
 HERE = Path(__file__).parent
 # Human-fingered transcriptions from the PDMX dataset (MuseScore uploads, CC0): Nos. 8-10 finger
 # the right hand only, No. 38 (committed with the data) fingers both hands.
-HUMAN_FINGERED = [
-    HERE / 'fixtures/pdmx_beyer_no08.musicxml',
-    HERE / 'fixtures/pdmx_beyer_no09.musicxml',
-    HERE / 'fixtures/pdmx_beyer_no10.musicxml',
+HUMAN_FINGERED = [HERE / f'fixtures/pdmx_beyer_no{n:02}.musicxml' for n in (8, 9, 10)] + [
     HERE.parent.parent / 'beyer_op101_musicxml/beyer_op101_no38.musicxml',
 ]
 
@@ -29,7 +26,7 @@ class ReproducesHumanFingering(unittest.TestCase):
                         technical.remove(technical.find('fingering'))
                 self.assertTrue(human)
 
-                self.assertEqual(add_fingering(root), 0)
+                add_fingering(root)
                 computed = {note: note.findtext('notations/technical/fingering') for note in human}
                 self.assertEqual(computed, human)
 

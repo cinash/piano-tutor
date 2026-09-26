@@ -132,8 +132,7 @@ def read_staves(text):
             reader = StaffReader(tokens, i + 3, 7 * (3 + ref.count("'") - ref.count(',')) + STEPS.index(ref[0]))
             reader.block()
             staves.append(reader)
-    upper, lower = staves
-    return upper, lower
+    return staves
 
 
 def to_musicxml(text, number):
@@ -229,8 +228,7 @@ def main():
         if match:
             number = int(match.group(1))
             root = to_musicxml(fetch(path), number)
-            if unfingered := add_fingering(root):
-                print(f'No. {number}: {unfingered} notes fit no five-finger window')
+            add_fingering(root)
             ET.indent(root)
             ET.ElementTree(root).write(OUT / f'beyer_op101_no{number:02}.musicxml', encoding='UTF-8', xml_declaration=True)
             print(f'No. {number}')

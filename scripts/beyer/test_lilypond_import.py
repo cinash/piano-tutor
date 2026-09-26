@@ -2,11 +2,12 @@
 import unittest
 import xml.etree.ElementTree as ET
 from fractions import Fraction
+from pathlib import Path
 
 from fingering import events_by_hand
 from lilypond_import import OUT, to_musicxml
-from test_fingering import HERE
 
+HERE = Path(__file__).parent
 GENERATED = {n: OUT / f'beyer_op101_no{n:02}.musicxml' for n in range(8, 32)}
 
 
@@ -31,6 +32,8 @@ class GeneratedFiles(unittest.TestCase):
                         filled = sum(int(n.findtext('duration')) for n in measure.iter('note')
                                      if n.findtext('staff') == staff and n.find('chord') is None)
                         self.assertEqual(Fraction(filled, divisions), bar)
+                        first = next(n for n in measure.iter('note') if n.findtext('staff') == staff)
+                        self.assertIsNone(first.find('chord'), 'a chord note spilled into the next bar')
 
     def test_every_note_is_fingered(self):
         for number, path in GENERATED.items():

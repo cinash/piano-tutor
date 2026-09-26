@@ -3,7 +3,7 @@
 Each hand rests over five adjacent white-key steps, and a note's finger is its step inside that
 window: the right hand counts 1 from the bottom, the left hand 5. A Viterbi pass picks the window
 for every onset so that the hand moves as rarely as possible, and by as little as possible when it
-has to. A chord wider than a fifth fits no window; its notes are left unfingered and counted.
+has to. A chord wider than a fifth fits no window and raises.
 
 Usage: python3 scripts/beyer/fingering.py IN.musicxml OUT.musicxml
 """
@@ -49,17 +49,18 @@ def events_by_hand(root):
 
 
 def choose_windows(events):
-    """The lowest step of the five-step window for each event, or None where nothing fits."""
+    """The lowest step of the five-step window for each event."""
     spans = [(min(map(diatonic, notes)), max(map(diatonic, notes))) for notes in events]
+    if any(high - low > 4 for low, high in spans):
+        raise ValueError('a chord wider than a fifth fits no five-finger window')
     bases = range(min(low for low, _ in spans) - 4, max(high for _, high in spans) + 1)
     move = lambda a, b: 0 if a == b else SHIFT + PER_STEP * abs(a - b)
     cost = {b: 0 for b in bases}
     back = []
     for low, high in spans:
-        fits = high - low <= 4
         new, came_from = {}, {}
         for b in bases:
-            if fits and not b <= low <= high <= b + 4:
+            if not b <= low <= high <= b + 4:
                 new[b] = float('inf')
                 continue
             prev = min(bases, key=lambda a: cost[a] + move(a, b))
@@ -70,41 +71,31 @@ def choose_windows(events):
         cost = new
     b = min(bases, key=lambda a: cost[a])
     path = []
-    for came_from, (low, high) in zip(reversed(back), reversed(spans)):
-        path.append(b if high - low <= 4 else None)
+    for came_from in reversed(back):
+        path.append(b)
         b = came_from[b]
     return path[::-1]
 
 
+def child(parent, tag):
+    found = parent.find(tag)
+    return found if found is not None else ET.SubElement(parent, tag)
+
+
 def add_fingering(root):
-    """Sets <technical><fingering> on every pitched note; returns how many fit no window."""
-    unfingered = 0
+    """Sets <technical><fingering> on every pitched note."""
     for hand, events in events_by_hand(root).items():
         if not events:
             continue
         chords = [notes for _, notes in events]
         for notes, base in zip(chords, choose_windows(chords)):
             for note in notes:
-                if base is None:
-                    unfingered += 1
-                    continue
                 step = diatonic(note) - base
-                notations = note.find('notations')
-                if notations is None:
-                    notations = ET.SubElement(note, 'notations')
-                technical = notations.find('technical')
-                if technical is None:
-                    technical = ET.SubElement(notations, 'technical')
-                fingering = technical.find('fingering')
-                if fingering is None:
-                    fingering = ET.SubElement(technical, 'fingering')
-                fingering.text = str(step + 1 if hand == 'RH' else 5 - step)
-    return unfingered
+                finger = step + 1 if hand == 'RH' else 5 - step
+                child(child(child(note, 'notations'), 'technical'), 'fingering').text = str(finger)
 
 
 if __name__ == '__main__':
     tree = ET.parse(sys.argv[1])
-    unfingered = add_fingering(tree.getroot())
+    add_fingering(tree.getroot())
     tree.write(sys.argv[2], encoding='UTF-8', xml_declaration=True)
-    if unfingered:
-        print(f'{unfingered} notes fit no five-finger window and were left unfingered')
