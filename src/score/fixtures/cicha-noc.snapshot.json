@@ -69,7 +69,7 @@
       "id": "m3-b1-e1",
       "notes": [
         {
-          "pitch": 67,
+          "pitch": 55,
           "hand": "left",
           "finger": 3
         }
@@ -83,7 +83,7 @@
       "id": "m3-b2.5-e1",
       "notes": [
         {
-          "pitch": 69,
+          "pitch": 57,
           "hand": "left",
           "finger": 2
         }
@@ -97,7 +97,7 @@
       "id": "m3-b3-e1",
       "notes": [
         {
-          "pitch": 67,
+          "pitch": 55,
           "hand": "left",
           "finger": 3
         }
@@ -111,7 +111,7 @@
       "id": "m4-b1-e1",
       "notes": [
         {
-          "pitch": 64,
+          "pitch": 52,
           "hand": "left",
           "finger": 5
         }
@@ -167,7 +167,7 @@
       "id": "m7-b1-e1",
       "notes": [
         {
-          "pitch": 72,
+          "pitch": 60,
           "hand": "left",
           "finger": 1
         }
@@ -181,7 +181,7 @@
       "id": "m7-b3-e1",
       "notes": [
         {
-          "pitch": 72,
+          "pitch": 60,
           "hand": "left",
           "finger": 1
         }
@@ -195,7 +195,7 @@
       "id": "m8-b1-e1",
       "notes": [
         {
-          "pitch": 67,
+          "pitch": 55,
           "hand": "left",
           "finger": 3
         }
@@ -536,9 +536,9 @@
           "finger": 3
         },
         {
-          "pitch": 60,
+          "pitch": 48,
           "hand": "left",
-          "finger": 1
+          "finger": 5
         }
       ],
       "measure": 19,
@@ -550,9 +550,9 @@
       "id": "m20-b1-e1",
       "notes": [
         {
-          "pitch": 67,
+          "pitch": 55,
           "hand": "left",
-          "finger": 3
+          "finger": 1
         }
       ],
       "measure": 20,
@@ -564,9 +564,9 @@
       "id": "m20-b2-e1",
       "notes": [
         {
-          "pitch": 64,
+          "pitch": 52,
           "hand": "left",
-          "finger": 5
+          "finger": 3
         }
       ],
       "measure": 20,
@@ -578,9 +578,9 @@
       "id": "m21-b1-e1",
       "notes": [
         {
-          "pitch": 67,
+          "pitch": 55,
           "hand": "left",
-          "finger": 3
+          "finger": 1
         }
       ],
       "measure": 21,
@@ -592,9 +592,9 @@
       "id": "m21-b2-e1",
       "notes": [
         {
-          "pitch": 65,
+          "pitch": 53,
           "hand": "left",
-          "finger": 4
+          "finger": 2
         }
       ],
       "measure": 21,
@@ -606,9 +606,9 @@
       "id": "m21-b3-e1",
       "notes": [
         {
-          "pitch": 62,
+          "pitch": 50,
           "hand": "left",
-          "finger": 2
+          "finger": 4
         }
       ],
       "measure": 21,
@@ -620,9 +620,9 @@
       "id": "m22-b1-e1",
       "notes": [
         {
-          "pitch": 60,
+          "pitch": 48,
           "hand": "left",
-          "finger": 1
+          "finger": 5
         }
       ],
       "measure": 22,

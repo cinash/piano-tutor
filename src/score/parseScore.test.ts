@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import cichaNocXml from '../../cicha-noc.musicxml?raw';
 import { parseScore } from './parseScore';
+import type { Hand } from './types';
 import cichaNocSnapshot from './fixtures/cicha-noc.snapshot.json';
 import graceNotesXml from './fixtures/grace-notes.musicxml?raw';
 import tiedNotesXml from './fixtures/tied-notes.musicxml?raw';
@@ -51,16 +52,24 @@ describe('parseScore', () => {
 
   it('groups simultaneous notes across both hands into one event', () => {
     // m. 19 beat 1, the one bar of cicha-noc where the hands play together rather than
-    // taking the melody in turn: C5 over C4, written on separate staves.
+    // taking the melody in turn: C5 over C3, written on separate staves.
     const octave = cichaNoc.events.find((e) => e.measure === 19 && e.beat === 1);
 
     expect(octave?.notes).toEqual(
       expect.arrayContaining([
         { pitch: 72, hand: 'right', finger: 3 }, // C5
-        { pitch: 60, hand: 'left', finger: 1 }, // C4
+        { pitch: 48, hand: 'left', finger: 5 }, // C3
       ]),
     );
     expect(octave?.notes).toHaveLength(2);
+  });
+
+  it('puts every left-hand note of cicha-noc below every right-hand note', () => {
+    const notes = cichaNoc.events.flatMap((e) => e.notes);
+    const pitchesOf = (hand: Hand) =>
+      notes.filter((n) => n.hand === hand).map((n) => n.pitch);
+
+    expect(Math.max(...pitchesOf('left'))).toBeLessThan(Math.min(...pitchesOf('right')));
   });
 
   it('produces no event for a rest, while later notes keep the full timeline position', () => {

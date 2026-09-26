@@ -21,7 +21,7 @@ test('practising one hand queues only that hand, and switching hands restarts', 
     .poll(() => queuedEventIds(page))
     .toEqual(['m3-b1-e1', 'm3-b2.5-e1', 'm3-b3-e1', 'm4-b1-e1']);
 
-  await playChord(page, [67]); // m3 b1, the left hand's first note
+  await playChord(page, [55]); // m3 b1, the left hand's first note: G3
   await expect
     .poll(() => page.evaluate(() => window.__practiceState?.nextEventIndex))
     .toBe(1);
@@ -37,7 +37,7 @@ test('practising one hand queues only that hand, and switching hands restarts', 
     .toBe(0);
 
   // The queue is the right hand's now, starting at m1 rather than m3, and the G4 it
-  // waits for carries the right hand's colour instead of the left's.
+  // waits for carries the right hand's colour.
   await expect
     .poll(() => queuedEventIds(page))
     .toEqual(['m1-b1-e1', 'm1-b2.5-e1', 'm1-b3-e1', 'm2-b1-e1']);

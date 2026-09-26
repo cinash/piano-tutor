@@ -14,9 +14,9 @@ update it at the end of each step.
    With nothing held, confirm the keys the app is waiting for are visibly marked. The
    hands take this arrangement's melody in turn, so confirm the marked key's colour
    follows the hand you are meant to play it with — the right hand in bars 1-2, the left
-   in its echo in bars 3-4. Bar 19 is the one place both hands play at once: confirm its
-   C5 and C4 are marked in different colours, and that playing one leaves it marked until
-   the other follows.
+   in its echo in bars 3-4, marked to the left of where the right hand played bars 1-2.
+   Bar 19 is the one place both hands play at once: confirm its C5 and C3 are marked in
+   different colours, and that playing one leaves it marked until the other follows.
 4. Play a quick run of notes and judge whether the on-screen response feels immediate —
    no perceptible lag between key press and highlight.
 5. Unplug the USB cable while connected; confirm the app doesn't crash and the status
@@ -58,10 +58,15 @@ update it at the end of each step.
     downloaded file there, and confirm the history arrives intact.
 11. Open the app beside your own copy of Cicha Noc and read the staff against it: the
     same key and time signature (no sharps or flats, 3/4), both hands' staves — treble
-    over treble, as your ABC writes them — and the same notes, with the same fingerings,
-    in the same bars. Bars 9-12 are written out twice rather than carrying a repeat sign,
-    so your bars 13-18 are the app's 17-22. Nothing automated can do this: the e2e suite
-    can only tell that _something_ was engraved.
+    over bass — and the same notes, with the same fingerings, in the same bars. Bars 9-12
+    are written out twice rather than carrying a repeat sign, so your bars 13-18 are the
+    app's 17-22. The file differs from your ABC in three ways, on purpose, so that the
+    left hand plays below the right as a beginner arrangement writes it: the left hand is
+    in bass clef rather than treble, an octave lower, and its fingering in bars 19-22 reads
+    5 / 1 3 / 1 2 4 / 5, a left-hand C position, where your ABC had right-hand fingering.
+    Say whether the lower echo sounds right and whether that fingering sits well under the
+    hand. Nothing automated can do this: the e2e suite can only tell that _something_ was
+    engraved.
     Then play a few bars on the real piano and read the cursor the same way: it should
     sit on the note you are being asked for, still sit on the right one several bars
     later rather than having slipped a note, and go back to the beginning on Restart and

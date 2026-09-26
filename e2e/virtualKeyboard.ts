@@ -7,6 +7,7 @@ import { expect, type Page } from '@playwright/test';
  * get wrong, per the flake step 1's merge commit fixed.
  */
 const KEY_FOR_PITCH: Record<number, string> = {
+  55: 'b', // G3
   64: 'e', // E4
   67: 't', // G4
   69: 'y', // A4
