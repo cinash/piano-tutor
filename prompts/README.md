@@ -127,14 +127,14 @@ step 14 made for hands, and the obvious step after this one.
 
 ## Planned — which finger, and where the hand sits
 
-| Step                          | What it adds                                 |
-| ----------------------------- | -------------------------------------------- |
-| [27](step27.md) Hand position | Each hand's five keys shaded, finger on each |
+| Step                          | What it adds                                                         |
+| ----------------------------- | -------------------------------------------------------------------- |
+| [27](step27.md) Hand position | Each hand's five keys shaded, finger on each, next position outlined |
 
 The keyboard says which key and which hand, and the queue says which finger, but nothing on
 screen joins the two or says where the rest of the hand should wait. Worked out from the
-fingering the score already carries, so it needs no new data. Open questions for the owner are
-in the brief.
+fingering and key signature the score already carries. Four commits, the first of which — the
+finger on the key to press — is useful on its own.
 
 ## Deliberately not planned
 
