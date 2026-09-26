@@ -912,3 +912,23 @@ fingers 2 and then 3 to exercise different fingers; the rule, with nothing else 
 the hand's little finger on it. On the app's keyboard that places the left hand over G4-D5,
 sharing two keys with the right hand's C5-G5. Nos. 10-11 get their left hand from the same
 tie-break (G4 = 5; E-F-G = 5-4-3) and have no printed digits here to check against.
+
+## A finger the book prints is kept, and the five-finger rule fills the notes around it
+
+`scripts/beyer/fingering.py` no longer fingers every note. A note that already carries a
+finger - a digit Edition Peters prints, entered in the file - keeps it, and that finger fixes
+the hand's window at its onset, as step 27's one fingered note fixes the other four keys. The
+rule chooses windows for everything else with the same costs as before, so a file with no
+digits is fingered exactly as it was. This is what the book's left hand in Nos. 8 and 9 needs:
+one repeated G, printed 2 and then 3, which the rule alone fingers 5 because nothing in the
+notes says where the hand sits.
+
+An onset no window fits - a chord wider than a fifth, or printed fingers no one window agrees
+with, such as a triad printed 1-2-4 - is not guessed: its unprinted notes stay unfingered and
+`add_fingering` returns them. The rule still moves the hand between two digits when the notes
+need it, so a run the book leaves unmarked gets a hand shift where a player might pass the
+thumb under; only an onset that fits no window at all is refused.
+
+Rejected: `pianoplayer` as the filler, which matched 69-88% of the right hands of Nos. 8-10
+and 20% of No. 38's left, because it shifts the hand by a key where the book keeps it still;
+and the rule without anchors, which the book's Nos. 8 and 9 contradict.
