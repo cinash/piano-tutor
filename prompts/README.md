@@ -121,6 +121,19 @@ replay picker is dev-only.
 Recording which piece an attempt was of is deliberately not part of it — the same trade
 step 14 made for hands, and the obvious step after this one.
 
+## Planned — three reports from the player
+
+| Step                               | What it repairs                                   |
+| ---------------------------------- | ------------------------------------------------- |
+| [24](step24.md) Left hand lower    | The left hand an octave down, in bass clef        |
+| [25](step25.md) Staff scroll       | The marker held a third of the way in, gliding    |
+| [26](step26.md) Remember the piano | Reconnect to the last piano when it is plugged in |
+
+Three separate reports, kept as three separate steps by the owner's choice; none depends on
+another, so they can be built in any order. Step 24 is a data fix, not a code one: the keyboard
+drew the left hand's notes at their pitch, and the step 21 transcription had put them at the
+right hand's pitches.
+
 ## Deliberately not planned
 
 **Tempo in practice.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo is
