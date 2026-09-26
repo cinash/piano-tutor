@@ -68,7 +68,9 @@ Alternatives weighed:
 - `src/score/parseScore.test.ts:52-63`, the bar-19 test, asserts `{ pitch: 60, hand: 'left' }`
   with the comment "C5 over C4"; it becomes 48, C3.
 - **The parse snapshot changes on purpose.** Regenerate it and check that the diff holds only
-  staff-2 pitches, each exactly 12 lower.
+  staff-2 pitches, each exactly 12 lower, and the left-hand fingers of bars 19-22. If a
+  `falling-notes` element snapshot shows those events, it moves on purpose too; say so when
+  re-blessing it.
 - **The staff's height is measured, not assumed** (`src/score/StaffView.css`, "~277px engraving",
   and `DECISIONS.md`). Bass clef changes the ledger lines under the lower staff. Measure it again;
   if the 300px pane now cuts the staff off, `e2e/staff.spec.ts`'s "none of the staff is cut off
@@ -90,25 +92,20 @@ The octave and clef change in the MusicXML, its provenance line, and the tests, 
 
 - **Any change to the keyboard, the hand colours or the parser.** They are right; this is a data
   fix.
-- **Changing the arrangement in any other way** — rhythm or harmony. That is the owner's to
-  supply, as step 21 was. Fingering is the one exception under consideration; see the open
-  question below.
+- **Changing the arrangement in any other way** — rhythm, harmony, or fingering beyond bars
+  19-22's left hand. That is the owner's to supply, as step 21 was.
 - **Any other piece.** Step 22 is still waiting for a second one.
 
-## Open question for the owner — the left hand's fingering in bars 19-22
+## Confirmed decision — the left hand's fingering in bars 19-22 is corrected
 
-Bars 3-8 carry real left-hand fingering (E 5, G 3, A 2, thumb on C). Bars 19-22 do not: bar 19
-puts the thumb on C, the lowest note of the phrase, with finger 3 on the G above it in bar 20, and
-bar 21 has D on 2 under F on 4. In a left hand the thumb is the highest finger and 2 sits above 4,
-so this reads as a slip in the source, and moving the notes down an octave keeps it. The finger
-queue shows those numbers to the child on every event.
-
-- **(a) Correct it here** to a plain left-hand C position (C3 5, D3 4, E3 3, F3 2, G3 1), so bars
-  19-22 read 5 / 1 3 / 1 2 4 / 5. Recommended. If wrong, one bar's numbers are edited back.
-- **(b) Leave the owner's numbers**, and the child practises a fingering that fights the hand.
-- **(c) Wait for the owner to regenerate the arrangement**, and this step waits with it.
-
-The answer changes what this step edits, so it is settled before the brief is handed over.
+Bars 3-8 carry real left-hand fingering (E 5, G 3, A 2, thumb on C). Bars 19-22 did not: bar 19
+put the thumb on C, the lowest note of the phrase, with finger 3 on the G above it in bar 20, and
+bar 21 had D on 2 under F on 4. In a left hand the thumb is the highest finger and 2 sits above 4,
+so it read as a slip in the source, and the octave move alone would have kept it. Asked, the owner
+chose to correct it to a plain left-hand C position (C3 5, D3 4, E3 3, F3 2, G3 1), so the
+left-hand `<fingering>` in bars 19-22 reads **5 / 1 3 / 1 2 4 / 5**. The alternatives offered were
+leaving the owner's numbers, and waiting for a regenerated arrangement. Bars 3-8's left-hand
+fingering and every right-hand fingering stay as they are. Add this to the `<rights>` note too.
 
 ## What this makes harder later
 

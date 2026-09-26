@@ -95,15 +95,12 @@ The store, the save and forget points, the automatic connect, and the tests belo
 - Remembering the computer keyboard or a replay file.
 - A "forget this piano" control beyond the existing Disconnect button.
 
-## Open question for the owner
+## Confirmed decision — switching to the computer keyboard keeps the piano
 
-**Does choosing the computer keyboard forget the piano?** As written, no: only Disconnect forgets
-it, so a player who switches to the computer keyboard gets the piano back on the next load if it is
-plugged in. The alternative is that any other choice forgets it too. Recommendation: as written,
-because the piano is what the app is for and the computer keyboard is mostly a stand-in when it is
-not plugged in. If that is wrong, the cost is one reload that connects the piano when the player
-wanted the computer keyboard, fixed with one click. The instructions above change only at the
-`connectVirtual` and `loadReplayFile` call sites.
+Asked whether choosing "Use computer keyboard" (or a replay) without pressing Disconnect should
+forget the piano, the owner said no: only Disconnect forgets it. The computer keyboard is a
+stand-in, so if the piano is plugged in on the next load it connects again. `connectVirtual` and
+`loadReplayFile` do not touch the store.
 
 ## What this makes harder later
 
@@ -128,6 +125,7 @@ without the step.**
 - With `piano-tutor.last-piano.v1` set to a connected input's name, rendering the app reaches
   "Connected: Digital Piano MIDI 1" with no selection made.
 - Choosing a device from the dropdown stores its name.
+- Switching from the piano to the computer keyboard leaves the name stored.
 - Pressing Disconnect clears it, and a fresh render stays "Not connected".
 - With the computer keyboard connected and the remembered piano listed, pressing Disconnect clears
   the name, and a following `statechange` leaves the app "Not connected".
