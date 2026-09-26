@@ -563,7 +563,7 @@ keyboard, not a replacement, so OSMD renders it as a single horizontal system
 ~277 px system plus room for a horizontal scrollbar. Credits are off, because on one line
 OSMD centres the title over the whole piece's width, out of view, while the band it takes
 still pushes the staff down. The height is
-also a whole number on purpose: OSMD's is fractional (639.5 px here), and half a pixel of
+also a whole number on purpose: OSMD's is fractional (277.25 px here), and half a pixel of
 it would land the queue and the keyboard on a half-pixel boundary, failing their committed
 screenshots on antialiasing alone. It sits above the _loop picker_ rather than directly
 above the queue for the same screenshot-sliver reason that already put the position readout
