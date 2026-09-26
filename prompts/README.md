@@ -29,6 +29,7 @@ judge a brief against, and the guide for writing one.
 | [24](step24.md) Left hand lower | Left hand an octave down, bass clef, fingering      |
 | [25](step25.md) Staff scroll    | The marker held a third of the way in, gliding      |
 | [26](step26.md) Remember piano  | Reconnects to the last piano when it is plugged in  |
+| [27](step27.md) Hand position   | Each hand's five keys numbered, next one outlined   |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -124,17 +125,6 @@ replay picker is dev-only.
 
 Recording which piece an attempt was of is deliberately not part of it — the same trade
 step 14 made for hands, and the obvious step after this one.
-
-## Planned — which finger, and where the hand sits
-
-| Step                          | What it adds                                                         |
-| ----------------------------- | -------------------------------------------------------------------- |
-| [27](step27.md) Hand position | Each hand's five keys shaded, finger on each, next position outlined |
-
-The keyboard says which key and which hand, and the queue says which finger, but nothing on
-screen joins the two or says where the rest of the hand should wait. Worked out from the
-fingering and key signature the score already carries. Three commits, the first of which — the
-finger on the key to press — is useful on its own.
 
 ## Deliberately not planned
 

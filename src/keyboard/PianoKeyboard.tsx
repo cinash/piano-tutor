@@ -47,6 +47,7 @@ export function PianoKeyboard({
               : position
                 ? ` piano-key--position-${position.hand}`
                 : '';
+          const nextClass = next ? ` piano-key--next-${next.hand}` : '';
           return (
             <div
               key={key.note}
@@ -58,9 +59,7 @@ export function PianoKeyboard({
               data-finger={finger}
               data-next-hand={next?.hand}
               data-next-finger={next?.finger}
-              className={`piano-key piano-key--${key.color}${stateClass}${
-                next ? ` piano-key--next-${next.hand}` : ''
-              }`}
+              className={`piano-key piano-key--${key.color}${stateClass}${nextClass}`}
               style={{ left: `${key.leftPercent}%`, width: `${key.widthPercent}%` }}
             >
               {next && <span className="piano-key__next-finger">{next.finger}</span>}

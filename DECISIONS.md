@@ -869,7 +869,9 @@ note outside the key cannot be counted from, so when it is the note fixing the p
 hand has none; when it lies under another finger — the raised seventh of a minor key — the
 number goes on the scale's key instead, a known wrong shade until a minor-key piece needs
 the rule that lets a hand's own upcoming notes place their fingers. A same-hand chord takes
-its first fingered note as the parser orders them. Where both hands' positions share a key,
+its first fingered note as the parser orders them — and the outline below compares that
+note with the chord's second one rather than with the hand's next event, to be revisited
+with the first piece that has one. Where both hands' positions share a key,
 the keyboard shows the right hand's, which `handPositions` lists first.
 
 The key to press keeps its strong hand colour; the rest of the position takes a lighter
