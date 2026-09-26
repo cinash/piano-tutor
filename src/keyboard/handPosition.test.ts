@@ -76,8 +76,12 @@ describe('handPositions', () => {
       [59, 2],
       [60, 1],
     ]);
-    expect(keysOf(handPositions(cichaNocScore, firstEventOf(8)), 'left')[0]).toEqual([
-      52, 5,
+    expect(keysOf(handPositions(cichaNocScore, firstEventOf(8)), 'left')).toEqual([
+      [52, 5],
+      [53, 4],
+      [55, 3],
+      [57, 2],
+      [59, 1],
     ]);
   });
 

@@ -117,11 +117,11 @@ export function App() {
   // or after its place, so a silence shows where the next note is. The demo plays the
   // whole piece, so it has no loop to wrap at; after its last note there is no event,
   // and -1 finds no position, as past the end does.
-  const demoEventIndex = demoStep
-    ? score.events.findIndex((event) => event.startTime >= demoStep.startTime)
-    : -1;
   const positions = demoStep
-    ? handPositions(score, demoEventIndex)
+    ? handPositions(
+        score,
+        score.events.findIndex((event) => event.startTime >= demoStep.startTime),
+      )
     : handPositions(score, view.engine.nextEventIndex, view.engine.loop);
 
   const openAttemptRef = useRef<number | null>(null);
