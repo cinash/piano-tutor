@@ -74,7 +74,7 @@
     "vscode": {
       "extensions": [
         // Kept at the CLAUDE_CODE_VERSION pinned in the Dockerfile — see the note there.
-        "anthropic.claude-code@2.1.261",
+        "anthropic.claude-code@2.1.283",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "ms-playwright.playwright"
