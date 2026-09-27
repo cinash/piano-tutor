@@ -111,14 +111,16 @@ we are, the queue says what to play, and nothing is asked for during a demonstra
 
 | Step                             | What it adds                                   |
 | -------------------------------- | ---------------------------------------------- |
-| [22](step22.md) Choose the piece | A dropdown of Cicha Noc and Beyer Nos. 8–31    |
+| [22](step22.md) Choose the piece | A dropdown of Cicha Noc and 22 Beyer pieces    |
 | [28](step28.md) Beyer, scanned   | All of Op. 101 recognised, proofread, fingered |
 
 Step 21 replaced the one piece; this one stops it being the only one. The Beyer import supplied
-the rest: Nos. 8–31, all fingered, offered in a dropdown in book order after Cicha Noc, with
-No. 38 left out until its fingering is complete. It first packs the controls above the staff into
-two rows. The choice is remembered across a reload, and each attempt records which piece it was
-of, for the learn-in-order mode the owner has said comes later.
+the rest: Nos. 8, 9 and 12–31, offered in a dropdown in book order after Cicha Noc from an
+explicit list with a hand-written id per piece — No. 38 until its fingering is complete, and
+Nos. 10 and 11 until the owner says which book's numbering the child reads, are left out. It
+first packs the controls above the staff into two rows. The choice is remembered across a
+reload, and each attempt records its piece and hands, for the learn-in-order mode the owner has
+said comes later; the history recorded before it is, by the owner's word, not carried forward.
 
 Two things in the app do not fall out of a piece swap on their own, and the brief names
 both: the staff loads its XML in an effect that never runs again, so it would keep drawing
@@ -127,8 +129,8 @@ for. Pieces are bundled at build time rather than picked from disk, for the same
 replay picker is dev-only.
 
 Step 28 makes step 22's public-domain alternative real without choosing it: it turns the Peters
-scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches. It bundles none of it
-itself; step 22's glob offers each file it derives in the dropdown as the batch lands.
+scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches, and bundles none of it:
+a file reaches the child when a line for it is added to step 22's list of pieces.
 
 ## Deliberately not planned
 
