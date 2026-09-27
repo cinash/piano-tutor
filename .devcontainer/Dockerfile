@@ -121,8 +121,8 @@ RUN set -eux; \
 #
 # sudo is installed for one command: node may start dockerd through start-dockerd, and
 # nothing else. The docker group gives node the socket — which is root inside this container,
-# as it is anywhere, and no more than that outside it. sudo itself is left to the base
-# image's digest rather than pinned: Debian drops superseded point-release builds from its
+# as it is anywhere, and no more than that outside it. sudo is unpinned, like the packages
+# Playwright's --with-deps installs: Debian drops superseded point-release builds from its
 # archive, so a pin there would break the build rather than hold it.
 RUN set -eux; \
     curl -fsSL https://download.docker.com/linux/debian/gpg -o /usr/share/keyrings/docker.asc; \

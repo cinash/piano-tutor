@@ -67,7 +67,7 @@
   "initializeCommand": "bash .devcontainer/scripts/init-host.sh",
   // Browsers are baked into the image, so this only has to restore node_modules.
   "postCreateCommand": "npm ci",
-  // Every start: nothing else in the container runs dockerd — see the script header.
+  // Every start: the container has no init system to run dockerd — see the script header.
   "postStartCommand": "sudo /usr/local/bin/start-dockerd",
   // Every attach, not just create — see the script header.
   "postAttachCommand": "bash /workspace/.devcontainer/scripts/github-identity.sh",
