@@ -4,7 +4,8 @@ Reads only the LilyPond those 24 files use - \relative notes, rests, chords, tie
 unfold, bar checks - and stops on anything else. Slurs, staccato and tempo words are not carried
 over. The engraving sits an octave below the Edition Peters score (ed. Ruthardt, plate 8033) and puts
 the left hand in bass clef; the book has both hands in treble clef an octave higher, and so does the
-output. Fingering comes from fingering.py.
+output. Fingering comes from fingering.py, anchored on the two digits of the book's that the notes
+cannot give: the left hand's repeated G in Nos. 8 and 9.
 
 Usage: python3 scripts/beyer/lilypond_import.py   (fetches the sources, writes beyer_op101_musicxml/)
 """
@@ -17,7 +18,7 @@ from fractions import Fraction
 from math import lcm
 from pathlib import Path
 
-from fingering import add_fingering
+from fingering import add_fingering, find_or_add
 
 REPO = 'nathanaelmeister/Piano_-_First_two_hand_exercises'
 COMMIT = '2e3550b4a4a7623925a91360e4fb1f60cdd94429'
@@ -30,6 +31,8 @@ RIGHTS = (
     'Ruthardt, plate 8033) prints them; Peters numbers two other pieces 10 and 11. Fingering '
     "computed by piano-tutor's scripts/beyer/fingering.py, not copied from the book."
 )
+# The left hand's first finger as Peters prints it
+PRINTED_LEFT = {8: '2', 9: '3'}
 STEPS = 'cdefgab'
 TYPES = {'1': 'whole', '2': 'half', '4': 'quarter'}
 TOKEN = re.compile(r'''\\[a-zA-Z]+|"[^"]*"|\d+/\d+|\d+\.*|[a-zA-Z]+[',]*|-\.|\S''')
@@ -228,6 +231,11 @@ def main():
         if match:
             number = int(match.group(1))
             root = to_musicxml(fetch(path), number)
+            if number in PRINTED_LEFT:
+                first = next(n for n in root.iter('note') if n.findtext('staff') == '2')
+                technical = find_or_add(find_or_add(first, 'notations'), 'technical')
+                find_or_add(technical, 'fingering').text = PRINTED_LEFT[number]
+                root.find('identification/rights').text += " The left hand's first finger is the book's."
             if add_fingering(root):
                 raise ValueError(f'No. {number} has notes no five-finger window reaches')
             ET.indent(root)

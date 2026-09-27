@@ -43,6 +43,13 @@ class GeneratedFiles(unittest.TestCase):
                 self.assertTrue(fingers)
                 self.assertTrue(all(f in ('1', '2', '3', '4', '5') for f in fingers))
 
+    def test_nos_8_and_9_finger_the_left_hands_g_as_the_book_prints_it(self):
+        for number, finger in ((8, '2'), (9, '3')):
+            with self.subTest(number=number):
+                left = [n.findtext('notations/technical/fingering')
+                        for n in ET.parse(GENERATED[number]).getroot().iter('note') if n.findtext('staff') == '2']
+                self.assertEqual(set(left), {finger})
+
     def test_nos_8_to_10_match_an_independent_transcription(self):
         for number in (8, 9, 10):
             with self.subTest(number=number):
