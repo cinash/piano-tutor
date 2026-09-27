@@ -35,14 +35,13 @@ test('the controls above the staff sit in two rows, not one line each', async ({
   };
 
   const firstRow = await middleOf(page.getByRole('heading', { name: 'piano-tutor' }));
-  expect(await middleOf(page.getByTestId('disconnect-button'))).toBeCloseTo(firstRow, 0);
-  expect(await middleOf(page.getByTestId('webmidi-device-select'))).toBeCloseTo(
-    firstRow,
-    0,
-  );
+  for (const id of ['disconnect-button', 'webmidi-device-select']) {
+    expect(await middleOf(page.getByTestId(id))).toBeCloseTo(firstRow, 0);
+  }
 
   const secondRow = await middleOf(page.getByTestId('restart-practice'));
   expect(secondRow).toBeGreaterThan(firstRow);
-  expect(await middleOf(page.getByTestId('listen-to-piece'))).toBeCloseTo(secondRow, 0);
-  expect(await middleOf(page.getByTestId('demo-speed-select'))).toBeCloseTo(secondRow, 0);
+  for (const id of ['listen-to-piece', 'demo-speed-select']) {
+    expect(await middleOf(page.getByTestId(id))).toBeCloseTo(secondRow, 0);
+  }
 });

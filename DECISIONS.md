@@ -1030,8 +1030,6 @@ file-input chrome — wraps onto a line of its own. It is left to wrap: the gap 
 only development shows.
 
 Hands and Keyboard range are settings too, but stay below the queue for the screenshot reason
-"The staff is a fixed-height pane" records. Moving the rows did shift the committed element screenshots, not by
-anything inside them: the old layout left the queue and keyboard on a fractional offset, so
-their baselines were 121 and 181 px tall for elements of 120 and 180. Every row now has a
-whole-pixel height, and against the baselines less their top row the new captures differ in
-six anti-aliased pixels on the rims of three finger circles; they were re-taken for that.
+"The staff is a fixed-height pane" records. The committed element screenshots were re-taken
+with the rows, which left the queue and keyboard on whole pixels where the old layout had left
+them on a fraction; nothing inside either changed (the commit says how that was checked).
