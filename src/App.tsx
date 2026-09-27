@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
+import './App.css';
 import {
   DEFAULT_DEMO_SPEED,
   DEFAULT_KEYBOARD_PRESET,
@@ -388,38 +389,34 @@ export function App() {
 
   return (
     <div>
-      <h1>piano-tutor</h1>
-      {error && <p role="alert">{error}</p>}
-      <DevicePicker
-        active={active}
-        webMidiSupported={webMidiSupported}
-        webMidiInputs={webMidiInputs}
-        onConnectWebMidi={connectWebMidi}
-        onConnectVirtual={connectVirtual}
-        onLoadReplayFile={(file) => void loadReplayFile(file)}
-        onDisconnect={() => {
-          // Here rather than in disconnect(), which an unplug calls too: replugging
-          // reconnects only because the unplug leaves the piano remembered.
-          forgetLastPiano();
-          disconnect();
-        }}
-      />
-      {import.meta.env.DEV && active.kind !== 'none' && (
-        <button type="button" onClick={toggleRecording} data-testid="toggle-recording">
-          {isRecording ? 'Stop recording & download' : 'Start recording'}
-        </button>
-      )}
+      <div className="toolbar">
+        <h1>piano-tutor</h1>
+        <DevicePicker
+          active={active}
+          webMidiSupported={webMidiSupported}
+          webMidiInputs={webMidiInputs}
+          onConnectWebMidi={connectWebMidi}
+          onConnectVirtual={connectVirtual}
+          onLoadReplayFile={(file) => void loadReplayFile(file)}
+          onDisconnect={() => {
+            // Here rather than in disconnect(), which an unplug calls too: replugging
+            // reconnects only because the unplug leaves the piano remembered.
+            forgetLastPiano();
+            disconnect();
+          }}
+        />
+      </div>
       {active.kind !== 'none' && (
-        <>
+        <div className="toolbar">
           <button type="button" onClick={handleRestart} data-testid="restart-practice">
             Restart
-          </button>{' '}
+          </button>
           <button type="button" onClick={handleListen} data-testid="listen-to-piece">
             {demoStep ? 'Stop' : 'Listen'}
-          </button>{' '}
+          </button>
           {/* On this row, not its own: anything below that moves breaks the element
               snapshots. */}
-          <label htmlFor="demo-speed-select">Speed</label>{' '}
+          <label htmlFor="demo-speed-select">Speed</label>
           <select
             id="demo-speed-select"
             data-testid="demo-speed-select"
@@ -432,8 +429,18 @@ export function App() {
               </option>
             ))}
           </select>
-        </>
+          {import.meta.env.DEV && (
+            <button
+              type="button"
+              onClick={toggleRecording}
+              data-testid="toggle-recording"
+            >
+              {isRecording ? 'Stop recording & download' : 'Start recording'}
+            </button>
+          )}
+        </div>
       )}
+      {error && <p role="alert">{error}</p>}
       <StaffView targetStartTime={staffTarget} />
       <LoopPicker
         measureCount={score.measureCount}

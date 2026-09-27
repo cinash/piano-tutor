@@ -37,8 +37,9 @@ export function DevicePicker({
     event.target.value = '';
   }
 
+  // A fragment, so each of these is an item of the toolbar row App puts it in.
   return (
-    <div>
+    <>
       <p data-testid="source-status">{describeActiveSource(active)}</p>
 
       {active.kind !== 'none' && (
@@ -92,7 +93,7 @@ export function DevicePicker({
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
 

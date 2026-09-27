@@ -1012,3 +1012,26 @@ scan by a person.
 The Vitest check over the library is the part of step 28's gate that holds before any file
 comes from the scan; the listing of the manifest's pieces, the hands each kind plays, and
 `<rights>` naming the edition and pages are asserted with the first batch that commits one.
+
+## The controls above the staff are two rows, and Hands and Keyboard range stay below the queue
+
+Seven stacked lines — the heading, the connection status, Disconnect, the Piano select, "Use
+computer keyboard", the dev-only replay input, then recording, Restart, Listen and Speed —
+took about 210 px before the staff began. The owner asked for less, and chose two rows from a
+mock-up: the heading and everything about the connection on the first, what you do with the
+piece on the second (step 22). Each is a wrapping flex row (`.toolbar` in `src/App.css`), and
+`DevicePicker` returns a fragment so its elements become items of the first. The heading stays
+an `<h1>`, only smaller.
+
+At 1280 px the first row fits while disconnected and in a production build, but once
+connected in development the dev-only replay input — 490 px, most of it the browser's own
+file-input chrome — wraps onto a line of its own. It is left to wrap: the gap cannot recover
+30 px, and moving the input elsewhere would change the layout the owner chose for a control
+only development shows.
+
+Hands and Keyboard range are settings too, but stay below the queue for the screenshot reason
+"The staff is a fixed-height pane" records. Moving the rows did shift the committed element screenshots, not by
+anything inside them: the old layout left the queue and keyboard on a fractional offset, so
+their baselines were 121 and 181 px tall for elements of 120 and 180. Every row now has a
+whole-pixel height, and against the baselines less their top row the new captures differ in
+six anti-aliased pixels on the rims of three finger circles; they were re-taken for that.

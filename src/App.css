@@ -1,0 +1,18 @@
+/* The controls above the staff: two rows rather than one line per control, so the staff
+   and keyboard start higher on the page. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.toolbar h1 {
+  font-size: 1.25em;
+}
+
+.toolbar h1,
+.toolbar p {
+  margin: 0;
+}
