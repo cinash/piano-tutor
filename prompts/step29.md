@@ -1,12 +1,12 @@
 # Step 29 — Timed play
 
-Adds a second way to practise beside today's wait-mode. In **timed** play the piece moves on at
-the chosen speed whether or not the player keeps up, and a note not played in time is counted as
-missed. Touches `src/practice/practiceView.ts`, `src/practice/practiceView.test.ts`,
+Adds a second way to practise beside today's wait-mode. In **timed** play the piece is paced by the
+chosen speed and moves on whether or not the player keeps up, and a note not played in time is
+counted as missed. Touches `src/practice/practiceView.ts`, `src/practice/practiceView.test.ts`,
 `src/practice/practiceState.ts`, `src/App.tsx`, `src/App.test.tsx`, `src/progress/types.ts`,
 `src/progress/attemptStore.ts`, `src/progress/attemptStore.test.ts`,
 `src/progress/AttemptHistory.tsx`, `src/progress/AttemptHistory.test.tsx`, `e2e/window.d.ts`, a
-new `e2e/timed-play.spec.ts`, six entries in `DECISIONS.md` (below) and item 9 of
+new `e2e/timed-play.spec.ts`, five entries in `DECISIONS.md` (below) and item 9 of
 `MANUAL-CHECKS.md`. No new dependency. One branch,
 `step-29-timed-play`, off `main`, in **three commits**, each passing `npm run ci` and each through
 the two-reviewer code gate in `CLAUDE.md` on its own.
@@ -114,7 +114,17 @@ every note inside it, whatever the note lengths (decision 9); an eighth after a 
 ¼-beat floor, 227 ms at 100%. Measured in beats, so slowing down is also more forgiving. Not in
 `ENGINE_TIMING`, whose comment says it is what `advance()` tunes. Rejected: a fixed ±¼ beat, which
 round 2 showed collapses after one long note; and a fixed ±150 ms, strict at 50% and loose at 150%.
-Consecutive windows may overlap; only the current event is ever judged against its own.
+Consecutive windows may overlap — routinely after a long note or a miss, since a miss does not
+re-sync — so the rules below credit an early note to its own event when the one before it is missed.
+
+**While the child is silent the piece moves at 80% of the speed**, not 100%: with no note to
+re-sync it, event _j_ expires 1.25 × its distance from the clock's event, the far edge of its
+window. The cursor (commit 2) follows due times, so it runs ahead of the keys during a silence, and
+when the child comes back in on a highlighted key — accepted, the window being wide by then — the
+clock re-syncs and the cursor steps back to it. Rejected: capping the window's growth, which breaks
+decision 9 across the long rests of one-hand practice (Cicha Noc's hands take the melody in turn);
+and re-syncing at a missed event's due time, which brings back round 2's collapse. The manual check
+asks whether the step back confuses a child.
 
 **Judging a note** in `advancePracticeView`, when there is a `timedClock` — in this order:
 
@@ -128,8 +138,10 @@ Consecutive windows may overlap; only the current event is ever judged against i
 4. **A pitch of the next event:** exactly as today — not wrong, and fed to `advance()`'s early-note
    grace. Checked before rule 5, because Cicha Noc opens G4-A4-G4: the second G4 played a hair
    early is the next event's, not a late repeat of the first.
-5. **A pitch of the event just before the current one** (linear, as the "next event" rule is):
-   **off-time** — typically the note of an event that has just been missed.
+5. **A pitch of any event from the clock's own event up to the one before the current** — the
+   stretch since the last note played in time: **off-time**. Typically the note of an event just
+   missed, or a child carrying on from where they paused. Not only the one event before, because a
+   child two events behind is playing right keys late, and decision 6 says that is not wrong.
 6. **Anything else:** wrong, as today.
 
 An **off-time** note goes into `wrongNotes`, so it is red while held, counts in `notesPlayed` and in
@@ -149,10 +161,13 @@ export function expireDueEvents(
 An event's deadline is its due time plus the window. Each pitch of the event not yet played adds
 one to a new `attempt.missedNoteCount`, and the engine moves on through `nextIndexAfter()`, so a
 loop wraps and a miss on the last event ends the piece. An event is missed when `now` is **at or
-after** its deadline, so a timer that fires exactly on it always finds something to expire. `satisfiedNoteIds` and `pendingEarlyNotes`
-are cleared, and the pending early notes are not credited: they were played before their own
-window. A miss does not re-sync the clock. When nothing has expired it returns `state` itself, so
-a call that changes nothing does not re-render.
+after** its deadline, so a timer that fires exactly on it always finds something to expire.
+`satisfiedNoteIds` is cleared. Each pending early note (`pendingEarlyNotes` keeps the time it was
+played) whose time lies inside the **new** current event's window is credited to it, and dropped
+otherwise; if that completes the event, it completes as a played note does — re-syncing the clock
+to the latest credited note's time — so a child who skips a note and plays the next one in its own
+window loses one note, not two. A miss itself does not re-sync the clock. When nothing has expired
+it returns `state` itself, so a call that changes nothing does not re-render.
 
 `App` calls it from a `setTimeout` for the current event's deadline, set in an effect keyed on
 `view`, with the delay rounded **up** — `Math.ceil(deadline − performance.now())`. Vitest's fake
@@ -168,13 +183,18 @@ a note of the player's completes the piece; `expireDueEvents` never sets it. The
 fact, since only a note can complete the piece there.
 
 **Completing the piece stops the clock**, as a wrap does: there is no current event to time, and
-after the end every note is ignored, as wait-mode ignores it.
+after the end every note is ignored, as wait-mode ignores it. A note that completes the last event
+of the piece or of a loop still adds its stretch to the tempo counters below; then the clock stops
+rather than re-syncing.
 
 **The tempo actually played.** Each re-sync that replaces an existing clock adds
 `thatEvent.startTime − timedClock.startTime` to `attempt.beatsInTime` and `clock − startedAt` to
 `attempt.msInTime`: the stretches from one note played in time to the next. Their ratio is the
 tempo the child kept. Stored as the two counters, not a tempo, for the reason `DECISIONS.md` gives
-for storing counts and deriving accuracy.
+for storing counts and deriving accuracy. Each stretch ends in a note inside its window, so the
+ratio is bounded by the window: it says how the child drifted within the tolerance, not the pace of
+a child playing at 60%, which misses too much to record one. Say so in `DECISIONS.md`, so no later
+feature reads it as the child's pace.
 
 **The clock is `performance.now()`.** `MidiEvent.time` is `performance.now()` from the computer
 keyboard and Web MIDI's `timeStamp` from the piano, which is on the same timeline; the timeout must
@@ -196,7 +216,8 @@ speed, which leaves an attempt with two speeds and one number to record.
 
 **Switching mode** restarts practice too, as a hands change does: a run half in one mode and half
 in the other is not an attempt of either. Unlike a hands change it does not stop a running demo,
-which plays the same notes in either mode.
+which plays the same notes in either mode. The cost: a child who has reached bar 12 in wait-mode
+and wants that passage timed loses the place, and sets a loop to get back to it.
 
 **Listen during a timed run** stops the clock and keeps the place: `handleListen` removes
 `timedClock` from the view state. While the demo plays, practice ignores every note
@@ -235,6 +256,12 @@ the next due time or the current deadline. The effect is then keyed on `view` an
 keyed only on `view` would never schedule the deadline. Rejected: a cursor on the note to play, as in
 wait-mode, which in timed play shows no beat. Rejected too: a silent `DemoPlayer` as the clock,
 which already drives the cursor during Listen — it is a fixed clock, which decision 5 rejected.
+`clockPosition` is not loop-aware: after misses have widened the windows, the event after the
+loop's end can fall due before the loop's last event expires, and the cursor shows it briefly
+before the wrap. Accepted, rather than passing the loop in for a moment's display.
+
+Commit 2 is the separable part of the step: without it timed play works, but with decision 3's
+silence nothing on screen shows the beat. It is kept for that reason.
 
 **No miss marker and no live count.** The child is watching the keys; the count is in the history.
 
@@ -261,15 +288,19 @@ fraction (0.75) and keeps its meaning if a piece later gets its own base tempo; 
 **target** tempo; `window` is `TIMED_WINDOW`, the constant the manual check is most likely to
 change, so an old count says how strict it was; `beatsInTime` and `msInTime` give the tempo the
 child actually kept, which can differ from `bpm` by up to the window; and `offTimeNoteCount` is the
-right keys played at the wrong time, which `notesPlayed` otherwise hides. The attempt effect in `App` builds
-it from `mode` and `demoSpeed` — safe, because in Timed mode both restart the attempt when they
-change. `isAttemptRecordArray` accepts a record with no `timed` and checks all seven numbers when
-there is one. Rejected: a required `mode` field, which would fail every record already stored and
+right keys played at the wrong time, which `notesPlayed` otherwise hides. The attempt effect in
+`App` builds it from `mode` and `demoSpeed` read **through refs** — the ones `handleEvent` needs
+anyway — so the effect stays keyed on `view`, `piece.id` and `hands`: as dependencies, a wait-mode
+speed change would re-run it and move the open record's `endedAt` to the moment of the change. In
+Timed mode both restart the attempt when they change, so a ref never reads a value the attempt was
+not played at. Listen in a timed run does change `view`, and moves `endedAt` to the press, which is
+right: the run stopped there. `isAttemptRecordArray` accepts a record with no `timed` and checks
+all seven numbers when there is one. Rejected: a required `mode` field, which would fail every record already stored and
 exported.
 
-The history table gains **Mode** after Piece — "Wait", or "Timed 75%", `speed` formatted as a percentage — and
-**Missed** after Wrong: the count for a timed attempt, "—" for a wait-mode one. Accuracy keeps its
-meaning.
+The history table gains **Mode** after Piece — "Wait", or "Timed 75%", `speed` formatted as a
+percentage — and **Missed** after Wrong: the count for a timed attempt, "—" for a wait-mode one.
+Accuracy keeps its meaning.
 
 ## Traps
 
@@ -278,7 +309,10 @@ meaning.
   appear after connecting, so a closure would always see Wait.
 - **The replay source cannot drive timed play.** `ReplayMidiSource` re-emits a recording with the
   `time` it was recorded with, not on this page's `performance.now()` timeline, so every deadline
-  would pass at once. It is a dev-only tool; say so in a comment rather than converting timestamps.
+  would pass at once. It is a dev-only tool; say so in a comment where `advancePracticeView` starts
+  the clock, rather than converting timestamps.
+- **`App.tsx:114-115` says the speed is "read only when Listen is pressed".** In Timed mode it is
+  also read when the clock starts; correct the comment.
 - **`advance()` does not change.** Its early-note grace still governs a note of the next event
   played a hair before the current one completes. The window governs the current event, and is
   checked in `advancePracticeView` before `advance()` is called.
@@ -343,15 +377,17 @@ Futures played forward:
 
 - **Retitle and amend "Practice is untimed; the Listen demo has speed presets; …"**: practice has
   two modes, wait-mode the default. Record the ten owner decisions above, the window and why it
-  grows with the time since the last note in time, why the clock stops at a loop wrap, why a speed change restarts a
-  timed attempt, and that the falling-note queue still does not animate on the clock — only the
-  staff cursor follows it.
+  grows with the time since the last note in time, that the piece moves at 80% while the child is
+  silent and why, why the clock stops at a loop wrap, why a speed change restarts a timed attempt,
+  and that the falling-note queue still does not animate on the clock — only the staff cursor
+  follows it.
 - **Amend "`MidiEvent.time` is source-relative, not wall-clock"**: timed play compares a note's
   `time` with `performance.now()`, which holds for the computer keyboard and the piano, and is why a
   replayed recording cannot drive it.
 - **Amend "An attempt's counters are stored; its accuracy is derived"**: `AttemptStats` now also
   carries `missedNoteCount`, `offTimeNoteCount`, `beatsInTime`, `msInTime` and `reachedEnd`; an
-  off-time note counts as played and not wrong.
+  off-time note counts as played and not wrong; and the tempo from `beatsInTime` and `msInTime` is
+  bounded by the window, so it is not the child's pace.
 - **Amend "Listening is not practising"**: Listen now touches `PracticeViewState` in one way — it
   stops a timed clock — and why; and "whatever restarts practice stops the demo too" no longer
   holds for a mode switch or a timed speed change, which restart practice and leave the demo alone.
@@ -365,8 +401,11 @@ Futures played forward:
   window advances, re-syncs the clock to its own time and adds to `beatsInTime` and `msInTime`. The
   window after a long note is a quarter of it; after an eighth, a quarter beat. A current pitch
   before its window is red, counts as played and off-time and not wrong, and does not advance. A
-  pitch in both the previous and the next event, played early, feeds the grace, not off-time. A late note arriving before any expiry call
-  is judged after the miss: one miss, and the pitch off-time, not wrong. `expireDueEvents` past one
+  pitch in both the previous and the next event, played early, feeds the grace, not off-time. A
+  late note arriving before any expiry call is judged after the miss: one miss, and the pitch
+  off-time, not wrong. A right key two events behind is off-time, not wrong. A note of the next
+  event played inside its own window while the current one is unplayed is credited to it when the
+  current one expires: one miss, not two. `expireDueEvents` past one
   deadline misses the unplayed pitches of that event, past two misses both, returns the same object
   when nothing is due, and changes nothing without a clock. A miss on the last event completes the
   piece with `reachedEnd` false; a note completing it sets `reachedEnd` true; either stops the
@@ -374,8 +413,10 @@ Futures played forward:
 - **Layer 2, `src/App.test.tsx`, with the computer keyboard and fake timers. This establishes that
   the behaviour exists.** Choose Timed, play Cicha Noc's first G4, advance the clock in steps past
   1705 ms (A4 due at 1364, window ⅜ beat, 341 ms, at 100%): the position has moved past A4 without
-  it being played. With Wait chosen, the same: still waiting on A4. At 50%, 1705 ms is not enough
-  and 3409 ms is. Listen during a timed run, advance 10 s, Stop: practice is where it was. Changing
+  it being played. With Wait chosen, the same: still waiting on A4 — the check of wait-mode's "no
+  timeout" under a clock. At 50%, 1705 ms is not enough and 3410 ms is (the deadline is
+  3409.09 ms, and the timer's delay is rounded up). Listen during a timed run, advance 10 s, Stop:
+  practice is where it was. Changing
   the speed in Timed mode starts the attempt again, and so does switching mode.
 - **Layer 2, the history.** `attemptStore.test.ts`: a record with no `timed` is accepted, one with
   a malformed `timed` rejected. `AttemptHistory.test.tsx`: the two columns for each mode. **Over
@@ -386,9 +427,11 @@ Futures played forward:
   `nextEventIndex` has passed 1. For commit 2, in the same file, at 50%: play G4, and 1 s after the
   key press (measured from before it, as `e2e/listen.spec.ts` measures) assert that the staff
   cursor, read as `e2e/staff-cursor.spec.ts` reads it, is still where it was before G4 — under
-  commit 1 it moves to A4 at once, with the engine — then poll until it moves, which it does at
-  A4's due time, 2727 ms, while `missedNoteCount` is still 0. That is the check that fails if the
-  cursor does not follow the clock; OSMD is stubbed in jsdom, so no App test can see it. Wait-mode's "no timeout" is covered by the existing specs.
+  commit 1 it moves to A4 at once, with the engine — then poll at 50 ms intervals
+  (`{ intervals: [50] }`, as `e2e/listen.spec.ts` does; the default intervals grow to 1 s and can
+  step over the 682 ms margin) until it moves, which it does at A4's due time, 2727 ms, while
+  `missedNoteCount` is still 0. That is the check that fails if the cursor does not follow the
+  clock; OSMD is stubbed in jsdom, so no App test can see it.
 - No committed screenshot, and do not re-bless the element snapshots.
 - `npm run ci` green proves the clock, the window and the counting **for the computer keyboard**.
   Nothing in it drives the piano's `timeStamp` against `performance.now()`, and it cannot say
@@ -402,7 +445,9 @@ moves with the beat — if the piano gets misses the computer keyboard does not,
 timestamps. Stop playing and confirm the piece moves on without you. Say whether the window feels fair
 to a child at 50% and at 100%, whether the moving cursor is enough to keep time by with no click,
 whether a hand move is outlined early enough, and, on a one-bar loop, whether starting each pass
-on the first note feels right or the loop should run on at tempo.
+on the first note feels right or the loop should run on at tempo. Finally, stop for a bar, then
+come back in on the highlighted key, and say whether the cursor stepping back to it confuses a
+child.
 
 ## Finally
 
