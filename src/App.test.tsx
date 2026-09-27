@@ -541,9 +541,14 @@ describe('choosing the piece', () => {
     fireEvent.keyUp(window, { code: 'KeyT' });
 
     choosePiece('beyer-op101-12');
+    // Its first chord, not the event after it: Cicha Noc had moved on one event, and
+    // index 1 of No. 12 is D5.
+    expect(expectedPitches(container)).toEqual([60, 72]);
+
     for (const code of ['KeyQ', 'KeyI']) fireEvent.keyDown(window, { code });
 
-    expect(expectedPitches(container)).toEqual([74]); // m1 b2's D5, one event in
+    // The engine reads the new piece: its C4 and C5 move it on to m1 b2's D5.
+    expect(expectedPitches(container)).toEqual([74]);
   });
 
   it('clears a loop, whose bars the new piece may not have', () => {
@@ -582,5 +587,7 @@ describe('choosing the piece', () => {
     // fireEvent returns false when a handler prevented the default.
     expect(fireEvent.keyDown(pieceSelect(), { key: 'b' })).toBe(false);
     expect(fireEvent.keyDown(pieceSelect(), { key: 'ArrowDown' })).toBe(true);
+    // A shortcut such as find is left to the browser.
+    expect(fireEvent.keyDown(pieceSelect(), { key: 'f', ctrlKey: true })).toBe(true);
   });
 });

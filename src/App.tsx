@@ -187,9 +187,11 @@ export function App() {
 
   // A focused select jumps to the option starting with the letter typed, and the computer
   // keyboard plays letters as notes, so a pick followed by a B would change the piece.
-  // The key still reaches the window, where the note is played — see DECISIONS.md.
+  // The key still reaches the window, where the note is played — see DECISIONS.md. Not
+  // with a modifier held: Ctrl+F reports its key as "f", and find must still work.
   function cancelTypeAhead(event: KeyboardEvent<HTMLSelectElement>) {
-    if (event.key.length === 1) event.preventDefault();
+    const shortcut = event.ctrlKey || event.metaKey || event.altKey;
+    if (event.key.length === 1 && !shortcut) event.preventDefault();
   }
 
   function handleListen() {
@@ -416,6 +418,8 @@ export function App() {
     }
   }
 
+  const isConnected = active.kind !== 'none';
+
   return (
     <div>
       <div className="toolbar">
@@ -437,7 +441,7 @@ export function App() {
       </div>
       {/* Always shown, for the piece select: a piece is chosen before connecting too. */}
       <div className="toolbar">
-        {active.kind !== 'none' && (
+        {isConnected && (
           <>
             <button type="button" onClick={handleRestart} data-testid="restart-practice">
               Restart
@@ -476,7 +480,7 @@ export function App() {
             </option>
           ))}
         </select>
-        {import.meta.env.DEV && active.kind !== 'none' && (
+        {import.meta.env.DEV && isConnected && (
           <button type="button" onClick={toggleRecording} data-testid="toggle-recording">
             {isRecording ? 'Stop recording & download' : 'Start recording'}
           </button>
