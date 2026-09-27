@@ -37,9 +37,9 @@ think is wrong but that the document states clearly is theirs to fight, not your
   thing the step depends on is absent. Name the specific gap, not the general risk.
 
 - **Claims about the code that are not true any more.** A brief that cites a file, a symbol or a
-  line number is making a checkable claim: check it. `step22.md` names `App.tsx:93`,
-  `practiceView.ts:41` and four test files by name — that precision is the house style, and a
-  citation that has gone stale sends the implementer to the wrong place.
+  line number is making a checkable claim: check it. `step22.md` as first drafted (commit
+  `11dfb29`) names `App.tsx:93`, `practiceView.ts:41` and four test files by name — that precision
+  is the house style, and a citation that has gone stale sends the implementer to the wrong place.
 
 - **Contradictions with the record.** The project has already decided things and written them down.
   A brief that quietly reverses one — or repeats a decision without noticing it was already made
@@ -47,10 +47,10 @@ think is wrong but that the document states clearly is theirs to fight, not your
   "deliberately not planned" without saying that is what it is doing.
 
 - **Unmet preconditions.** Something the step needs that does not exist yet: a second piece of
-  music, a device, a file, another step. `step22.md` does this correctly: it heads a section "This step
-  needs a second piece, and the owner has to supply it", and says plainly "Do not start until one
-  has." A brief that depends on something absent and does not say so is a finding; one that says
-  so is not.
+  music, a device, a file, another step. `step22.md` as first drafted (commit `11dfb29`) did this
+  correctly: it headed a section "This step needs a second piece, and the owner has to supply it",
+  and said plainly "Do not start until one has." A brief that depends on something absent and does
+  not say so is a finding; one that says so is not.
 
 - **A gate that does not establish the behaviour.** The house convention is layered — a unit layer
   over the data, a component layer over `App`, an end-to-end layer through the running app — and a
