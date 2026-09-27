@@ -18,7 +18,7 @@ from fractions import Fraction
 from math import lcm
 from pathlib import Path
 
-from fingering import add_fingering
+from fingering import add_fingering, find_or_add
 
 REPO = 'nathanaelmeister/Piano_-_First_two_hand_exercises'
 COMMIT = '2e3550b4a4a7623925a91360e4fb1f60cdd94429'
@@ -31,7 +31,7 @@ RIGHTS = (
     'Ruthardt, plate 8033) prints them; Peters numbers two other pieces 10 and 11. Fingering '
     "computed by piano-tutor's scripts/beyer/fingering.py, not copied from the book."
 )
-# The left hand's first finger as Peters prints it: one repeated G says nothing of where the hand sits.
+# The left hand's first finger as Peters prints it
 PRINTED_LEFT = {8: '2', 9: '3'}
 STEPS = 'cdefgab'
 TYPES = {'1': 'whole', '2': 'half', '4': 'quarter'}
@@ -233,8 +233,8 @@ def main():
             root = to_musicxml(fetch(path), number)
             if number in PRINTED_LEFT:
                 first = next(n for n in root.iter('note') if n.findtext('staff') == '2')
-                technical = ET.SubElement(ET.SubElement(first, 'notations'), 'technical')
-                ET.SubElement(technical, 'fingering').text = PRINTED_LEFT[number]
+                technical = find_or_add(find_or_add(first, 'notations'), 'technical')
+                find_or_add(technical, 'fingering').text = PRINTED_LEFT[number]
                 root.find('identification/rights').text += " The left hand's first finger is the book's."
             if add_fingering(root):
                 raise ValueError(f'No. {number} has notes no five-finger window reaches')
