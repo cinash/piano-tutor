@@ -31,6 +31,15 @@ ARG HELM_SHA256=c306b46f719b0a4da32d0f78ee21bf90ce8d602f15b22ab753f0674d1670a7f3
 ARG KUSTOMIZE_VERSION=v5.8.1
 ARG KUSTOMIZE_SHA256=029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d
 
+# Docker Engine, from Docker's apt repository. That repository keeps every past build, so each
+# package is pinned exactly; its signing key is checked by fingerprint, for the same reason
+# the downloads below are checked by sha256.
+ARG DOCKER_VERSION=5:29.8.1-1~debian.12~bookworm
+ARG CONTAINERD_VERSION=2.3.6-1~debian.12~bookworm
+ARG DOCKER_BUILDX_VERSION=0.37.1-1~debian.12~bookworm
+ARG DOCKER_COMPOSE_VERSION=5.5.1-1~debian.12~bookworm
+ARG DOCKER_KEY_FINGERPRINT=9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
 # The host user's identity, so files written through the bind mount are owned by
 # the host user rather than by root.
 ARG USER_UID=1001
@@ -103,6 +112,36 @@ RUN set -eux; \
         kustomize.tgz "${KUSTOMIZE_SHA256}"; \
     tar --no-same-owner -xzf kustomize.tgz -C /usr/local/bin kustomize; \
     cd /; rm -rf /tmp/dl
+
+# Docker Engine, so the container can build and run images of its own. sysbox-runc is what
+# makes that possible without --privileged or the host's socket: the inner dockerd is root only
+# inside the container's user namespace, and sysbox backs /var/lib/docker with a host
+# directory so overlay2 works. The inner daemon's images and containers therefore live and
+# die with this container.
+#
+# sudo is installed for one command: node may start dockerd through start-dockerd, and
+# nothing else. The docker group gives node the socket — which is root inside this container,
+# as it is anywhere, and no more than that outside it. sudo itself is left to the base
+# image's digest rather than pinned: Debian drops superseded point-release builds from its
+# archive, so a pin there would break the build rather than hold it.
+RUN set -eux; \
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /usr/share/keyrings/docker.asc; \
+    gpg --show-keys --with-colons /usr/share/keyrings/docker.asc \
+        | grep -qx "fpr:::::::::${DOCKER_KEY_FINGERPRINT}:"; \
+    echo "deb [signed-by=/usr/share/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+        > /etc/apt/sources.list.d/docker.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        docker-ce="${DOCKER_VERSION}" docker-ce-cli="${DOCKER_VERSION}" \
+        containerd.io="${CONTAINERD_VERSION}" \
+        docker-buildx-plugin="${DOCKER_BUILDX_VERSION}" \
+        docker-compose-plugin="${DOCKER_COMPOSE_VERSION}" \
+        sudo; \
+    rm -rf /var/lib/apt/lists/*; \
+    usermod -aG docker node; \
+    echo 'node ALL=(root) NOPASSWD: /usr/local/bin/start-dockerd' > /etc/sudoers.d/start-dockerd; \
+    chmod 0440 /etc/sudoers.d/start-dockerd
+COPY --chmod=0755 .devcontainer/scripts/start-dockerd.sh /usr/local/bin/start-dockerd
 
 WORKDIR /workspace
 USER node
