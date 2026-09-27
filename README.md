@@ -69,6 +69,15 @@ port forwarding presenting it to the host as `localhost:5173`. The port is `stri
 so a collision fails the server rather than quietly moving to 5174 and breaking that
 guarantee.
 
+## Docker inside the container
+
+`docker` works in the container, against a daemon of its own: sysbox-runc lets the container
+run one without `--privileged` and without the host's socket, and `postStartCommand` starts it
+on every container start, logging to `/var/log/dockerd.log`. What it builds and runs belongs to
+that daemon — the host does not see it, and rebuilding the dev container discards it. So
+`build_image.sh` below still runs on the host: the k3s import it ends with needs host root
+either way.
+
 ## Deploying to k3s
 
 `chart/` is a Helm chart that puts the built app on the k3s cluster, behind the tailscale
