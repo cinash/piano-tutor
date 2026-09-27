@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from 'react';
 
+import './App.css';
 import {
   DEFAULT_DEMO_SPEED,
   DEFAULT_KEYBOARD_PRESET,
@@ -50,7 +58,8 @@ import {
 import { mergeAttempts } from './progress/mergeAttempts';
 import type { AttemptRecord } from './progress/types';
 import { StaffView } from './score/StaffView';
-import { cichaNocScore } from './score/cichaNoc';
+import { loadPiece, savePiece } from './score/pieceStore';
+import { PIECES, type Piece } from './score/pieces';
 import { filterScoreByHand, type HandSelection } from './score/filterScoreByHand';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
@@ -94,6 +103,8 @@ export function App() {
     DEFAULT_KEYBOARD_PRESET,
   );
   const [hands, setHands] = useState<HandSelection>('both');
+  // Remembered across a reload, unlike hands, range and speed — see DECISIONS.md.
+  const [piece, setPiece] = useState<Piece>(loadPiece);
   // A display choice, and deliberately not engine state: practice must be identical
   // folded and unfolded — see DECISIONS.md.
   const [queueFolded, setQueueFolded] = useState(loadQueueFolded);
@@ -106,7 +117,7 @@ export function App() {
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
-  const score = filterScoreByHand(cichaNocScore, hands);
+  const score = filterScoreByHand(piece.score, hands);
 
   // Where the demo has reached while one plays, so the cursor follows it; the note the
   // engine is waiting for otherwise. The filtered score, which nextEventIndex indexes.
@@ -162,6 +173,25 @@ export function App() {
     // nextEventIndex indexes the event list, and the other hand's is a different list,
     // so the same number would be a different note — start the attempt again.
     setView(restartPractice);
+  }
+
+  function handlePieceChange(event: ChangeEvent<HTMLSelectElement>) {
+    const next = PIECES.find((candidate) => candidate.id === event.target.value);
+    if (!next) return;
+    setPiece(next);
+    stopDemo();
+    // A fresh start rather than restartPractice, which keeps the loop: a loop is bars of
+    // the old piece, which the new one may not have.
+    setView(createInitialPracticeViewState());
+  }
+
+  // A focused select jumps to the option starting with the letter typed, and the computer
+  // keyboard plays letters as notes, so a pick followed by a B would change the piece.
+  // The key still reaches the window, where the note is played — see DECISIONS.md. Not
+  // with a modifier held: Ctrl+F reports its key as "f", and find must still work.
+  function cancelTypeAhead(event: KeyboardEvent<HTMLSelectElement>) {
+    const shortcut = event.ctrlKey || event.metaKey || event.altKey;
+    if (event.key.length === 1 && !shortcut) event.preventDefault();
   }
 
   function handleListen() {
@@ -221,6 +251,8 @@ export function App() {
       wrongNoteCount,
       reachedEnd: view.engine.status === 'complete',
       loop: view.engine.loop,
+      piece: piece.id,
+      hands,
     };
     const openStartedAt = openAttemptRef.current;
 
@@ -239,11 +271,13 @@ export function App() {
           : record,
       ),
     );
-  }, [view]);
+  }, [view, piece.id, hands]);
 
   useEffect(() => saveAttempts(attempts), [attempts]);
 
   useEffect(() => saveQueueFolded(queueFolded), [queueFolded]);
+
+  useEffect(() => savePiece(piece), [piece]);
 
   function attach(
     source: MidiSource,
@@ -386,55 +420,78 @@ export function App() {
     }
   }
 
+  const isConnected = active.kind !== 'none';
+
   return (
     <div>
-      <h1>piano-tutor</h1>
+      <div className="toolbar">
+        <h1>piano-tutor</h1>
+        <DevicePicker
+          active={active}
+          webMidiSupported={webMidiSupported}
+          webMidiInputs={webMidiInputs}
+          onConnectWebMidi={connectWebMidi}
+          onConnectVirtual={connectVirtual}
+          onLoadReplayFile={(file) => void loadReplayFile(file)}
+          onDisconnect={() => {
+            // Here rather than in disconnect(), which an unplug calls too: replugging
+            // reconnects only because the unplug leaves the piano remembered.
+            forgetLastPiano();
+            disconnect();
+          }}
+        />
+      </div>
+      {/* Always shown, for the piece select: a piece is chosen before connecting too. */}
+      <div className="toolbar">
+        {isConnected && (
+          <>
+            <button type="button" onClick={handleRestart} data-testid="restart-practice">
+              Restart
+            </button>
+            <button type="button" onClick={handleListen} data-testid="listen-to-piece">
+              {demoStep ? 'Stop' : 'Listen'}
+            </button>
+            {/* On this row, not its own: anything below that moves breaks the element
+                snapshots. */}
+            <label htmlFor="demo-speed-select">Speed</label>
+            <select
+              id="demo-speed-select"
+              data-testid="demo-speed-select"
+              value={demoSpeed.label}
+              onChange={handleDemoSpeedChange}
+            >
+              {DEMO_SPEED_PRESETS.map((preset) => (
+                <option key={preset.label} value={preset.label}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        <label htmlFor="piece-select">Piece</label>
+        <select
+          id="piece-select"
+          data-testid="piece-select"
+          value={piece.id}
+          onChange={handlePieceChange}
+          onKeyDown={cancelTypeAhead}
+        >
+          {PIECES.map((candidate) => (
+            <option key={candidate.id} value={candidate.id}>
+              {candidate.score.title}
+            </option>
+          ))}
+        </select>
+        {import.meta.env.DEV && isConnected && (
+          <button type="button" onClick={toggleRecording} data-testid="toggle-recording">
+            {isRecording ? 'Stop recording & download' : 'Start recording'}
+          </button>
+        )}
+      </div>
       {error && <p role="alert">{error}</p>}
-      <DevicePicker
-        active={active}
-        webMidiSupported={webMidiSupported}
-        webMidiInputs={webMidiInputs}
-        onConnectWebMidi={connectWebMidi}
-        onConnectVirtual={connectVirtual}
-        onLoadReplayFile={(file) => void loadReplayFile(file)}
-        onDisconnect={() => {
-          // Here rather than in disconnect(), which an unplug calls too: replugging
-          // reconnects only because the unplug leaves the piano remembered.
-          forgetLastPiano();
-          disconnect();
-        }}
-      />
-      {import.meta.env.DEV && active.kind !== 'none' && (
-        <button type="button" onClick={toggleRecording} data-testid="toggle-recording">
-          {isRecording ? 'Stop recording & download' : 'Start recording'}
-        </button>
-      )}
-      {active.kind !== 'none' && (
-        <>
-          <button type="button" onClick={handleRestart} data-testid="restart-practice">
-            Restart
-          </button>{' '}
-          <button type="button" onClick={handleListen} data-testid="listen-to-piece">
-            {demoStep ? 'Stop' : 'Listen'}
-          </button>{' '}
-          {/* On this row, not its own: anything below that moves breaks the element
-              snapshots. */}
-          <label htmlFor="demo-speed-select">Speed</label>{' '}
-          <select
-            id="demo-speed-select"
-            data-testid="demo-speed-select"
-            value={demoSpeed.label}
-            onChange={handleDemoSpeedChange}
-          >
-            {DEMO_SPEED_PRESETS.map((preset) => (
-              <option key={preset.label} value={preset.label}>
-                {preset.label}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-      <StaffView targetStartTime={staffTarget} />
+      {/* Keyed, so a new piece is a fresh mount with one score in the pane and no
+          cursor left pointing at the old one. */}
+      <StaffView key={piece.id} xml={piece.xml} targetStartTime={staffTarget} />
       <LoopPicker
         measureCount={score.measureCount}
         loop={view.engine.loop}

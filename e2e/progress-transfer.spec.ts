@@ -17,7 +17,13 @@ test('downloads the history and imports it back into a browser with none', async
   expect(download.suggestedFilename()).toMatch(/^progress-\d+\.json$/);
   const exported: unknown = JSON.parse(await readFile(await download.path(), 'utf8'));
   expect(exported).toMatchObject([
-    { notesPlayed: 3, wrongNoteCount: 0, reachedEnd: false },
+    {
+      notesPlayed: 3,
+      wrongNoteCount: 0,
+      reachedEnd: false,
+      piece: 'cicha-noc',
+      hands: 'both',
+    },
   ]);
 
   // The reload is what makes the import assertion below discriminating: without it the
@@ -33,6 +39,7 @@ test('downloads the history and imports it back into a browser with none', async
   // The first cell is a wall-clock time, so it's matched loosely.
   await expect(rows.locator('td')).toHaveText([
     /\d/,
+    'Cicha Noc',
     'whole piece',
     '3',
     '0',

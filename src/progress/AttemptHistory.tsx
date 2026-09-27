@@ -1,4 +1,5 @@
 import type { Loop } from '../engine/types';
+import { pieceTitle } from '../score/pieces';
 import type { AttemptRecord } from './types';
 
 export interface AttemptHistoryProps {
@@ -26,6 +27,7 @@ export function AttemptHistory({ records }: AttemptHistoryProps) {
       <thead>
         <tr>
           <th scope="col">When</th>
+          <th scope="col">Piece</th>
           <th scope="col">Range</th>
           <th scope="col">Notes</th>
           <th scope="col">Wrong</th>
@@ -37,6 +39,7 @@ export function AttemptHistory({ records }: AttemptHistoryProps) {
         {records.map((record) => (
           <tr key={record.startedAt} data-testid="attempt-history-row">
             <td>{new Date(record.startedAt).toLocaleString()}</td>
+            <td>{pieceTitle(record.piece)}</td>
             <td>{formatLoop(record.loop)}</td>
             <td>{record.notesPlayed}</td>
             <td>{record.wrongNoteCount}</td>

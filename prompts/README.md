@@ -25,6 +25,7 @@ judge a brief against, and the guide for writing one.
 | [17](step17.md) Listen          | Keys lighting up to the piece; the sound took 19    |
 | [19](step19.md) Output port     | The demo's port, matched to the piano by name       |
 | 21 The owner's own piece        | `cicha-noc.musicxml` replaced by the owner's ABC    |
+| [22](step22.md) Choose piece    | A dropdown of 23 pieces; controls in two rows       |
 | [23](step23.md) Listen speed    | Demo speed presets, 50%–150%; practice untimed      |
 | [24](step24.md) Left hand lower | Left hand an octave down, bass clef, fingering      |
 | [25](step25.md) Staff scroll    | The marker held a third of the way in, gliding      |
@@ -109,18 +110,18 @@ we are, the queue says what to play, and nothing is asked for during a demonstra
 
 ## Planned — more than one piece
 
-| Step                             | What it adds                                   |
-| -------------------------------- | ---------------------------------------------- |
-| [22](step22.md) Choose the piece | A dropdown of Cicha Noc and 22 Beyer pieces    |
-| [28](step28.md) Beyer, scanned   | All of Op. 101 recognised, proofread, fingered |
+| Step                           | What it adds                                   |
+| ------------------------------ | ---------------------------------------------- |
+| [28](step28.md) Beyer, scanned | All of Op. 101 recognised, proofread, fingered |
 
-Step 21 replaced the one piece; this one stops it being the only one. The Beyer import supplied
-the rest: Nos. 8, 9 and 12–31, offered in a dropdown in book order after Cicha Noc from an
-explicit list with a hand-written id per piece — No. 38 until its fingering is complete, and
-Nos. 10 and 11 until the owner says which book's numbering the child reads, are left out. It
-first packs the controls above the staff into two rows. The choice is remembered across a
-reload, and each attempt records its piece and hands, for the learn-in-order mode the owner has
-said comes later; the history recorded before it is, by the owner's word, not carried forward.
+Step 21 replaced the one piece; step 22, now shipped, stopped it being the only one. The
+Beyer import supplied the rest: Nos. 8, 9 and 12–31, offered in a dropdown in book order after
+Cicha Noc from an explicit list with a hand-written id per piece — No. 38 until its fingering
+is complete, and Nos. 10 and 11 until the owner says which book's numbering the child reads,
+are left out. It first packs the controls above the staff into two rows. The choice is
+remembered across a reload, and each attempt records its piece and hands, for the
+learn-in-order mode the owner has said comes later; the history recorded before it is, by the
+owner's word, not carried forward.
 
 Two things in the app do not fall out of a piece swap on their own, and the brief names
 both: the staff loads its XML in an effect that never runs again, so it would keep drawing

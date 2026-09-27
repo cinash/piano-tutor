@@ -10,6 +10,8 @@ function record(startedAt: number, notesPlayed: number): AttemptRecord {
     notesPlayed,
     wrongNoteCount: 0,
     reachedEnd: false,
+    piece: 'cicha-noc',
+    hands: 'both',
   };
 }
 

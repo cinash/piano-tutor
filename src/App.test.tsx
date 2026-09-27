@@ -9,6 +9,7 @@ import {
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
 import { loadQueueFolded } from './practice/queueFoldStore';
+import { loadAttempts } from './progress/attemptStore';
 import { cichaNocScore } from './score/cichaNoc';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
@@ -55,6 +56,10 @@ function playPerfectly() {
     for (const code of codes) fireEvent.keyDown(window, { code });
     for (const code of codes) fireEvent.keyUp(window, { code });
   }
+}
+
+function choosePiece(id: string) {
+  fireEvent.change(screen.getByTestId('piece-select'), { target: { value: id } });
 }
 
 // Saved attempts outlive a render, so every test in the file starts with none.
@@ -129,7 +134,7 @@ describe('App', () => {
         .getAllByRole('cell')
         .slice(1)
         .map((cell) => cell.textContent),
-    ).toEqual(['whole piece', String(notesPlayed), '0', '100%', 'yes']);
+    ).toEqual(['Cicha Noc', 'whole piece', String(notesPlayed), '0', '100%', 'yes']);
     // Every note of the piece is a separate re-render of the whole app, which takes
     // about 1.6s alone and can pass 5s when the suite runs this file alongside the
     // others. The default timeout was already marginal before step 21 changed the piece.
@@ -284,6 +289,18 @@ describe('listening to the piece', () => {
     expect(output.sent).toContainEqual([0x90, 69, 80]);
   });
 
+  it('stops when another piece is chosen, and sends nothing after it', async () => {
+    const output = new FakeMidiOutput('Digital Piano MIDI 1');
+    await startListening(output);
+
+    choosePiece('beyer-op101-12');
+    const sent = output.sent.length;
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(output.sent).toHaveLength(sent);
+    expect(screen.getByTestId('listen-to-piece').textContent).toBe('Listen');
+  });
+
   it('plays silently rather than reporting an error when there is no output port', async () => {
     const { container } = await startListening();
 
@@ -355,7 +372,14 @@ describe('folding the finger queue away', () => {
     expect(folded).toEqual(unfolded);
     // Not two identical nothings: the measure really was played, and recorded.
     expect(unfolded.position).toBe('Measure 2 of 22');
-    expect(unfolded.attempt).toEqual(['whole piece', '3', '0', '100%', 'no']);
+    expect(unfolded.attempt).toEqual([
+      'Cicha Noc',
+      'whole piece',
+      '3',
+      '0',
+      '100%',
+      'no',
+    ]);
   });
 
   it('remembers the choice across a reload', () => {
@@ -496,5 +520,92 @@ describe('remembering the piano', () => {
     expect((screen.getByTestId('webmidi-device-select') as HTMLSelectElement).value).toBe(
       '',
     );
+  });
+});
+
+describe('choosing the piece', () => {
+  /** The keys marked as the ones to press next, lowest first. */
+  function expectedPitches(container: HTMLElement) {
+    return Array.from(container.querySelectorAll('[data-expected="true"]'))
+      .map((key) => Number(key.getAttribute('data-note')))
+      .sort((a, b) => a - b);
+  }
+
+  const pieceSelect = () => screen.getByTestId('piece-select') as HTMLSelectElement;
+
+  it('can be chosen before anything is connected, and starts at its first note', () => {
+    const { container } = render(<App />);
+    expect(expectedPitches(container)).toEqual([67]); // Cicha Noc's G4
+
+    choosePiece('beyer-op101-12');
+
+    expect(screen.getByTestId('position-readout').textContent).toBe('Measure 1 of 8');
+    expect(expectedPitches(container)).toEqual([60, 72]); // No. 12's C4 and C5
+  });
+
+  it('is practised from its first note, whatever was played of the last one', async () => {
+    const { container } = await renderConnectedApp();
+    fireEvent.keyDown(window, { code: 'KeyT' }); // Cicha Noc's G4
+    fireEvent.keyUp(window, { code: 'KeyT' });
+
+    choosePiece('beyer-op101-12');
+    // Its first chord, not the event after it: Cicha Noc had moved on one event, and
+    // index 1 of No. 12 is D5.
+    expect(expectedPitches(container)).toEqual([60, 72]);
+
+    for (const code of ['KeyQ', 'KeyI']) fireEvent.keyDown(window, { code });
+
+    // The engine reads the new piece: its C4 and C5 move it on to m1 b2's D5.
+    expect(expectedPitches(container)).toEqual([74]);
+  });
+
+  it('clears a loop, whose bars the new piece may not have', () => {
+    render(<App />);
+    fireEvent.click(screen.getByTestId('loop-enabled-checkbox'));
+    fireEvent.change(screen.getByTestId('loop-start-input'), { target: { value: '18' } });
+
+    choosePiece('beyer-op101-12');
+
+    expect(
+      (screen.getByTestId('loop-enabled-checkbox') as HTMLInputElement).checked,
+    ).toBe(false);
+    expect((screen.getByTestId('loop-end-input') as HTMLInputElement).value).toBe('8');
+  });
+
+  it('remembers the choice across a reload', () => {
+    const { unmount } = render(<App />);
+    choosePiece('beyer-op101-12');
+    unmount();
+
+    render(<App />);
+
+    expect(pieceSelect().value).toBe('beyer-op101-12');
+  });
+
+  it('opens on the first piece when the one remembered is no longer offered', () => {
+    localStorage.setItem('piano-tutor.piece.v1', 'beyer-op101-38');
+    render(<App />);
+
+    expect(pieceSelect().value).toBe('cicha-noc');
+  });
+
+  it('records the piece, and the hands it was practised with, in the attempt', async () => {
+    await renderConnectedApp();
+    choosePiece('beyer-op101-12');
+    fireEvent.click(screen.getByTestId('hands-left'));
+
+    fireEvent.keyDown(window, { code: 'KeyQ' }); // No. 12's left-hand C4
+
+    expect(loadAttempts()).toMatchObject([{ piece: 'beyer-op101-12', hands: 'left' }]);
+  });
+
+  it('does not jump to a piece on a typed letter, which the computer keyboard plays', () => {
+    render(<App />);
+
+    // fireEvent returns false when a handler prevented the default.
+    expect(fireEvent.keyDown(pieceSelect(), { key: 'b' })).toBe(false);
+    expect(fireEvent.keyDown(pieceSelect(), { key: 'ArrowDown' })).toBe(true);
+    // A shortcut such as find is left to the browser.
+    expect(fireEvent.keyDown(pieceSelect(), { key: 'f', ctrlKey: true })).toBe(true);
   });
 });

@@ -37,8 +37,9 @@ export function DevicePicker({
     event.target.value = '';
   }
 
+  // A fragment, so each of these is an item of the toolbar row App puts it in.
   return (
-    <div>
+    <>
       <p data-testid="source-status">{describeActiveSource(active)}</p>
 
       {active.kind !== 'none' && (
@@ -70,15 +71,9 @@ export function DevicePicker({
         )}
       </div>
 
-      <div>
-        <button
-          type="button"
-          onClick={onConnectVirtual}
-          data-testid="use-virtual-keyboard"
-        >
-          Use computer keyboard
-        </button>
-      </div>
+      <button type="button" onClick={onConnectVirtual} data-testid="use-virtual-keyboard">
+        Use computer keyboard
+      </button>
 
       {import.meta.env.DEV && (
         <div>
@@ -92,7 +87,7 @@ export function DevicePicker({
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
 

@@ -10,7 +10,7 @@ import {
  * mapping is unaffected by locale or Shift state. Row 1 (Z..) covers one octave from
  * the base note; row 2 (Q..) carries on above it, overlapping by one note at the top of
  * row 1 / bottom of row 2 the way many DAW "typing keyboard" instruments do, and runs
- * to F5 — the highest note cicha-noc.musicxml asks for.
+ * to G5 — the highest note an offered piece asks for.
  */
 const SEMITONE_OFFSET_BY_CODE: Readonly<Record<string, number>> = {
   KeyZ: 0,
@@ -44,6 +44,8 @@ const SEMITONE_OFFSET_BY_CODE: Readonly<Record<string, number>> = {
   Digit0: 27,
   KeyP: 28,
   BracketLeft: 29,
+  Equal: 30,
+  BracketRight: 31,
 };
 
 const BASE_NOTE = 48; // C3

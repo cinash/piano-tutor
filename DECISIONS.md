@@ -90,11 +90,14 @@ rather than a single hardcoded range, free numeric low/high inputs, or a value c
 from the score. The fixed list is what lets every preset contain the score by
 construction; free input couldn't offer that guarantee.
 
-It is still not derived from `cicha-noc.musicxml`. There is one score in the app,
-imported by `App.tsx` at compile time with no way to load another, so a
-`keyboardRangeForScore()` would be branches that can never run — that would become the
-right answer only once a second score exists. Each preset is chosen wide enough to
-contain this score's C3-F5 range regardless, which is what the Layer 2 gate checks.
+It is still not derived from the score. Until step 22 there was one score in the app, so a
+`keyboardRangeForScore()` would have been branches that could never run. Step 22 took that
+reason away — there are now 23 pieces — and the fixed list stays anyway, as a judgement
+rather than a necessity: the narrowest preset, C2-B5, holds every offered piece (C3-G5
+between them), and a keyboard that changed width with the piece would move the keys under
+the child's eyes. `config.test.ts` checks every offered piece against every preset, so a
+piece added later that reaches past the narrowest is where deriving the range gets
+reconsidered.
 
 ## The keyboard says which key, the falling-note queue says which finger
 
@@ -181,8 +184,10 @@ base note (default C3), and `Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P [` above it, over
 by one note at the top of the first row / bottom of the second — the convention used by
 several DAWs' "typing keyboard" instruments. The second row ran one octave, to C5, until
 step 21: the arrangement that landed then reaches D5 and F5, which fell off the end of
-it, so it was continued along the same pattern to F5 and stops there, at the piece's own
-top note.
+it, so it was continued along the same pattern to F5. Step 22 continued it again, `=` for
+F♯5 and `]` for G5, because 22 of the 24 Beyer pieces reach G5 and could otherwise only be
+finished at the piano. It stops at the highest note an offered piece asks for, and
+`pieces.test.ts` fails for a piece added later that reaches past it.
 
 ## Replay is a dev-only file picker, not a bundled fixture
 
@@ -559,10 +564,12 @@ the hand radios call `restartPractice`, the same path the Restart button uses, w
 zeroes the counters and therefore closes the open attempt record through the
 write-through effect above. There is no second reset path.
 
-## One-hand attempts are recorded indistinguishably from two-hand ones
+## One-hand attempts were recorded indistinguishably from two-hand ones, until step 22
 
-`AttemptRecord` says nothing about which hand was practised, so the history's accuracy
-column now mixes two things it does not label: fourteen left-hand notes at 100% sits
+Reversed by step 22, which records the hands in every attempt: see "Every attempt records its
+piece and hands, and the history before them is not kept". What follows is the reasoning it
+reversed. `AttemptRecord` said nothing about which hand was practised, so the history's accuracy
+column mixed two things it did not label: fourteen left-hand notes at 100% sits
 beside forty-five two-hand notes at 100% and reads the same. That is the price of leaving
 the `localStorage` schema alone — `isAttemptRecordArray` validates field by field, so a
 `hands` field added without tolerating its absence would reject every record already
@@ -1012,3 +1019,125 @@ scan by a person.
 The Vitest check over the library is the part of step 28's gate that holds before any file
 comes from the scan; the listing of the manifest's pieces, the hands each kind plays, and
 `<rights>` naming the edition and pages are asserted with the first batch that commits one.
+
+## The controls above the staff are two rows, and Hands and Keyboard range stay below the queue
+
+Seven stacked lines — the heading, the connection status, Disconnect, the Piano select, "Use
+computer keyboard", the dev-only replay input, then recording, Restart, Listen and Speed —
+took about 210 px before the staff began. The owner asked for less, and chose two rows from a
+mock-up: the heading and everything about the connection on the first, what you do with the
+piece on the second (step 22). Each is a wrapping flex row (`.toolbar` in `src/App.css`), and
+`DevicePicker` returns a fragment so its elements become items of the first. The heading stays
+an `<h1>`, only smaller.
+
+At 1280 px the first row fits while disconnected and in a production build, but once
+connected in development the dev-only replay input — 490 px, most of it the browser's own
+file-input chrome — wraps onto a line of its own. It is left to wrap: the gap cannot recover
+30 px, and moving the input elsewhere would change the layout the owner chose for a control
+only development shows.
+
+Hands and Keyboard range are settings too, but stay below the queue for the screenshot reason
+"The staff is a fixed-height pane" records. The committed element screenshots were re-taken
+with the rows, which left the queue and keyboard on whole pixels where the old layout had left
+them on a fraction; nothing inside either changed (the commit says how that was checked).
+
+## The pieces offered are an explicit list, each with an id written by hand
+
+`src/score/pieces.ts` lists every piece the player can choose, in the order the dropdown shows
+them: Cicha Noc, then Beyer Nos. 8, 9 and 12-31, each a `?raw` import bundled at build time.
+A file in `beyer_op101_musicxml/` reaches the child only when someone adds its line, which is
+where the owner's yes is given; step 28 keeps adding recognised files there, and a committed
+file is not necessarily proofread or inside the narrowest keyboard. Rejected: globbing the
+directory, which offers every batch the moment it lands. `beyerLibrary.test.ts` still globs
+it, as step 28's gate on the library; `pieces.test.ts` checks what is offered — notes, a
+finger on every one, a unique title, and every pitch on the computer keyboard.
+
+Left out, each by the owner's choice: No. 38, the PDMX transcription the fingering tool is
+tested against, until the 33 of its 88 notes that carry no finger have one; and Nos. 10 and
+11, because the Peters edition prints other pieces ("Hänschen klein", "Der Kuckuck") under
+those numbers, until the owner says which book the child reads from (step 28's question 1).
+
+Each piece's `id` — `cicha-noc`, `beyer-op101-08` … — is written beside it rather than
+derived from the file name, at the owner's request, "so that we can rename them later". It
+goes into stored history, so an id names one piece for good: its file may be renamed and its
+title may change, and a different piece takes a new id. Whether a Peters-derived file that
+replaces one of these keeps its id — No. 30, say, going from 16 bars to 24 with its repeats
+written out — is left to the step 28 batch that replaces it. The dropdown's label is the
+score's own `<work-title>`.
+
+Everything is parsed at start-up, as Cicha Noc always was. Measured when the list arrived:
+the main chunk went from 1,544 kB to 2,257 kB (407 kB to 428 kB gzipped); parsing the 22
+Beyer files takes about 110-145 ms in the dev container's Chromium; the Vitest suite's
+duration did not measurably change (22.8 s before, 21.0 s after). Rejected for now: loading
+each piece on demand, a chunk per piece behind a promise, which would make the piece a
+loading state in `App` and `StaffView`. That becomes the answer as step 28 grows the list
+toward 109 pieces, and the change is local to `pieces.ts`.
+
+## The piece is a dropdown whose letter type-ahead is cancelled
+
+The owner asked for a dropdown, and 23 radio buttons — the way Hands avoids the problem below
+— do not fit on a row. A focused `<select>` jumps to the option whose label starts with the
+letter typed, and `VirtualKeyboardSource` plays letters as notes: every Beyer title starts
+with B (G3) and Cicha Noc with C (E3). A mouse pick leaves the select focused, so the first B
+or C played would switch the piece and restart the attempt. The select's `onKeyDown` cancels
+the default for every single-character key typed without Ctrl, Cmd or Alt, so find and reload
+still work; the event still bubbles to the window, where the virtual keyboard plays the note.
+Arrow keys, Enter and Tab keep working; Space no longer opens the list, and Alt+↓ does. Rejected: blurring
+the select after each change, which throws out a keyboard user after one arrow press, since
+Chromium changes a closed select's value on an arrow key. The Speed and Keyboard range
+selects have the same exposure for digits and were left alone.
+
+The select is shown before anything is connected, unlike the rest of its row: choosing a
+piece before connecting is ordinary, and the staff, queue and keyboard already draw with
+nothing connected. So while disconnected it sits alone on the second row, and moves right
+when Restart, Listen and Speed appear.
+
+## Changing the piece starts afresh, and the choice is remembered
+
+A new piece is `createInitialPracticeViewState()`, the state `attach()` starts from, rather
+than `restartPractice`, which keeps the loop on purpose: a loop is a range of bars of one
+piece, and bars 18-22 of Cicha Noc do not exist in the 8 bars of No. 12. It also stops a
+running demo, whose schedule was built from the old score. The attempt in flight has already
+been written through, so it ends as it does when the hand changes. Hands, keyboard range and
+speed carry over: they are the player's settings, not the piece's.
+
+`StaffView` takes the XML as a prop and `App` keys it by the piece's id, so a new piece is a
+fresh mount — one score in the pane, and no cursor effect running against an instance whose
+container was just emptied. Rejected: clearing the rendered instance in the load effect's
+cleanup, the same result spread across two effects.
+
+The choice is remembered across a reload (`src/score/pieceStore.ts`, beside the queue fold's
+store), while hands, keyboard range and speed still reset: the owner's choice, since
+practising one of 23 pieces for a week should not mean picking it after every reload. A
+stored id that is no longer offered opens on the first piece.
+
+## Every attempt records its piece and hands, and the history before them is not kept
+
+`AttemptRecord` gains `piece`, the piece's id from `PIECES`, and `hands`, both required. The
+owner asked for the piece in the history and a "Piece" column to show it, by the standing
+rule that history is recorded where the data first exists; and for the hands too, since a
+left-hand-only run on a piece otherwise reads to a later learn-in-order mode like a full
+pass. That reverses step 14's entry above, whose reason — a new field would reject every
+stored record and exported file — would not have held for an optional field in any case.
+
+They are required rather than optional because the owner declared the history recorded so
+far not valid. The consequences are deliberate: `isAttemptRecordArray` rejects a record
+without them, so on the first load of this build the old history reads as none and, since
+the attempts are saved on mount, is written over at once — a copy worth keeping has to be
+downloaded before the new build is opened; a progress file exported before it is refused on
+import with the message any wrong file gets; and the key stays `piano-tutor.attempts.v1`,
+since a `v2` would only leave the old array behind with nothing to read it. The next change
+to `AttemptRecord` will not have that licence once real practice is being recorded, and
+should be an optional field.
+
+The tailnet copy runs whatever build was last deployed by hand. Until it is redeployed the
+two copies store different record shapes: its exports are refused here, and this build's are
+accepted there — its validator ignores extra fields — and then mixed with records written
+without `piece` or `hands`, which this build then refuses whole. Redeploy before moving
+progress between them.
+
+The Piece column shows the title of an offered piece and the bare id of one no longer
+offered, looked up through `pieceTitle()` in `pieces.ts`. The hands are recorded but not
+shown: a column for them is the learn-in-order mode's decision. Recording the input an
+attempt came from — piano, computer keyboard, replay — was offered too, and the owner said
+not now; it can arrive later as an optional field.
