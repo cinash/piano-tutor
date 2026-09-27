@@ -1078,8 +1078,9 @@ The owner asked for a dropdown, and 23 radio buttons — the way Hands avoids th
 letter typed, and `VirtualKeyboardSource` plays letters as notes: every Beyer title starts
 with B (G3) and Cicha Noc with C (E3). A mouse pick leaves the select focused, so the first B
 or C played would switch the piece and restart the attempt. The select's `onKeyDown` cancels
-the default for every single-character key; the event still bubbles to the window, where the
-virtual keyboard plays the note. Arrow keys, Enter and Tab keep working. Rejected: blurring
+the default for every single-character key typed without Ctrl, Cmd or Alt, so find and reload
+still work; the event still bubbles to the window, where the virtual keyboard plays the note.
+Arrow keys, Enter and Tab keep working; Space no longer opens the list, and Alt+↓ does. Rejected: blurring
 the select after each change, which throws out a keyboard user after one arrow press, since
 Chromium changes a closed select's value on an arrow key. The Speed and Keyboard range
 selects have the same exposure for digits and were left alone.
