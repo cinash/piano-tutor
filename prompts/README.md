@@ -133,9 +133,17 @@ Step 28 turns the Peters scan of Beyer's Op. 101 into proofread, fingered MusicX
 and bundles none of it: a file reaches the child when a line for it is added to step 22's list of
 pieces.
 
+## Planned — playing in time
+
+| Step                       | What it adds                                        |
+| -------------------------- | --------------------------------------------------- |
+| [29](step29.md) Timed play | A second mode: the piece moves on at Listen's speed |
+
+Wait-mode lets a child learn the notes; timed play asks them to keep going. The first note
+starts the clock, a note not played by its deadline is counted as missed, and the staff cursor
+follows the clock while the keys still show what to play. Wait-mode stays the default.
+
 ## Deliberately not planned
 
-**Tempo in practice.** flowkey's 50% / 75% practice speed is a tempo feature, and tempo is
-out of scope by decision in `step5.md`. Step 23 brings speed back for the Listen demo only;
-practice stays untimed wait-mode, and the owner confirmed they do not want a timed mode.
-Wanting one later is a decision to reverse in the open, not a gap to fill quietly.
+**Tempo in practice** was here until the owner asked for timed play; step 29 reopens it in
+the open, and reverses the "Practice is untimed" entry in `DECISIONS.md`.
