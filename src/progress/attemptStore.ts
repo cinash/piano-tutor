@@ -1,4 +1,5 @@
 import type { Loop } from '../engine/types';
+import { HAND_SELECTIONS } from '../score/filterScoreByHand';
 import type { AttemptRecord } from './types';
 
 const STORAGE_KEY = 'piano-tutor.attempts.v1';
@@ -28,7 +29,7 @@ export function isAttemptRecordArray(value: unknown): value is AttemptRecord[] {
         typeof item.reachedEnd === 'boolean' &&
         (item.loop === undefined || isLoop(item.loop)) &&
         typeof item.piece === 'string' &&
-        ['both', 'left', 'right'].includes(item.hands),
+        HAND_SELECTIONS.includes(item.hands),
     )
   );
 }

@@ -592,11 +592,11 @@ describe('choosing the piece', () => {
   it('records the piece, and the hands it was practised with, in the attempt', async () => {
     await renderConnectedApp();
     choosePiece('beyer-op101-12');
-    fireEvent.click(screen.getByTestId('hands-right'));
+    fireEvent.click(screen.getByTestId('hands-left'));
 
-    fireEvent.keyDown(window, { code: 'KeyI' }); // No. 12's right-hand C5
+    fireEvent.keyDown(window, { code: 'KeyQ' }); // No. 12's left-hand C4
 
-    expect(loadAttempts()).toMatchObject([{ piece: 'beyer-op101-12', hands: 'right' }]);
+    expect(loadAttempts()).toMatchObject([{ piece: 'beyer-op101-12', hands: 'left' }]);
   });
 
   it('does not jump to a piece on a typed letter, which the computer keyboard plays', () => {

@@ -3,6 +3,8 @@ import type { Hand, Score } from './types';
 /** Which hand is being practised; `'both'` is the piece as written. */
 export type HandSelection = Hand | 'both';
 
+export const HAND_SELECTIONS: readonly HandSelection[] = ['both', 'left', 'right'];
+
 /**
  * The score as one hand plays it: each event's notes narrowed to that hand, and events
  * left with nothing dropped rather than kept empty — an empty event has no expectation
