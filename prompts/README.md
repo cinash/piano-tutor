@@ -111,12 +111,14 @@ we are, the queue says what to play, and nothing is asked for during a demonstra
 
 | Step                             | What it adds                                   |
 | -------------------------------- | ---------------------------------------------- |
-| [22](step22.md) Choose the piece | Buttons that change which piece you play       |
+| [22](step22.md) Choose the piece | A dropdown of Cicha Noc and Beyer Nos. 8–31    |
 | [28](step28.md) Beyer, scanned   | All of Op. 101 recognised, proofread, fingered |
 
-Step 21 replaced the one piece; this one stops it being the only one. **It cannot be built
-until a second piece exists, and the owner has to supply it** — `step22.md` says why, and
-what the alternative is if they would rather not author one.
+Step 21 replaced the one piece; this one stops it being the only one. The Beyer import supplied
+the rest: Nos. 8–31, all fingered, offered in a dropdown in book order after Cicha Noc, with
+No. 38 left out until its fingering is complete. It first packs the controls above the staff into
+two rows. The choice is remembered across a reload, and each attempt records which piece it was
+of, for the learn-in-order mode the owner has said comes later.
 
 Two things in the app do not fall out of a piece swap on their own, and the brief names
 both: the staff loads its XML in an effect that never runs again, so it would keep drawing
@@ -124,12 +126,9 @@ the old score, and a restart deliberately keeps the loop, which a shorter piece 
 for. Pieces are bundled at build time rather than picked from disk, for the same reason the
 replay picker is dev-only.
 
-Recording which piece an attempt was of is deliberately not part of it — the same trade
-step 14 made for hands, and the obvious step after this one.
-
 Step 28 makes step 22's public-domain alternative real without choosing it: it turns the Peters
-scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches, and bundles none of it.
-Whether step 22's second piece is one of them stays the owner's answer.
+scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches. It bundles none of it
+itself; step 22's glob offers each file it derives in the dropdown as the batch lands.
 
 ## Deliberately not planned
 
