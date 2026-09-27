@@ -32,8 +32,8 @@ ARG KUSTOMIZE_VERSION=v5.8.1
 ARG KUSTOMIZE_SHA256=029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d
 
 # Docker Engine, from Docker's apt repository. That repository keeps every past build, so each
-# package is pinned exactly; its signing key is checked by fingerprint, for the same reason
-# the downloads below are checked by sha256.
+# package is pinned exactly; the file its signing key arrives in must carry Docker's
+# fingerprint.
 ARG DOCKER_VERSION=5:29.8.1-1~debian.12~bookworm
 ARG CONTAINERD_VERSION=2.3.6-1~debian.12~bookworm
 ARG DOCKER_BUILDX_VERSION=0.37.1-1~debian.12~bookworm

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 #
 # devcontainer.json postStartCommand, run as root through sudo — starts the container's own
-# dockerd. The container has no init system to do it, so this runs on every start. It is the
-# one thing node may run as root: the sudoers rule in the Dockerfile names this file and
-# nothing else.
+# dockerd. The container has no init system to do it, so this runs on every start.
 set -euo pipefail
 
 pgrep -x dockerd >/dev/null && exit 0
