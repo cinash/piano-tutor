@@ -26,7 +26,9 @@ export function isAttemptRecordArray(value: unknown): value is AttemptRecord[] {
         typeof item.notesPlayed === 'number' &&
         typeof item.wrongNoteCount === 'number' &&
         typeof item.reachedEnd === 'boolean' &&
-        (item.loop === undefined || isLoop(item.loop)),
+        (item.loop === undefined || isLoop(item.loop)) &&
+        typeof item.piece === 'string' &&
+        ['both', 'left', 'right'].includes(item.hands),
     )
   );
 }

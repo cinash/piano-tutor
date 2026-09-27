@@ -11,6 +11,8 @@ const newer: AttemptRecord = {
   wrongNoteCount: 2,
   reachedEnd: false,
   loop: { startMeasure: 1, endMeasure: 2 },
+  piece: 'beyer-op101-12',
+  hands: 'both',
 };
 
 const older: AttemptRecord = {
@@ -19,6 +21,8 @@ const older: AttemptRecord = {
   notesPlayed: 41,
   wrongNoteCount: 0,
   reachedEnd: true,
+  piece: 'beyer-op101-38', // not offered, so shown by its id
+  hands: 'right',
 };
 
 /** Every cell but the first — the "when" cell is a locale- and zone-dependent render. */
@@ -41,8 +45,8 @@ describe('AttemptHistory', () => {
     render(<AttemptHistory records={[newer, older]} />);
 
     expect(screen.getAllByTestId('attempt-history-row').map(cellsAfterTheTime)).toEqual([
-      ['measures 1–2', '12', '2', '83%', 'no'],
-      ['whole piece', '41', '0', '100%', 'yes'],
+      ['Beyer Op. 101 No. 12', 'measures 1–2', '12', '2', '83%', 'no'],
+      ['beyer-op101-38', 'whole piece', '41', '0', '100%', 'yes'],
     ]);
   });
 
@@ -50,6 +54,13 @@ describe('AttemptHistory', () => {
     render(<AttemptHistory records={[{ ...older, notesPlayed: 0 }]} />);
 
     const [row] = screen.getAllByTestId('attempt-history-row');
-    expect(cellsAfterTheTime(row)).toEqual(['whole piece', '0', '0', '—', 'yes']);
+    expect(cellsAfterTheTime(row)).toEqual([
+      'beyer-op101-38',
+      'whole piece',
+      '0',
+      '0',
+      '—',
+      'yes',
+    ]);
   });
 });

@@ -564,10 +564,12 @@ the hand radios call `restartPractice`, the same path the Restart button uses, w
 zeroes the counters and therefore closes the open attempt record through the
 write-through effect above. There is no second reset path.
 
-## One-hand attempts are recorded indistinguishably from two-hand ones
+## One-hand attempts were recorded indistinguishably from two-hand ones, until step 22
 
-`AttemptRecord` says nothing about which hand was practised, so the history's accuracy
-column now mixes two things it does not label: fourteen left-hand notes at 100% sits
+Reversed by step 22, which records the hands in every attempt: see "Every attempt records its
+piece and hands, and the history before them is not kept". What follows is the reasoning it
+reversed. `AttemptRecord` said nothing about which hand was practised, so the history's accuracy
+column mixed two things it did not label: fourteen left-hand notes at 100% sits
 beside forty-five two-hand notes at 100% and reads the same. That is the price of leaving
 the `localStorage` schema alone — `isAttemptRecordArray` validates field by field, so a
 `hands` field added without tolerating its absence would reject every record already
@@ -1108,3 +1110,34 @@ The choice is remembered across a reload (`src/score/pieceStore.ts`, beside the 
 store), while hands, keyboard range and speed still reset: the owner's choice, since
 practising one of 23 pieces for a week should not mean picking it after every reload. A
 stored id that is no longer offered opens on the first piece.
+
+## Every attempt records its piece and hands, and the history before them is not kept
+
+`AttemptRecord` gains `piece`, the piece's id from `PIECES`, and `hands`, both required. The
+owner asked for the piece in the history and a "Piece" column to show it, by the standing
+rule that history is recorded where the data first exists; and for the hands too, since a
+left-hand-only run on a piece otherwise reads to a later learn-in-order mode like a full
+pass. That reverses step 14's entry above, whose reason — a new field would reject every
+stored record and exported file — would not have held for an optional field in any case.
+
+They are required rather than optional because the owner declared the history recorded so
+far not valid. The consequences are deliberate: `isAttemptRecordArray` rejects a record
+without them, so on the first load of this build the old history reads as none and, since
+the attempts are saved on mount, is written over at once — a copy worth keeping has to be
+downloaded before the new build is opened; a progress file exported before it is refused on
+import with the message any wrong file gets; and the key stays `piano-tutor.attempts.v1`,
+since a `v2` would only leave the old array behind with nothing to read it. The next change
+to `AttemptRecord` will not have that licence once real practice is being recorded, and
+should be an optional field.
+
+The tailnet copy runs whatever build was last deployed by hand. Until it is redeployed the
+two copies store different record shapes: its exports are refused here, and this build's are
+accepted there — its validator ignores extra fields — and then mixed with records written
+without `piece` or `hands`, which this build then refuses whole. Redeploy before moving
+progress between them.
+
+The Piece column shows the title of an offered piece and the bare id of one no longer
+offered, looked up through `pieceTitle()` in `pieces.ts`. The hands are recorded but not
+shown: a column for them is the learn-in-order mode's decision. Recording the input an
+attempt came from — piano, computer keyboard, replay — was offered too, and the owner said
+not now; it can arrive later as an optional field.

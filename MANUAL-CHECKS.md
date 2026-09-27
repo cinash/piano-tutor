@@ -67,8 +67,11 @@ update it at the end of each step.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was
-    played. Then click "Download progress", open the deployed tailnet copy, import the
-    downloaded file there, and confirm the history arrives intact.
+    played, and that its Piece column names the piece you chose. Then click "Download
+    progress", open the deployed tailnet copy, import the downloaded file there, and
+    confirm the history arrives intact. The tailnet copy has to be redeployed after step 22
+    first: until then its exports are refused here, and it accepts this build's without
+    keeping what they carry — see `DECISIONS.md`.
 11. Open the app beside your own copy of Cicha Noc and read the staff against it: the
     same key and time signature (no sharps or flats, 3/4), both hands' staves — treble
     over bass — and the same notes, with the same fingerings, in the same bars. Bars 9-12

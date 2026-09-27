@@ -9,6 +9,7 @@ async function expectBothAttempts(page: Page) {
   // The first cell is a wall-clock time, so it's matched loosely.
   await expect(rows.nth(0).locator('td')).toHaveText([
     /\d/,
+    'Cicha Noc',
     'whole piece',
     '1',
     '1',
@@ -17,6 +18,7 @@ async function expectBothAttempts(page: Page) {
   ]);
   await expect(rows.nth(1).locator('td')).toHaveText([
     /\d/,
+    'Cicha Noc',
     'whole piece',
     '3',
     '0',

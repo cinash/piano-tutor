@@ -9,6 +9,7 @@ import {
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
 import { loadQueueFolded } from './practice/queueFoldStore';
+import { loadAttempts } from './progress/attemptStore';
 import { cichaNocScore } from './score/cichaNoc';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
@@ -133,7 +134,7 @@ describe('App', () => {
         .getAllByRole('cell')
         .slice(1)
         .map((cell) => cell.textContent),
-    ).toEqual(['whole piece', String(notesPlayed), '0', '100%', 'yes']);
+    ).toEqual(['Cicha Noc', 'whole piece', String(notesPlayed), '0', '100%', 'yes']);
     // Every note of the piece is a separate re-render of the whole app, which takes
     // about 1.6s alone and can pass 5s when the suite runs this file alongside the
     // others. The default timeout was already marginal before step 21 changed the piece.
@@ -371,7 +372,14 @@ describe('folding the finger queue away', () => {
     expect(folded).toEqual(unfolded);
     // Not two identical nothings: the measure really was played, and recorded.
     expect(unfolded.position).toBe('Measure 2 of 22');
-    expect(unfolded.attempt).toEqual(['whole piece', '3', '0', '100%', 'no']);
+    expect(unfolded.attempt).toEqual([
+      'Cicha Noc',
+      'whole piece',
+      '3',
+      '0',
+      '100%',
+      'no',
+    ]);
   });
 
   it('remembers the choice across a reload', () => {
@@ -579,6 +587,16 @@ describe('choosing the piece', () => {
     render(<App />);
 
     expect(pieceSelect().value).toBe('cicha-noc');
+  });
+
+  it('records the piece, and the hands it was practised with, in the attempt', async () => {
+    await renderConnectedApp();
+    choosePiece('beyer-op101-12');
+    fireEvent.click(screen.getByTestId('hands-right'));
+
+    fireEvent.keyDown(window, { code: 'KeyI' }); // No. 12's right-hand C5
+
+    expect(loadAttempts()).toMatchObject([{ piece: 'beyer-op101-12', hands: 'right' }]);
   });
 
   it('does not jump to a piece on a typed letter, which the computer keyboard plays', () => {

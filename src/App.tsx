@@ -251,6 +251,8 @@ export function App() {
       wrongNoteCount,
       reachedEnd: view.engine.status === 'complete',
       loop: view.engine.loop,
+      piece: piece.id,
+      hands,
     };
     const openStartedAt = openAttemptRef.current;
 
@@ -269,7 +271,7 @@ export function App() {
           : record,
       ),
     );
-  }, [view]);
+  }, [view, piece.id, hands]);
 
   useEffect(() => saveAttempts(attempts), [attempts]);
 

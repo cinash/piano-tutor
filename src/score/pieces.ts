@@ -65,3 +65,8 @@ export const PIECES: readonly Piece[] = [
   piece('beyer-op101-30', beyerNo30Xml),
   piece('beyer-op101-31', beyerNo31Xml),
 ];
+
+/** The title of the offered piece with this id, or the id itself for one not offered. */
+export function pieceTitle(id: string): string {
+  return PIECES.find((piece) => piece.id === id)?.score.title ?? id;
+}

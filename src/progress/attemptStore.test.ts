@@ -12,6 +12,8 @@ const looped: AttemptRecord = {
   wrongNoteCount: 2,
   reachedEnd: false,
   loop: { startMeasure: 1, endMeasure: 2 },
+  piece: 'beyer-op101-12',
+  hands: 'left',
 };
 
 const wholePiece: AttemptRecord = {
@@ -20,6 +22,8 @@ const wholePiece: AttemptRecord = {
   notesPlayed: 41,
   wrongNoteCount: 0,
   reachedEnd: true,
+  piece: 'cicha-noc',
+  hands: 'both',
 };
 
 describe('attemptStore', () => {
@@ -53,6 +57,19 @@ describe('attemptStore', () => {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify([{ startedAt: 1, endedAt: 2 }]));
     expect(loadAttempts()).toEqual([]);
+  });
+
+  it('reads records from before the piece and hands were recorded as no history', () => {
+    // An undefined field is left out by JSON.stringify: stored without it.
+    for (const record of [
+      { ...looped, piece: undefined },
+      { ...looped, hands: undefined },
+      { ...looped, piece: 12 },
+      { ...looped, hands: 'up' },
+    ]) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([record]));
+      expect(loadAttempts()).toEqual([]);
+    }
   });
 
   it('reads records with a malformed loop as no history', () => {
