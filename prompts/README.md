@@ -140,8 +140,9 @@ pieces.
 | [29](step29.md) Timed play | A second mode: the piece moves on at Listen's speed |
 
 Wait-mode lets a child learn the notes; timed play asks them to keep going. It is the standard
-design: a fixed clock started by the first note, a metronome clicking from the computer (on by
-default), a small window around each note's time, and misses passing while the music goes on.
+design: a metronome clicking from the computer as soon as Timed is chosen (on by default), a fixed
+clock started by the first note on the click, a small window around each note's time, and misses
+passing while the music goes on.
 The staff cursor follows the clock while the keys still show what to play. Wait-mode stays the
 default.
 
