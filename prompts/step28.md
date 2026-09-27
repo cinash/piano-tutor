@@ -128,6 +128,14 @@ plays**. Smaller, but every change above becomes re-recognition, and a generated
 longer be told from a printed one. A human correction to fingering goes into the source as a digit,
 never into a derived file, which is overwritten.
 
+A derived file reaches the child only when a line for it, with an id written by hand, is added to
+step 22's `src/score/pieces.ts`. That id goes into stored history, so it names one piece for good:
+a different piece — Peters' Nos. 10 and 11 among them, whose numbers this directory's `no10` and
+`no11` use for other pieces — gets a new id. Whether a derived file replacing one already offered
+keeps its id is the replacing batch's decision, with both sides written down: the same id gives
+the learn-in-order mode one piece rather than two, a new one keeps an old pass of 16 bars (No. 30)
+from reading as a pass of the 24 the book prints.
+
 The derived file differs from the source in these ways, each already a precedent here:
 
 - **Repeats are written out**, as step 21 wrote out Cicha Noc's (`DECISIONS.md`, "repeats are

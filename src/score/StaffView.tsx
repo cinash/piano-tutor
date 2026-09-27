@@ -2,12 +2,13 @@ import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import { useEffect, useRef, useState } from 'react';
 
 import './StaffView.css';
-import { cichaNocXml } from './cichaNoc';
 
 /** Where the pane holds the cursor: more of the music ahead of it than behind, as flowkey does. */
 const CURSOR_FRACTION_FROM_LEFT = 1 / 3;
 
 export interface StaffViewProps {
+  /** The piece's MusicXML. Drawn once per mount: a new piece is a new key — see App.tsx. */
+  xml: string;
   /**
    * Where to mark, in quarter-note beats from the start of the piece — the `startTime`
    * of the event the engine is waiting for, or where a running demo has reached, or
@@ -17,7 +18,7 @@ export interface StaffViewProps {
 }
 
 /** The notation, drawn from the raw MusicXML, with the cursor on the marked position. */
-export function StaffView({ targetStartTime }: StaffViewProps) {
+export function StaffView({ xml, targetStartTime }: StaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Null until the first render() has run, because that is what creates the cursor.
   const [renderedOsmd, setRenderedOsmd] = useState<OpenSheetMusicDisplay | null>(null);
@@ -39,7 +40,7 @@ export function StaffView({ targetStartTime }: StaffViewProps) {
     });
     let cancelled = false;
 
-    void osmd.load(cichaNocXml).then(() => {
+    void osmd.load(xml).then(() => {
       // load() is a promise, so this can resolve after unmount, into a detached div.
       if (cancelled) return;
       osmd.render();
@@ -52,7 +53,7 @@ export function StaffView({ targetStartTime }: StaffViewProps) {
       cancelled = true;
       container.replaceChildren();
     };
-  }, []);
+  }, [xml]);
 
   useEffect(() => {
     if (!renderedOsmd) return;

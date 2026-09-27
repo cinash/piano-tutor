@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { KEYBOARD_PRESETS } from './config';
-import { cichaNocScore } from './score/cichaNoc';
+import { PIECES } from './score/pieces';
 
 describe('KEYBOARD_PRESETS', () => {
-  it('contains every pitch cicha-noc.musicxml uses, in every preset', () => {
-    const pitches = cichaNocScore.events.flatMap((event) =>
+  it.each(PIECES)('contains every pitch $id uses, in every preset', ({ score }) => {
+    const pitches = score.events.flatMap((event) =>
       event.notes.map((note) => note.pitch),
     );
 

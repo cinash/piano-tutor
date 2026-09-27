@@ -57,6 +57,10 @@ function playPerfectly() {
   }
 }
 
+function choosePiece(id: string) {
+  fireEvent.change(screen.getByTestId('piece-select'), { target: { value: id } });
+}
+
 // Saved attempts outlive a render, so every test in the file starts with none.
 beforeEach(() => {
   localStorage.clear();
@@ -284,6 +288,18 @@ describe('listening to the piece', () => {
     expect(output.sent).toContainEqual([0x90, 69, 80]);
   });
 
+  it('stops when another piece is chosen, and sends nothing after it', async () => {
+    const output = new FakeMidiOutput('Digital Piano MIDI 1');
+    await startListening(output);
+
+    choosePiece('beyer-op101-12');
+    const sent = output.sent.length;
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(output.sent).toHaveLength(sent);
+    expect(screen.getByTestId('listen-to-piece').textContent).toBe('Listen');
+  });
+
   it('plays silently rather than reporting an error when there is no output port', async () => {
     const { container } = await startListening();
 
@@ -496,5 +512,75 @@ describe('remembering the piano', () => {
     expect((screen.getByTestId('webmidi-device-select') as HTMLSelectElement).value).toBe(
       '',
     );
+  });
+});
+
+describe('choosing the piece', () => {
+  /** The keys marked as the ones to press next, lowest first. */
+  function expectedPitches(container: HTMLElement) {
+    return Array.from(container.querySelectorAll('[data-expected="true"]'))
+      .map((key) => Number(key.getAttribute('data-note')))
+      .sort((a, b) => a - b);
+  }
+
+  const pieceSelect = () => screen.getByTestId('piece-select') as HTMLSelectElement;
+
+  it('can be chosen before anything is connected, and starts at its first note', () => {
+    const { container } = render(<App />);
+    expect(expectedPitches(container)).toEqual([67]); // Cicha Noc's G4
+
+    choosePiece('beyer-op101-12');
+
+    expect(screen.getByTestId('position-readout').textContent).toBe('Measure 1 of 8');
+    expect(expectedPitches(container)).toEqual([60, 72]); // No. 12's C4 and C5
+  });
+
+  it('is practised from its first note, whatever was played of the last one', async () => {
+    const { container } = await renderConnectedApp();
+    fireEvent.keyDown(window, { code: 'KeyT' }); // Cicha Noc's G4
+    fireEvent.keyUp(window, { code: 'KeyT' });
+
+    choosePiece('beyer-op101-12');
+    for (const code of ['KeyQ', 'KeyI']) fireEvent.keyDown(window, { code });
+
+    expect(expectedPitches(container)).toEqual([74]); // m1 b2's D5, one event in
+  });
+
+  it('clears a loop, whose bars the new piece may not have', () => {
+    render(<App />);
+    fireEvent.click(screen.getByTestId('loop-enabled-checkbox'));
+    fireEvent.change(screen.getByTestId('loop-start-input'), { target: { value: '18' } });
+
+    choosePiece('beyer-op101-12');
+
+    expect(
+      (screen.getByTestId('loop-enabled-checkbox') as HTMLInputElement).checked,
+    ).toBe(false);
+    expect((screen.getByTestId('loop-end-input') as HTMLInputElement).value).toBe('8');
+  });
+
+  it('remembers the choice across a reload', () => {
+    const { unmount } = render(<App />);
+    choosePiece('beyer-op101-12');
+    unmount();
+
+    render(<App />);
+
+    expect(pieceSelect().value).toBe('beyer-op101-12');
+  });
+
+  it('opens on the first piece when the one remembered is no longer offered', () => {
+    localStorage.setItem('piano-tutor.piece.v1', 'beyer-op101-38');
+    render(<App />);
+
+    expect(pieceSelect().value).toBe('cicha-noc');
+  });
+
+  it('does not jump to a piece on a typed letter, which the computer keyboard plays', () => {
+    render(<App />);
+
+    // fireEvent returns false when a handler prevented the default.
+    expect(fireEvent.keyDown(pieceSelect(), { key: 'b' })).toBe(false);
+    expect(fireEvent.keyDown(pieceSelect(), { key: 'ArrowDown' })).toBe(true);
   });
 });

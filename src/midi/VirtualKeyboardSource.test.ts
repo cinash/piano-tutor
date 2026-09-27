@@ -44,10 +44,12 @@ describe('VirtualKeyboardSource', () => {
     expect(received[2]).toMatchObject({ type: 'noteOn', note: 60 });
   });
 
-  it('reaches F5, the highest note the piece asks for', () => {
+  it('reaches G5, the highest note an offered piece asks for', () => {
     keydown('BracketLeft');
+    keydown('Equal');
+    keydown('BracketRight');
 
-    expect(received[0]).toMatchObject({ type: 'noteOn', note: 77 });
+    expect(received.map((event) => event.note)).toEqual([77, 78, 79]); // F5, F♯5, G5
   });
 
   it('ignores OS key-repeat events while a key is held', () => {

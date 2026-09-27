@@ -26,6 +26,9 @@ update it at the end of each step.
    Listen and confirm the shading moves with the demo. Before each move — the right hand's
    E4 in bar 2, the left hand's E3 in bar 4 — confirm the next position is outlined, clear
    enough to see coming, and that the shading lands on it once the note is played.
+   Then pick another piece from the "Piece" dropdown with the mouse and play it: confirm
+   the marked keys, the shading and the queue all follow the new piece, with nothing left
+   marked from the old one.
 4. Play a quick run of notes and judge whether the on-screen response feels immediate —
    no perceptible lag between key press and highlight.
 5. Unplug the USB cable while connected; confirm the app doesn't crash and the status
@@ -34,8 +37,8 @@ update it at the end of each step.
    from the dropdown, and that it works again. Then press "Disconnect", reload, and
    confirm it stays "Not connected".
 7. Click "Use computer keyboard" and confirm the mapped keys (Z X C V B N M and the row
-   above, Q W E R T Y U I O P and the bracket beside it) light up the correct on-screen
-   keys.
+   above, Q W E R T Y U I O P and the two brackets beside it, with `=` for the black key
+   between them) light up the correct on-screen keys, up to G5 on `]`.
 8. Click "Start recording", play a short phrase, click "Stop recording & download", and
    confirm a `recording-*.json` file downloads containing the notes you played.
 9. Play Cicha Noc through on the real piano and confirm the falling-note view and
@@ -90,6 +93,10 @@ update it at the end of each step.
     — that playing the piece still behaves exactly as it did with the queue showing, and
     that closing the tab and reopening `http://localhost:5173` brings it back still
     hidden.
+    Then read two Beyer pieces against the book the same way: No. 8, whose hands are both
+    in treble clef with the left hand's G4 on the little finger (`DECISIONS.md` says why),
+    and No. 20, which carries a repeat sign the app plays through once. Say whether playing
+    it once is acceptable until step 28's files, with their repeats written out, arrive.
 
 Close the browser tab before using `amidi` or `aplaymidi` on the host, and quit those
 before going back to the browser: a page holding a Web MIDI port locks the ALSA device,
