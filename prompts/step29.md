@@ -30,7 +30,7 @@ to play to, and the notes they did not get to in time counted.
 step 23, did not want a timed mode. `DECISIONS.md` ("The demo is played by the piano; the app makes
 no sound of its own") records that at step 17 the owner chose the piano over a Web Audio synth for
 the demo. **The owner has now asked for timed play, and chose a metronome from the computer**,
-knowing the piano has no click (decision 3). Both entries are amended in the open. Wait-mode is kept
+knowing the piano has no click the app can start or keep in step with (decision 3). Both entries are amended in the open. Wait-mode is kept
 exactly as it is and stays the default, and the demo still plays through the piano.
 
 ## The standard design
@@ -54,8 +54,10 @@ the beat. This brief builds that, with a metronome as the beat.
 3. **The metronome sounds from the computer's speakers, on by default, and can be switched off.**
    Off, the moving cursor and the highlighted keys are the only cue. Rejected: a click sent to the
    piano as a note — the P-145's MIDI Reference lists ten melodic voices, no percussion and no
-   metronome message, so it would be a piano note blending with the child's; the song from the
-   speakers, which needs piano samples (a new dependency) and plays the child the answer.
+   metronome message, so it would be a piano note blending with the child's; the piano's own
+   metronome, set by hand, which the app can neither start, set to 49.5 BPM, nor find the beat of,
+   so no note could be snapped to it; the song from the speakers, which needs piano samples (a new
+   dependency) and plays the child the answer.
 4. **Timed play shares Listen's Speed select**, step 23's five presets, 50% to 150% of `DEMO_BPM`
    (66 quarter notes a minute). Rejected: a second select.
 5. **A fixed clock** — the standard design. Rejected: a clock that re-syncs to each note played.
@@ -68,6 +70,17 @@ the beat. This brief builds that, with a metronome as the beat.
 9. **History records the child's own timing: how early or late on average, and how tight.** Three
    counters (below). Rejected: early/late alone, where a child ±200 ms at random averages near zero
    and looks perfect; and recording nothing.
+10. **With a loop set, the bars before it are played untimed**, as in wait-mode, and the clock starts
+    on the first right note inside the loop. Rejected: timing the lead-in, which makes the child sit
+    through it at tempo on every Restart and counts what they skip as missed; and Restart jumping
+    to the loop's first bar, which would change Restart in both modes.
+11. **A timed loop pauses after one whole silent pass.** When a loop's length has gone by with no
+    note played, the clock stops (the metronome keeps clicking) and the next right note starts a
+    new one on the beat. A loop never ends, and a child who walks away would otherwise collect
+    misses by the hundred. Rejected: running on forever; pausing after a fixed number of misses.
+
+The owner expects the loop to be little used and may remove it later to simplify; for now it stays,
+with no more timed-play rules than these two.
 
 ## How timed play works
 
@@ -84,6 +97,7 @@ export interface TimedClock {
   startTime: number; // quarter-note beats
   msPerBeat: number;
   passBeats: number; // loop length × passes completed; 0 without a loop
+  lastNoteAt: number; // performance.now() time of the last note-on, for decision 11
 }
 timedClock?: TimedClock;
 ```
@@ -103,8 +117,11 @@ in wait-mode.
 the current event and `timing` is not null, the clock starts at that event, with `startedAt`
 **snapped onto the grid**: of the times at which the grid puts this event's beat position —
 `origin + (k + frac(event.startTime)) × msPerBeat` for whole `k` — the nearest to the note. With no
-grid, `startedAt` is the note's own time. The first note starts the run and is not itself timed: it
-counts in `notesPlayed`, not in the hit counters. From then on the timed rules below apply, in
+grid, `startedAt` is the note's own time. With a loop set, only an event inside the loop starts the
+clock (decision 10): the bars before it, and an event past its end when a loop was set late, are
+judged in wait-mode, and completing one moves on as wait-mode does, wrapping into the loop where it
+would. So a clock never starts outside the loop. The first note starts the run and is not itself
+timed: it counts in `notesPlayed`, not in the hit counters. From then on the timed rules below apply, in
 `src/practice/timedPlay.ts`, and `advance()` is not called.
 
 **The window** is ±¼ quarter-note beat around each event's due time, `TIMED_WINDOW = 0.25` in
@@ -143,7 +160,9 @@ export function expireDueEvents(
 
 An event is missed when `now` is **at or after** its due time plus the window. Each of its pitches
 not yet hit adds one to `attempt.missedNoteCount`; the engine moves on through `nextIndexAfter()`
-and `satisfiedNoteIds` is cleared. When nothing expires it returns `state` itself.
+and `satisfiedNoteIds` is cleared. With a loop set, once `now − lastNoteAt` reaches the loop's
+length (`loopLength × msPerBeat`), it removes `timedClock` instead of expiring further (decision 11).
+When nothing changes it returns `state` itself.
 
 `App` calls it from a `setTimeout` for the current event's close, set in an effect keyed on `view`,
 reading the score through `scoreRef` (the filtered score is a new object every render when one hand
@@ -162,10 +181,10 @@ the clock into the loop (below). Rejected: stopping the clock at the wrap so the
 restarts it, which never times the move back into the start.
 
 **Changing the loop during a run stops the clock**, as Listen does: `setPracticeLoop` removes
-`timedClock`, and the next right note starts a new one on the grid. A loop can be set while the
-engine is past its end (`DECISIONS.md`, "setting a loop doesn't jump playback"), and a clock kept
-across that jump would find the loop's events long overdue. The attempt carries on, as a loop change
-has never restarted it.
+`timedClock`, and the next right note inside the loop starts a new one on the grid. A loop can be
+set while the engine is past its end (`DECISIONS.md`, "setting a loop doesn't jump playback"); that
+event is then judged in wait-mode, and completing it wraps into the loop (decision 10). The attempt
+carries on, as a loop change has never restarted it.
 
 **The end.** When the last event is hit or missed, the piece is complete and the clock stops; the
 metronome goes on clicking, as it does whenever Timed is chosen. `AttemptStats` gains `reachedEnd`,
@@ -200,7 +219,8 @@ while Listen plays, and on unmount. It exposes its grid for the snap above, and 
 of information once a clock runs: `metronome.accentFrom(firstBarStartTime, beatsPerBar)` — the time
 of a bar's first beat on the grid, computed by `App` from the clock and `measureStartTime`, and the
 bar length from the piece's time signature. Every `beatsPerBar`-th click from there is accented;
-before a clock runs, and after it stops, no click is. Whole-bar loops and one time signature per
+`metronome.accentFrom(null)`, called when the clock stops, turns accents off, so before a clock runs
+and after it stops no click is accented. Whole-bar loops and one time signature per
 piece keep the accents periodic through a wrap.
 
 - **The click** is a short oscillator burst, about 30 ms, higher for the accent, through a gain
@@ -249,7 +269,10 @@ export function clockPosition(
 
 The score position is `b = startTime + (now − startedAt) / msPerBeat`, folded into the loop once past
 its end — `loopStartTime + ((b − loopStartTime) mod loopLength)` — so the cursor stays on the loop's
-last note until the music reaches the bar line, then jumps to its start. `App` keeps `now` as state,
+last note until the music reaches the bar line, then jumps to its start. Where no event's time has
+come yet — before the snapped `startedAt`, or a folded position before the loop's first event (a bar
+that opens with a rest) — it returns the clock's own `startTime`, or the loop's first event's.
+`App` keeps `now` as state,
 set by the same timer, which commit 3 sets for whichever comes first — the next due time or the
 current close; the effect is then keyed on `view` and `now`.
 
@@ -274,7 +297,22 @@ timed?: {
 };
 ```
 
-Absent on a wait-mode attempt — which is also what every record before this step says, so no stored
+`AttemptStats` itself becomes, with every field always present and zero in wait-mode:
+
+```ts
+{
+  notesPlayed;
+  wrongNoteCount;
+  reachedEnd: boolean;
+  missedNoteCount;
+  offTimeNoteCount;
+  hitNoteCount;
+  hitOffsetBeats;
+  hitAbsOffsetBeats;
+} // the rest numbers
+```
+
+`timed` is absent on a wait-mode attempt — which is also what every record before this step says, so no stored
 or exported history becomes wrong. `speed` keeps its meaning if a piece later has its own base tempo;
 `window` keeps old counts comparable if the manual check changes it; `metronome` says whether the
 child had a beat to play to. Stored as counters, not averages, for the reason `DECISIONS.md` gives
@@ -305,10 +343,12 @@ The table gains **Mode** after Piece — "Wait", or "Timed 75%" with `speed` as 
   timers before choosing Timed.
 - **The e2e snapshot** (`src/practice/practiceState.ts`, duplicated in `e2e/window.d.ts`) gains
   `missedNoteCount`; keep the duplicate in step.
-- **Timed play assumes what every offered piece has today**: one time signature counted in quarter
-  notes, no pickup bar, nothing shorter than an eighth. Add a test to `src/score/pieces.test.ts`
-  that checks each offered piece against these, so a piece added by step 28 that breaks them fails
-  CI instead of shipping wrong clicks and overlapping windows.
+- **Timed play assumes what every offered piece has today.** Add a test to
+  `src/score/pieces.test.ts` that checks, on each offered piece's parsed `Score`: one time signature,
+  with `beatType` 4; every event's `startTime` inside its own bar per `measureStartTime` (so no
+  pickup or short bar); and consecutive `startTime`s at least ½ beat apart (so windows never
+  overlap). A piece added by step 28 that fails it then fails CI instead of shipping wrong clicks;
+  that step decides whether to extend timed play or leave the piece out.
 
 ## Four commits
 
@@ -317,7 +357,8 @@ The table gains **Mode** after Piece — "Wait", or "Timed 75%" with `speed` as 
    test, and the speed, mode, loop-change and Listen rules. No metronome yet, so no grid: the first
    note is `startedAt`. The cursor still follows the engine.
 2. **The metronome.** `metronome.ts`, the checkbox, the grid and the snap, the accents.
-3. **The cursor follows the clock.** `clockPosition` and the `now` state.
+3. **The cursor follows the clock.** `clockPosition` and the `now` state. The separable one: with
+   the metronome on it is a second cue, so it is the commit to drop if the branch has to shrink.
 4. **History records it.** `AttemptRecord.timed`, its validation, the two columns.
 
 ## Out of scope
@@ -328,7 +369,9 @@ The table gains **Mode** after Piece — "Wait", or "Timed 75%" with `speed` as 
 - **Remembering mode and metronome across a reload**: a child opening the app is not dropped into a
   clock they did not choose.
 - **Showing the timing counters**: recorded for later features.
-- **A per-note miss marker, a live score, a continuously scrolling staff.**
+- **A per-note miss marker, a live score, a continuously scrolling staff**: the child is watching
+  the keys and listening to the click; the count is in the history, and OSMD's cursor moves note to
+  note.
 - **Speeds outside step 23's five**: the owner chose to share Listen's select.
 - **Timed play from a replayed recording**, above.
 
@@ -352,7 +395,8 @@ versions ignore unknown fields.
 - **Retitle and amend "Practice is untimed; the Listen demo has speed presets; …"**: two modes,
   wait-mode the default; the owner's decisions above; the standard fixed-clock design, and that the
   silent re-syncing design of the first drafts was dropped because its rules only made up for a
-  child with nothing to keep time by; the ±¼-beat window; the loop running on at tempo; what
+  child with nothing to keep time by; the ±¼-beat window; the loop running on at tempo, untimed
+  before it and pausing after a silent pass; what
   restarts a timed attempt; the falling-note queue still does not animate on the clock.
 - **New: "The metronome clicks from the computer, not the piano"**: the P-145 has no click voice and
   no MIDI metronome control; Web Audio on the audio clock, latency-compensated, cancellable; the
@@ -382,10 +426,14 @@ versions ignore unknown fields.
   closed event, returns the same object when nothing closed, and does nothing without a clock; a late
   note after a closed window is one miss and one off-time; the last event hit sets `reachedEnd` and
   stops the clock, missed stops it with `reachedEnd` false; a loop wrap adds the loop length to
-  `passBeats`; a loop change stops the clock; `clockPosition` before, at and after a due time, and
-  across a loop's end. `measureStartTime.test.ts` for 3/4 and 4/4. The pieces test.
+  `passBeats`; a loop change stops the clock; with a loop set, a note completing an event before
+  the loop, or one past its end, does not start the clock, and one inside it does; a loop pass with
+  no note stops the clock; `clockPosition` before, at and after a due time, before the snapped start,
+  and across a loop's end. `measureStartTime.test.ts` for 3/4 and 4/4. The pieces test.
 - **Layer 2, `src/App.test.tsx`, fake timers and the computer keyboard. This establishes that the
-  behaviour exists.** Choose Timed with the metronome cleared, play Cicha Noc's first G4, and advance
+  behaviour exists.** Choose Timed (from commit 2, also clear the metronome — the checkbox only
+  exists from then — and install the stubbed `AudioContext` for every timed test, since choosing
+  Timed starts it), play Cicha Noc's first G4, and advance
   in steps past 1591 ms (A4 due at 1364, window 227 ms): the engine has moved past A4 without it being
   played. With Wait chosen, still waiting on A4. At 50%, 1591 ms is not enough and 3182 ms is. Listen
   during a timed run, advance 10 s, Stop: practice is where it was. Changing speed, mode or metronome
@@ -402,10 +450,16 @@ versions ignore unknown fields.
   carried to the end reads Reached end "no".
 - **Layer 3, `e2e/timed-play.spec.ts`**: choose Timed, clear the metronome, play G4, then nothing;
   poll `window.__practiceState` until `missedNoteCount` ≥ 1 and `nextEventIndex` has passed 1. For
-  commit 3, at 50%: 1 s after pressing G4 (timed from before the press, as `e2e/listen.spec.ts`
-  times), the staff cursor is still where it was — under commit 1 it moves to A4 at once, with the
-  engine — then poll at 50 ms intervals until it moves, at 2727 ms, while `missedNoteCount` is still 0. OSMD is stubbed in jsdom, so only Playwright sees the cursor. Update `e2e/history.spec.ts` and
+  commit 3, at 50% with the metronome cleared (so no snap moves the start): 1 s after pressing G4
+  (timed from before the press, as `e2e/listen.spec.ts` times), the staff cursor is still where it
+  was — under commit 1 it moves to A4 at once, with the engine — then poll at 50 ms intervals until
+  it moves, at 2727 ms, while `missedNoteCount` is still 0. OSMD is stubbed in jsdom, so only
+  Playwright sees the cursor. Update `e2e/history.spec.ts` and
   `e2e/progress-transfer.spec.ts` for the two new columns.
+- **Which commit carries which check:** Layer 1 and the first two Layer 2 bullets with commit 1
+  (the snap cases, once the grid exists, in commit 2); the metronome bullet with
+  commit 2; the cursor check with commit 3; the history bullet and the e2e history updates with
+  commit 4.
 - No committed screenshot, and do not re-bless the element snapshots.
 - `npm run ci` proves the clock, the window, the counting and when clicks are scheduled, **for the
   computer keyboard**. It cannot hear the click, drive the piano's `timeStamp`, or say whether the
@@ -419,7 +473,7 @@ the first note starts the run, the bar's first beat is then accented, and the cl
 the cursor — if it trails, suspect audio output latency. Confirm notes played with the click are
 accepted; stop, and confirm the music goes on without you; come back in with the click and confirm
 you are accepted again. Clear "Metronome" and confirm the click stops. On Beyer No. 12, a one-bar
-loop: confirm it runs on at tempo through the wrap. Say whether 50% — a click every 1.8 s — is too
+loop: confirm it runs on at tempo through the wrap, and that after a whole silent pass the misses stop until you play again. Say whether 50% — a click every 1.8 s — is too
 sparse to follow, whether ±¼ beat feels fair to a child at 50% and at 100%, and whether a hand move
 is outlined early enough.
 
