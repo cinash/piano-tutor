@@ -84,8 +84,9 @@ with no more timed-play rules than these two.
 
 ## How timed play works
 
-**The metronome's grid.** While Timed is chosen, a source is connected and the metronome checkbox is
-on, the metronome clicks every quarter-note beat at the chosen speed, starting at once — a grid
+**The metronome's grid.** Exactly while Timed is chosen, a source is connected, the metronome
+checkbox is on and no demo is playing — so it resumes after a reconnect or a Stop — the metronome
+clicks every quarter-note beat at the chosen speed, starting at once — a grid
 `{ origin: number; msPerBeat: number }` in `performance.now()` time, `msPerBeat` =
 `60000 / (DEMO_BPM × speed)`. With the metronome off there is no grid.
 
@@ -128,7 +129,9 @@ timed: it counts in `notesPlayed`, not in the hit counters. From then on the tim
 `timedPlay.ts`: 227 ms at 100%, 455 ms at 50%, 152 ms at 150%. In beats so a slower speed is also
 more forgiving, and a quarter so that for eighth notes and longer one event's window closes where the
 next one's opens — only one event is ever open. Rejected: a fixed number of milliseconds, strict at
-50% and loose at 150%.
+50% and loose at 150%; and `min(¼ beat, half the gap to the neighbouring event)`, which would admit
+sixteenths at ±⅛ beat, probably too harsh for a child — the step that first offers sixteenths starts
+from it.
 
 **Judging a note** while the clock runs:
 
@@ -160,9 +163,13 @@ export function expireDueEvents(
 
 An event is missed when `now` is **at or after** its due time plus the window. Each of its pitches
 not yet hit adds one to `attempt.missedNoteCount`; the engine moves on through `nextIndexAfter()`
-and `satisfiedNoteIds` is cleared. With a loop set, once `now − lastNoteAt` reaches the loop's
-length (`loopLength × msPerBeat`), it removes `timedClock` instead of expiring further (decision 11).
-When nothing changes it returns `state` itself.
+and `satisfiedNoteIds` is cleared. **The loop's pause (decision 11) is decided here and only here**,
+never when a note arrives: after counting a miss, if a loop is set and `now − lastNoteAt` has
+reached the loop's length (`loopLength × msPerBeat`), it removes `timedClock` and expires nothing
+further. Deciding it on a note's arrival would pause a one-event loop — left hand alone on a
+one-bar loop of Beyer No. 12, one whole note a bar — whenever a correct note came a little late,
+since there the gap between two right notes is a loop's length. When nothing changes it returns
+`state` itself.
 
 `App` calls it from a `setTimeout` for the current event's close, set in an effect keyed on `view`,
 reading the score through `scoreRef` (the filtered score is a new object every render when one hand
@@ -174,17 +181,22 @@ advancing 100 ms per `act()`.
 
 **The loop runs on at tempo.** When the engine moves from the loop's last event back to its first,
 `passBeats` grows by the loop's length, `loopEndTime − loopStartTime` — the end of its last bar
-minus the start of its first, from `measureStartTime(score, measure)` in `src/score/`, which sums
-`beats × 4 / beatType` over the bars before. So the next pass falls due one loop later on the same
+minus the start of its first, from `measureStartTime(score, measure)` in
+`src/score/measureStartTime.ts`, which sums `beats × 4 / beatType` over the bars before. **An empty
+`timeSignatures` means 4/4**: `parseScore` records a signature only when it differs from its own 4/4
+default (`src/score/parseScore.ts:62-86`), so 17 of the 23 offered pieces parse with none. The same
+file exports the signature in force for a measure, 4/4 when the list has none, and both
+`measureStartTime` and the metronome's bar length use it. Rejected: changing `parseScore` to always
+record the opening signature, which touches the parser and its snapshot for a default one helper
+can supply. So the next pass falls due one loop later on the same
 grid. Nothing else moves: the metronome's grid is its own and never re-anchored, and the cursor maps
 the clock into the loop (below). Rejected: stopping the clock at the wrap so the loop's first note
 restarts it, which never times the move back into the start.
 
 **Changing the loop during a run stops the clock**, as Listen does: `setPracticeLoop` removes
 `timedClock`, and the next right note inside the loop starts a new one on the grid. A loop can be
-set while the engine is past its end (`DECISIONS.md`, "setting a loop doesn't jump playback"); that
-event is then judged in wait-mode, and completing it wraps into the loop (decision 10). The attempt
-carries on, as a loop change has never restarted it.
+set while the engine is past its end (`DECISIONS.md`, "setting a loop doesn't jump playback"), which
+"Starting" covers. The attempt carries on, as a loop change has never restarted it.
 
 **The end.** When the last event is hit or missed, the piece is complete and the clock stops; the
 metronome goes on clicking, as it does whenever Timed is chosen. `AttemptStats` gains `reachedEnd`,
@@ -218,7 +230,7 @@ Timed is chosen with the checkbox on, and stops it on Wait, on clearing the chec
 while Listen plays, and on unmount. It exposes its grid for the snap above, and takes one more piece
 of information once a clock runs: `metronome.accentFrom(firstBarStartTime, beatsPerBar)` — the time
 of a bar's first beat on the grid, computed by `App` from the clock and `measureStartTime`, and the
-bar length from the piece's time signature. Every `beatsPerBar`-th click from there is accented;
+bar length from the piece's time signature (4/4 when it has none, above). Every `beatsPerBar`-th click from there is accented;
 `metronome.accentFrom(null)`, called when the clock stops, turns accents off, so before a clock runs
 and after it stops no click is accented. Whole-bar loops and one time signature per
 piece keep the accents periodic through a wrap.
@@ -344,11 +356,12 @@ The table gains **Mode** after Piece — "Wait", or "Timed 75%" with `speed` as 
 - **The e2e snapshot** (`src/practice/practiceState.ts`, duplicated in `e2e/window.d.ts`) gains
   `missedNoteCount`; keep the duplicate in step.
 - **Timed play assumes what every offered piece has today.** Add a test to
-  `src/score/pieces.test.ts` that checks, on each offered piece's parsed `Score`: one time signature,
-  with `beatType` 4; every event's `startTime` inside its own bar per `measureStartTime` (so no
-  pickup or short bar); and consecutive `startTime`s at least ½ beat apart (so windows never
-  overlap). A piece added by step 28 that fails it then fails CI instead of shipping wrong clicks;
-  that step decides whether to extend timed play or leave the piece out.
+  `src/score/pieces.test.ts` that checks, on each offered piece's parsed `Score`: at most one time
+  signature (none is 4/4), with `beatType` 4; every event's `startTime` inside its own bar per
+  `measureStartTime` (so no pickup or short bar); and consecutive `startTime`s at least ½ beat apart
+  (so windows never overlap). A piece added later that fails it then fails CI instead of shipping
+  wrong clicks, and whoever adds its line decides: extend timed play, leave the piece out, or offer
+  it for wait-mode only with Timed disabled for it.
 
 ## Four commits
 
@@ -358,7 +371,9 @@ The table gains **Mode** after Piece — "Wait", or "Timed 75%" with `speed` as 
    note is `startedAt`. The cursor still follows the engine.
 2. **The metronome.** `metronome.ts`, the checkbox, the grid and the snap, the accents.
 3. **The cursor follows the clock.** `clockPosition` and the `now` state. The separable one: with
-   the metronome on it is a second cue, so it is the commit to drop if the branch has to shrink.
+   the metronome on it is a second cue, so it is the commit to drop if the branch has to shrink —
+   but then the metronome checkbox goes too, since with the click off the cursor is the only
+   on-beat cue decision 3 promised.
 4. **History records it.** `AttemptRecord.timed`, its validation, the two columns.
 
 ## Out of scope
@@ -429,7 +444,9 @@ versions ignore unknown fields.
   `passBeats`; a loop change stops the clock; with a loop set, a note completing an event before
   the loop, or one past its end, does not start the clock, and one inside it does; a loop pass with
   no note stops the clock; `clockPosition` before, at and after a due time, before the snapped start,
-  and across a loop's end. `measureStartTime.test.ts` for 3/4 and 4/4. The pieces test.
+  and across a loop's end; a one-event loop played a little late each pass does not pause.
+  `measureStartTime.test.ts` for 3/4, and for 4/4 on a real parsed piece with an empty
+  `timeSignatures` (Beyer No. 12). The pieces test.
 - **Layer 2, `src/App.test.tsx`, fake timers and the computer keyboard. This establishes that the
   behaviour exists.** Choose Timed (from commit 2, also clear the metronome — the checkbox only
   exists from then — and install the stubbed `AudioContext` for every timed test, since choosing
@@ -437,8 +454,8 @@ versions ignore unknown fields.
   in steps past 1591 ms (A4 due at 1364, window 227 ms): the engine has moved past A4 without it being
   played. With Wait chosen, still waiting on A4. At 50%, 1591 ms is not enough and 3182 ms is. Listen
   during a timed run, advance 10 s, Stop: practice is where it was. Changing speed, mode or metronome
-  in Timed restarts the attempt; changing the speed in Wait does not move the open record's
-  `endedAt`. A `5` typed into the focused Speed select leaves it unchanged.
+  in Timed restarts the attempt (the metronome case from commit 2); changing the speed in Wait does
+  not move the open record's `endedAt`.
 - **Layer 2, the metronome**, over `App` with the stubbed `AudioContext`: choosing Timed starts
   clicks at once, 909 ms apart at 100%, none accented; G4 played 300 ms after a click starts the clock
   on that click — A4 then falls due 1364 ms after the click, not after the note; from then on every
@@ -448,18 +465,21 @@ versions ignore unknown fields.
   malformed one; `AttemptHistory.test.tsx` shows both columns for each mode; over `App`, a timed run
   with one miss reads "Timed 100%" and Missed 1, a wait run "Wait" and "—", and a timed run the clock
   carried to the end reads Reached end "no".
-- **Layer 3, `e2e/timed-play.spec.ts`**: choose Timed, clear the metronome, play G4, then nothing;
-  poll `window.__practiceState` until `missedNoteCount` ≥ 1 and `nextEventIndex` has passed 1. For
+- **Layer 3, `e2e/timed-play.spec.ts`**: choose Timed (and, from commit 2, clear the metronome),
+  play G4, then nothing; poll `window.__practiceState` until `missedNoteCount` ≥ 1 and
+  `nextEventIndex` has passed 1. The Speed guard, in the style of `e2e/choose-piece.spec.ts:34`
+  (jsdom's select does not jump on a typed key, so only a browser can fail it): focus Speed, press
+  `5`, and expect it still to read 100% and F♯4 (66) to be held. For
   commit 3, at 50% with the metronome cleared (so no snap moves the start): 1 s after pressing G4
   (timed from before the press, as `e2e/listen.spec.ts` times), the staff cursor is still where it
   was — under commit 1 it moves to A4 at once, with the engine — then poll at 50 ms intervals until
   it moves, at 2727 ms, while `missedNoteCount` is still 0. OSMD is stubbed in jsdom, so only
   Playwright sees the cursor. Update `e2e/history.spec.ts` and
   `e2e/progress-transfer.spec.ts` for the two new columns.
-- **Which commit carries which check:** Layer 1 and the first two Layer 2 bullets with commit 1
-  (the snap cases, once the grid exists, in commit 2); the metronome bullet with
-  commit 2; the cursor check with commit 3; the history bullet and the e2e history updates with
-  commit 4.
+- **Which commit carries which check:** Layer 1, the first Layer 2 bullet, the first Layer 3 check
+  and the Speed guard with commit 1 (the snap cases and the metronome restart case in commit 2); the
+  metronome bullet with commit 2; the cursor check with commit 3; the history bullet and the e2e
+  history updates with commit 4.
 - No committed screenshot, and do not re-bless the element snapshots.
 - `npm run ci` proves the clock, the window, the counting and when clicks are scheduled, **for the
   computer keyboard**. It cannot hear the click, drive the piano's `timeStamp`, or say whether the
