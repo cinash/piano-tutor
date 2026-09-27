@@ -98,7 +98,7 @@ update it at the end of each step.
     that closing the tab and reopening `http://localhost:5173` brings it back still
     hidden.
     Then read two Beyer pieces against the book the same way: No. 8, whose hands are both
-    in treble clef with the left hand's G4 on the little finger (`DECISIONS.md` says why),
+    in treble clef with the left hand's G4 on finger 2, as the book prints it,
     and No. 20, which carries a repeat sign the app plays through once. Say whether playing
     it once is acceptable until step 28's files, with their repeats written out, arrive.
 

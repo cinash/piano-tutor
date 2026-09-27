@@ -914,11 +914,13 @@ engraving and PDMX both use the other numbering, and the files keep it.
 The fingering is `scripts/beyer/fingering.py`'s: each hand over five adjacent white keys,
 moved as rarely as possible. It agrees with every digit the book prints in Nos. 12-31 and in
 the right hand of Nos. 8-9, and with all 207 human-fingered notes of PDMX Nos. 8-10 and 38.
-It does not agree with the book's left hand in Nos. 8 and 9, a single repeated G that Beyer
-fingers 2 and then 3 to exercise different fingers; the rule, with nothing else to go on, puts
-the hand's little finger on it. On the app's keyboard that places the left hand over G4-D5,
-sharing two keys with the right hand's C5-G5. Nos. 10-11 get their left hand from the same
-tie-break (G4 = 5; E-F-G = 5-4-3) and have no printed digits here to check against.
+The book's left hand in Nos. 8 and 9 is a single repeated G that Beyer fingers 2 and then 3 to
+exercise different fingers, and the rule, with nothing else to go on, put the hand's little
+finger on it - on the app's keyboard, the left hand over G4-D5, sharing two keys with the right
+hand's C5-G5. So `lilypond_import.py` writes those two printed digits on the left hand's first
+note, and the rule carries each through the piece, as the next entry describes. Nos. 10-11 get
+their left hand from the rule's tie-break (G4 = 5; E-F-G = 5-4-3) and have no printed digits
+here to check against.
 
 ## A finger the book prints is kept, and the five-finger rule fills the notes around it
 
