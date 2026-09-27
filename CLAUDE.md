@@ -228,9 +228,9 @@ carried to the next batch rather than dropped. `SKILL.md` says how to phrase the
 This replaces "green CI" as the finishing condition — `npm run ci` still has to pass, it is simply
 no longer what says the work is done. A brief is finished when every **ask** has been answered, or,
 where the step's instructions hold unchanged under either answer, is recorded in it as a named
-precondition saying what happens under each. `step22.md` is the worked example: it cannot start
-until a second piece exists, and it says what happens whether the owner authors one or the project
-transcribes public-domain material.
+precondition saying what happens under each. `step22.md` as first drafted (commit `11dfb29`) is
+the worked example: it could not start until a second piece existed, and it said what happens
+whether the owner authors one or the project transcribes public-domain material.
 
 That escape is only for a question of that shape. An **ask** whose answer would rewrite the step is
 not made finished by writing it down; it waits, and a brief carrying one does not go to an

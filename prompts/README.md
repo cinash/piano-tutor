@@ -128,9 +128,9 @@ the old score, and a restart deliberately keeps the loop, which a shorter piece 
 for. Pieces are bundled at build time rather than picked from disk, for the same reason the
 replay picker is dev-only.
 
-Step 28 makes step 22's public-domain alternative real without choosing it: it turns the Peters
-scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches, and bundles none of it:
-a file reaches the child when a line for it is added to step 22's list of pieces.
+Step 28 turns the Peters scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches,
+and bundles none of it: a file reaches the child when a line for it is added to step 22's list of
+pieces.
 
 ## Deliberately not planned
 
@@ -138,6 +138,3 @@ a file reaches the child when a line for it is added to step 22's list of pieces
 out of scope by decision in `step5.md`. Step 23 brings speed back for the Listen demo only;
 practice stays untimed wait-mode, and the owner confirmed they do not want a timed mode.
 Wanting one later is a decision to reverse in the open, not a gap to fill quietly.
-
-**Recording which hand an attempt used.** Kept out of step 14, which says why. Its own step,
-if the mixing turns out to matter in practice.
