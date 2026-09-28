@@ -5,7 +5,7 @@ export interface Grid {
 }
 
 /** Every `beatsPerBar`-th click from `firstBarStartTime`, a bar's first beat on the grid. */
-export interface Accent {
+interface Accent {
   firstBarStartTime: number;
   beatsPerBar: number;
 }
@@ -13,13 +13,15 @@ export interface Accent {
 export const CLICK_HZ = 1000;
 export const ACCENT_HZ = 1500;
 const CLICK_SECONDS = 0.03;
-// Each click is handed to the audio clock about this far ahead of its time.
+// Each click is handed to the audio clock about this far ahead of when it must be sent.
 const SCHEDULE_AHEAD_MS = 100;
 const SCHEDULER_MS = 25;
 
 /**
  * A click every quarter-note beat from the computer's speakers, each started at its exact
- * time on the audio clock so it is heard on the grid — see DECISIONS.md.
+ * time on the audio clock so it is heard, not merely sent, on the grid: brought forward by
+ * the output's own delay, which on Bluetooth speakers is about the width of the window —
+ * see DECISIONS.md.
  */
 export class Metronome {
   private context: AudioContext | null = null;
@@ -41,10 +43,12 @@ export class Metronome {
     void this.audio.resume();
   }
 
-  /** Clicks at once, and every `msPerBeat` from then, on a grid of its own. */
+  /**
+   * Clicks as soon as the speakers can sound it, and every `msPerBeat` from then, on a grid
+   * of its own.
+   */
   start(msPerBeat: number): void {
-    this.stop();
-    const grid = { origin: performance.now(), msPerBeat };
+    const grid = { origin: performance.now() + this.latencyMs, msPerBeat };
     this.currentGrid = grid;
     this.nextBeat = 0;
     this.scheduleAhead(grid);
@@ -68,9 +72,15 @@ export class Metronome {
     return this.context;
   }
 
+  /** How long a sound takes to reach the speakers; 0 where the browser does not say. */
+  private get latencyMs(): number {
+    return (this.audio.outputLatency ?? 0) * 1000;
+  }
+
   private scheduleAhead(grid: Grid): void {
     const { origin, msPerBeat } = grid;
-    while (origin + this.nextBeat * msPerBeat < performance.now() + SCHEDULE_AHEAD_MS) {
+    const horizon = performance.now() + this.latencyMs + SCHEDULE_AHEAD_MS;
+    while (origin + this.nextBeat * msPerBeat < horizon) {
       this.click(origin + this.nextBeat * msPerBeat, msPerBeat);
       this.nextBeat++;
     }
@@ -79,11 +89,11 @@ export class Metronome {
 
   private click(at: number, msPerBeat: number): void {
     const { audio } = this;
-    // Brought forward by the output's own delay, so the click is heard, not merely sent,
-    // on the grid: on Bluetooth speakers that delay is about the width of the window.
+    // Never in the past: a scheduler run late — a background tab's timers are slowed —
+    // sounds the click at once, and a negative time would throw.
     const when = Math.max(
       audio.currentTime,
-      audio.currentTime + (at - performance.now()) / 1000 - (audio.outputLatency ?? 0),
+      audio.currentTime + (at - performance.now() - this.latencyMs) / 1000,
     );
     const oscillator = audio.createOscillator();
     const envelope = audio.createGain();
@@ -100,6 +110,6 @@ export class Metronome {
   private isAccented(at: number, msPerBeat: number): boolean {
     if (!this.accent) return false;
     const beats = Math.round((at - this.accent.firstBarStartTime) / msPerBeat);
-    return beats >= 0 && beats % this.accent.beatsPerBar === 0;
+    return beats % this.accent.beatsPerBar === 0;
   }
 }

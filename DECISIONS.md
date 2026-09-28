@@ -118,12 +118,12 @@ miss rather than when a timer happens to run, and the next right note starts ano
 loop never ends, so a child who walked away would otherwise collect misses by the hundred.
 Changing the loop stops the clock, as it stops Listen.
 
-Each timed attempt has one speed and one mode: changing either while Timed is chosen
-restarts practice, keeping the loop, and switching mode always does. A child at bar 12 in
-wait-mode who switches to Timed loses the place; zeroing the counters but keeping it would
-need a reset path Restart does not have, and record a start mid-piece. In wait-mode a speed
-change still only affects the next Listen. The mode resets on a reload, as the speed does,
-so the app never opens onto a clock nobody chose.
+Each timed attempt has one speed, one mode and one metronome setting: changing any of them
+while Timed is chosen restarts practice, keeping the loop, and switching mode always does.
+A child at bar 12 in wait-mode who switches to Timed loses the place; zeroing the counters
+but keeping it would need a reset path Restart does not have, and record a start mid-piece.
+In wait-mode a speed change still only affects the next Listen. The mode resets on a
+reload, as the speed does, so the app never opens onto a clock nobody chose.
 
 The falling-note queue still does not animate on the clock: it shifts when the engine moves,
 which in timed play includes a miss.
@@ -779,9 +779,8 @@ chose the instrument. "Listen" therefore sends note-on and note-off to the piano
 _output_ port, and the app gains no audio code and no new dependency. That still holds for
 the demo. Step 29's metronome is the app's one sound of its own, from the computer's
 speakers by the owner's choice — see "The metronome clicks from the computer, not the
-piano" below. What makes that
-buildable in a container that never talks to the piano is that it splits in two: the sound
-is optional and the highlighting is not.
+piano" below. What makes that buildable in a container that never talks to the piano is
+that it splits in two: the sound is optional and the highlighting is not.
 
 The port is found by matching the output's name to the input the player already chose, so
 they still pick their piano exactly once and the app grows no second dropdown: the
@@ -844,8 +843,9 @@ The expected-note highlight still stays with practice.
 
 Step 29 adds timed play, which Listen interrupts: pressing it stops a running clock, since
 practice ignores notes while the demo plays and a clock left running would miss every event
-under it, and the metronome is silent while the demo plays. After Stop the next right note starts a new one. A speed, mode or metronome change in
-Timed restarts practice without stopping a demo already playing.
+under it, and the metronome is silent while the demo plays. After Stop the next right note
+starts a new one. A speed, mode or metronome change in Timed restarts practice without
+stopping a demo already playing.
 
 ## The metronome clicks from the computer, not the piano
 
@@ -864,15 +864,18 @@ would need piano samples, a new dependency, and play the child the answer.
 
 The click is a 30 ms oscillator burst through a gain envelope, higher on an accent — Web
 Audio, no samples. Each one is started at its exact time on the audio clock,
-`oscillator.start(when)`, by a timer that hands clicks over about 100 ms ahead; a
-`setTimeout` per click has audible jitter. `when` is converted from the grid's
+`oscillator.start(when)`, by a timer that hands each click over about 100 ms before it must
+be sent; a `setTimeout` per click has audible jitter. `when` is converted from the grid's
 `performance.now()` time and brought forward by `AudioContext.outputLatency` (0 where the
 browser does not report it), so the click is heard, not merely sent, on the grid — on
-Bluetooth speakers the output delay is about the width of the window. Stopping stops the
-click already handed over too, so Stop and Wait are silent at once; unlike a MIDI message
-sent ahead (see below), an oscillator can be taken back. The `AudioContext` is created or
-resumed in a click handler, the Timed radio's or the checkbox's, because a browser lets
-audio start only after a user gesture and a note from the piano is not one.
+Bluetooth speakers the output delay is about the width of the window, so it is added to the
+lead too, or a delay longer than the lead would leave every click late and unevenly so. For
+the same reason the grid starts one output delay after the metronome does, the first
+moment a click can be heard. Stopping stops the click already handed over too, so Stop and Wait are
+silent at once; unlike a MIDI message sent ahead (see below), an oscillator can be taken
+back. The `AudioContext` is created or resumed in a click handler, the Timed radio's or the
+checkbox's, because a browser lets audio start only after a user gesture and a note from
+the piano is not one.
 
 The metronome keeps its own grid, laid down when it starts and never re-anchored. The
 child's first note starts the run and is snapped onto it: the clock starts at the nearest

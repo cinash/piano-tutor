@@ -9,6 +9,7 @@ import {
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
 import { ACCENT_HZ, CLICK_HZ } from './practice/metronome';
+import { msPerBeatAt } from './practice/timedPlay';
 import { loadQueueFolded } from './practice/queueFoldStore';
 import { loadAttempts } from './progress/attemptStore';
 import { cichaNocScore } from './score/cichaNoc';
@@ -622,21 +623,27 @@ describe('choosing the piece', () => {
   });
 });
 
-/** A click the stubbed AudioContext was asked to sound, in performance.now() time. */
+/** A click the stubbed AudioContext sounded, heard at `at` in performance.now() time. */
 interface Click {
   at: number;
   hz: number;
 }
 
 let clicks: Click[] = [];
+let outputLatency = 0;
 
 /**
  * jsdom has no Web Audio, so this stands in for it as fakeMidiAccess does for Web MIDI:
- * each oscillator started is a click, and one stopped with no time before it sounded is
- * a click taken back. Its clock is performance.now(), which the fake timers drive.
+ * each oscillator started is a click, heard `outputLatency` seconds after it is sent, and
+ * one stopped with no time before it sounded is a click taken back. Its clock is
+ * performance.now(), which the fake timers drive.
  */
 class FakeAudioContext {
   readonly destination = {};
+
+  get outputLatency() {
+    return outputLatency;
+  }
 
   get currentTime() {
     return performance.now() / 1000;
@@ -660,7 +667,7 @@ class FakeAudioContext {
       onended: null,
       connect: (node: unknown) => node,
       start: (when: number) => {
-        click = { at: when * 1000, hz: oscillator.frequency.value };
+        click = { at: (when + outputLatency) * 1000, hz: oscillator.frequency.value };
         clicks.push(click);
       },
       stop: (when?: number) => {
@@ -697,6 +704,7 @@ describe('timed play', () => {
   // Choosing Timed starts the metronome, so every test here has its stand-in.
   beforeEach(() => {
     clicks = [];
+    outputLatency = 0;
     vi.stubGlobal('AudioContext', FakeAudioContext);
   });
 
@@ -803,7 +811,7 @@ describe('timed play', () => {
       accented: (beat: number) => boolean = () => false,
     ) =>
       Array.from({ length: count }, (_, beat) => [
-        Math.round((beat * 60000) / 66),
+        Math.round(beat * msPerBeatAt(1)),
         accented(beat),
       ]);
 
@@ -816,6 +824,17 @@ describe('timed play', () => {
 
       expect(clicksFrom(chosenAt)).toEqual(everyBeat(3));
       expect(clicks.every((click) => click.hz === CLICK_HZ)).toBe(true);
+    });
+
+    it('is heard on the beat through slow speakers, from as soon as they can sound', async () => {
+      outputLatency = 0.3; // Bluetooth: more than the lead a click is scheduled with
+      await renderWithFakeTimers();
+      const chosenAt = performance.now();
+
+      fireEvent.click(screen.getByTestId('mode-timed'));
+      advanceInSteps(2_000);
+
+      expect(clicksFrom(chosenAt + 300)).toEqual(everyBeat(3));
     });
 
     it('starts the clock on the nearest click, and accents each bar from then', async () => {
@@ -868,19 +887,20 @@ describe('timed play', () => {
 
     it('is silent with the checkbox cleared', async () => {
       await renderWithFakeTimers();
-      fireEvent.click(screen.getByTestId('mode-timed'));
-      fireEvent.click(screen.getByTestId('metronome-checkbox'));
+      chooseTimedWithoutMetronome();
       const clearedAt = performance.now();
 
       advanceInSteps(2_000);
 
-      expect(clicksFrom(clearedAt + 1)).toEqual([]);
+      // Only the click sounded the instant Timed was chosen, before it was cleared.
+      expect(clicks.filter((click) => click.at > clearedAt)).toEqual([]);
     });
 
     it('stops when Wait is chosen', async () => {
       await renderWithFakeTimers();
       fireEvent.click(screen.getByTestId('mode-timed'));
-      advanceInSteps(500);
+      // Past 809 ms, so the click due at 909 is already handed over and must be taken back.
+      advanceInSteps(850);
       fireEvent.click(screen.getByTestId('mode-wait'));
       const waitAt = performance.now();
 
@@ -892,7 +912,7 @@ describe('timed play', () => {
     it('is silent while Listen plays, and clicks again after Stop', async () => {
       await renderWithFakeTimers();
       fireEvent.click(screen.getByTestId('mode-timed'));
-      advanceInSteps(500);
+      advanceInSteps(850); // as above: the next click is already handed over
 
       await act(async () => {
         fireEvent.click(screen.getByTestId('listen-to-piece'));
