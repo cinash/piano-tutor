@@ -772,11 +772,14 @@ on `.staff-view` inside `prefers-reduced-motion: no-preference`, so it is off fo
 asks their system for less motion, and a new `scrollLeft` retargets a running glide rather
 than queueing behind it.
 
-## The demo is played by the piano; the app makes no sound of its own
+## The demo is played by the piano; the app's one sound is the metronome
 
 Offered a Web Audio synth, a sampled-piano dependency and the instrument itself, the player
 chose the instrument. "Listen" therefore sends note-on and note-off to the piano's MIDI
-_output_ port, and the app gains no audio code and no new dependency. What makes that
+_output_ port, and the app gains no audio code and no new dependency. That still holds for
+the demo. Step 29's metronome is the app's one sound of its own, from the computer's
+speakers by the owner's choice — see "The metronome clicks from the computer, not the
+piano" below. What makes that
 buildable in a container that never talks to the piano is that it splits in two: the sound
 is optional and the highlighting is not.
 
@@ -841,8 +844,47 @@ The expected-note highlight still stays with practice.
 
 Step 29 adds timed play, which Listen interrupts: pressing it stops a running clock, since
 practice ignores notes while the demo plays and a clock left running would miss every event
-under it. After Stop the next right note starts a new one. A speed or mode change in Timed
-restarts practice without stopping a demo already playing.
+under it, and the metronome is silent while the demo plays. After Stop the next right note starts a new one. A speed, mode or metronome change in
+Timed restarts practice without stopping a demo already playing.
+
+## The metronome clicks from the computer, not the piano
+
+Timed play (step 29) gives the child a beat to keep time by: a metronome, on by default and
+switched off with a checkbox, which clicks every quarter-note beat at the chosen speed for
+exactly as long as Timed is chosen, a source is connected, the checkbox is on and no demo
+is playing — so it comes back after a reconnect or a Stop. It starts the moment Timed is
+chosen, so the child hears the tempo before playing, with no Start button and no count-in
+to wait through.
+
+It is the computer's, not the piano's. The P-145's MIDI Reference lists ten melodic voices,
+no percussion and no metronome message, so a click sent to the piano would be a piano note
+blending with the child's; and the piano's own metronome, set by hand, is one the app can
+neither start, set to 49.5 BPM nor find the beat of. The song itself from the speakers
+would need piano samples, a new dependency, and play the child the answer.
+
+The click is a 30 ms oscillator burst through a gain envelope, higher on an accent — Web
+Audio, no samples. Each one is started at its exact time on the audio clock,
+`oscillator.start(when)`, by a timer that hands clicks over about 100 ms ahead; a
+`setTimeout` per click has audible jitter. `when` is converted from the grid's
+`performance.now()` time and brought forward by `AudioContext.outputLatency` (0 where the
+browser does not report it), so the click is heard, not merely sent, on the grid — on
+Bluetooth speakers the output delay is about the width of the window. Stopping stops the
+click already handed over too, so Stop and Wait are silent at once; unlike a MIDI message
+sent ahead (see below), an oscillator can be taken back. The `AudioContext` is created or
+resumed in a click handler, the Timed radio's or the checkbox's, because a browser lets
+audio start only after a user gesture and a note from the piano is not one.
+
+The metronome keeps its own grid, laid down when it starts and never re-anchored. The
+child's first note starts the run and is snapped onto it: the clock starts at the nearest
+time the grid puts that event's beat position, so every event after it falls due on a
+click. With the metronome off there is no grid and the clock starts at the note itself.
+Once a clock runs, every bar's first beat is accented, counted from where the piece's first
+bar falls on that clock; before a clock runs and after it stops, none is. One time
+signature per piece and whole-bar loops keep the accents periodic through a loop's wrap,
+which `src/score/pieces.test.ts` checks every offered piece for. Changing the checkbox in
+Timed restarts the attempt, as a speed change does, so each attempt had one setting
+throughout. It clicks quarter notes at every speed — at 50% one every 1.8 s — and whether
+that is too sparse to follow is the first thing the manual check asks.
 
 ## Notes are sent as they fall due, never scheduled ahead
 

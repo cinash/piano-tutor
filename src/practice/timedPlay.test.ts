@@ -44,7 +44,7 @@ const SCORE: Score = {
 };
 
 /** 60 beats a minute, so an event's due time is its startTime in seconds. */
-const TIMING: Timing = { msPerBeat: 1000 };
+const TIMING: Timing = { msPerBeat: 1000, grid: null };
 
 /** C4, the first note, at 5 s: every later event falls due at 5 s + its startTime. */
 const START = 5000;
@@ -86,6 +86,39 @@ describe('starting the clock', () => {
     });
     expect(state.engine.nextEventIndex).toBe(1);
     expect(state.attempt).toMatchObject({ notesPlayed: 1, hitNoteCount: 0 });
+  });
+
+  it('snaps onto the nearest click of the metronome’s grid', () => {
+    const grid = { origin: 4700, msPerBeat: 1000 };
+
+    expect(
+      play([on(60, START)], undefined, { ...TIMING, grid }).timedClock,
+    ).toMatchObject({
+      startedAt: 4700,
+      lastNoteAt: START,
+    });
+    expect(
+      play([on(60, 5400)], undefined, { ...TIMING, grid }).timedClock?.startedAt,
+    ).toBe(5700);
+  });
+
+  it('snaps an off-beat event to the same fraction of a beat after a click', () => {
+    const offBeat: Score = {
+      ...SCORE,
+      events: [event(1, 0.5, [60]), event(1, 1.5, [62])],
+    };
+    const timing = { ...TIMING, grid: { origin: 4000, msPerBeat: 1000 } };
+
+    const state = advancePracticeView(
+      createInitialPracticeViewState(),
+      offBeat,
+      on(60, 5100),
+      5100,
+      timing,
+    );
+
+    // 4500 and 5500 put beat position 0.5 on the grid; 5500 is the nearer.
+    expect(state.timedClock?.startedAt).toBe(5500);
   });
 
   it('does not start in wait-mode', () => {

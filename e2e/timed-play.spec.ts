@@ -9,6 +9,8 @@ test('in Timed, a note not played in time is missed and the piece goes on', asyn
 }) => {
   await connectVirtualKeyboard(page);
   await page.getByTestId('mode-timed').check();
+  // No click to snap to: the clock starts on the note itself.
+  await page.getByTestId('metronome-checkbox').uncheck();
 
   await playChord(page, [67]); // Cicha Noc's G4 starts the clock; then nothing
 

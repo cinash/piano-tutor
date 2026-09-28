@@ -3,6 +3,8 @@ import type { Loop } from '../engine/types';
 import type { MidiEvent } from '../midi/types';
 import { measureStartTime } from '../score/measureStartTime';
 import type { Score, ScoreEvent } from '../score/types';
+import { DEMO_BPM } from './demo';
+import type { Grid } from './metronome';
 import type { AttemptStats, PracticeViewState } from './practiceView';
 
 /**
@@ -12,10 +14,17 @@ import type { AttemptStats, PracticeViewState } from './practiceView';
  */
 export const TIMED_WINDOW = 0.25;
 
-/** What timed play needs to know of the speed chosen; the reducers take null in wait-mode. */
+/**
+ * What timed play needs to know of the speed chosen, and the metronome's grid, null with
+ * it off; the reducers take null in wait-mode.
+ */
 export interface Timing {
   msPerBeat: number;
+  grid: Grid | null;
 }
+
+/** The length of a quarter-note beat at a speed preset's fraction of DEMO_BPM. */
+export const msPerBeatAt = (speed: number) => 60000 / (DEMO_BPM * speed);
 
 /** A running timed attempt: the fixed clock every event's due time is read from. */
 export interface TimedClock {
@@ -54,7 +63,8 @@ const closeTime = (clock: TimedClock, event: ScoreEvent) =>
 
 /**
  * A note judged in wait-mode, from `before` to `after`, starts the clock when it completed
- * an event — at that event, and at `now`, the note's time. With a loop, only the loop is
+ * an event — at that event, and at the note's time `now`, snapped onto the metronome's
+ * grid when there is one. With a loop, only the loop is
  * timed: the bars before it, and an event past its end when the loop was set late, stay
  * in wait-mode. The first note is not itself timed.
  */
@@ -88,7 +98,7 @@ export function startClock(
   return {
     ...after,
     timedClock: {
-      startedAt: now,
+      startedAt: timing.grid ? snapToGrid(timing.grid, current.startTime, now) : now,
       startTime: current.startTime,
       msPerBeat: timing.msPerBeat,
       passBeats: wrapBeats(
@@ -100,6 +110,16 @@ export function startClock(
       lastNoteAt: now,
     },
   };
+}
+
+/**
+ * Of the times at which the grid puts beat position `startTime` — a click, for an event
+ * on the beat, or the same fraction of a beat after one — the nearest to `now`.
+ */
+function snapToGrid({ origin, msPerBeat }: Grid, startTime: number, now: number) {
+  const fraction = startTime - Math.floor(startTime);
+  const beat = Math.round((now - origin) / msPerBeat - fraction);
+  return origin + (beat + fraction) * msPerBeat;
 }
 
 /** When the event the engine is on stops being playable in time; null with no clock. */
