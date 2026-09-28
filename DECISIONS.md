@@ -544,6 +544,24 @@ accuracy keeps its meaning. `reachedEnd` is true only when the player's own note
 the last event, so a timed run the clock carried to the end after the child had stopped
 reads "no"; in wait-mode that is the same fact as `status === 'complete'`.
 
+A timed attempt's record carries them in one optional `timed` object, recorded where the data
+first exists although nothing reads the timing yet: the speed preset's fraction, the tempo in
+BPM, the window in beats, whether the metronome was on, and the five counters. `timed` is
+absent on a wait-mode attempt, which is what every record before step 29 says too, so no
+stored or exported history became wrong, and older app versions ignore the field. `speed`
+keeps its meaning if a piece later has its own base tempo, which `bpm` records absolutely;
+`window` keeps counts comparable if the manual check changes it; `metronome` says whether
+the child had a beat to play to. The timing is stored as sums, not averages, for the reason
+above: the signed sum of the hits' offsets over `hitNoteCount` says whether a child rushes or
+drags, and the sum of their distances over it how steady they are — early and late alone
+would let a child ±200 ms at random average near zero and look perfect. `isAttemptRecordArray`
+accepts a record with no `timed` and checks every field of one that has it. The history
+table shows it in two columns: Mode after Piece, "Wait" or "Timed 75%", and Missed after
+Wrong, "—" in wait-mode. The mode, speed and metronome setting reach `App`'s attempt effect
+through refs rather than as dependencies, so a wait-mode speed change does not move the open
+record's `endedAt`; a timed attempt restarts on any of them, so the refs hold what it was
+played with.
+
 ## Attempt history lives in `localStorage` and is written through on every change
 
 Progress is kept in the browser under `piano-tutor.attempts.v1` — no server, no API,

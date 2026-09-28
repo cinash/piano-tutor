@@ -26,6 +26,21 @@ const wholePiece: AttemptRecord = {
   hands: 'both',
 };
 
+const timed: AttemptRecord = {
+  ...wholePiece,
+  timed: {
+    speed: 0.75,
+    bpm: 49.5,
+    window: 0.25,
+    metronome: false,
+    missedNoteCount: 3,
+    offTimeNoteCount: 1,
+    hitNoteCount: 30,
+    hitOffsetBeats: -1.5,
+    hitAbsOffsetBeats: 4.25,
+  },
+};
+
 describe('attemptStore', () => {
   beforeEach(() => localStorage.clear());
 
@@ -33,6 +48,25 @@ describe('attemptStore', () => {
     saveAttempts([looped, wholePiece]);
 
     expect(loadAttempts()).toEqual([looped, wholePiece]);
+  });
+
+  it('round-trips a timed record beside a wait-mode one, which has no timed field', () => {
+    saveAttempts([timed, wholePiece]);
+
+    expect(loadAttempts()).toEqual([timed, wholePiece]);
+  });
+
+  it('reads a record with a malformed timed field as no history', () => {
+    for (const malformed of [
+      null,
+      'yes',
+      { ...timed.timed, metronome: 'on' },
+      { ...timed.timed, missedNoteCount: undefined },
+      { ...timed.timed, hitOffsetBeats: '0.5' },
+    ]) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...timed, timed: malformed }]));
+      expect(loadAttempts()).toEqual([]);
+    }
   });
 
   it('reads an absent key as no history', () => {

@@ -47,6 +47,7 @@ import {
   restartPractice,
   setPracticeLoop,
   stopClock,
+  type AttemptStats,
   type PracticeViewState,
 } from './practice/practiceView';
 import { loadQueueFolded, saveQueueFolded } from './practice/queueFoldStore';
@@ -56,6 +57,7 @@ import {
   expireDueEvents,
   msPerBeatAt,
   nextClockTime,
+  TIMED_WINDOW,
 } from './practice/timedPlay';
 import { AttemptHistory } from './progress/AttemptHistory';
 import {
@@ -64,7 +66,7 @@ import {
   saveAttempts,
 } from './progress/attemptStore';
 import { mergeAttempts } from './progress/mergeAttempts';
-import type { AttemptRecord } from './progress/types';
+import type { AttemptRecord, TimedRecord } from './progress/types';
 import { StaffView } from './score/StaffView';
 import { loadPiece, savePiece } from './score/pieceStore';
 import { timeSignatureAt } from './score/measureStartTime';
@@ -109,6 +111,25 @@ const MODE_OPTIONS: readonly { value: PracticeMode; label: string }[] = [
   { value: 'wait', label: 'Wait' },
   { value: 'timed', label: 'Timed' },
 ];
+
+/** A timed attempt as its record keeps it: how it was played, and its counters. */
+function timedRecord(
+  attempt: AttemptStats,
+  speed: number,
+  metronome: boolean,
+): TimedRecord {
+  return {
+    speed,
+    bpm: DEMO_BPM * speed,
+    window: TIMED_WINDOW,
+    metronome,
+    missedNoteCount: attempt.missedNoteCount,
+    offTimeNoteCount: attempt.offTimeNoteCount,
+    hitNoteCount: attempt.hitNoteCount,
+    hitOffsetBeats: attempt.hitOffsetBeats,
+    hitAbsOffsetBeats: attempt.hitAbsOffsetBeats,
+  };
+}
 
 export function App() {
   const [view, setView] = useState<PracticeViewState>(createInitialPracticeViewState);
@@ -179,6 +200,7 @@ export function App() {
   // so its grid is read from it directly.
   const modeRef = useRef(mode);
   const demoSpeedRef = useRef(demoSpeed);
+  const metronomeOnRef = useRef(metronomeOn);
 
   function handleEvent(event: MidiEvent) {
     // Listening is not practising: without this, a child playing along with the demo
@@ -291,7 +313,8 @@ export function App() {
   useEffect(() => {
     modeRef.current = mode;
     demoSpeedRef.current = demoSpeed;
-  }, [mode, demoSpeed]);
+    metronomeOnRef.current = metronomeOn;
+  }, [mode, demoSpeed, metronomeOn]);
 
   // Clicking exactly while it is wanted, so it comes back after a reconnect or a Stop,
   // and on a new grid when the speed changes.
@@ -370,6 +393,13 @@ export function App() {
       loop: view.engine.loop,
       piece: piece.id,
       hands,
+      // Through refs: as dependencies, a wait-mode speed change would re-run this and
+      // move the open record's endedAt. A timed attempt restarts on a change to any of
+      // them, so they hold what it was played with.
+      timed:
+        modeRef.current === 'timed'
+          ? timedRecord(view.attempt, demoSpeedRef.current.speed, metronomeOnRef.current)
+          : undefined,
     };
     const openStartedAt = openAttemptRef.current;
 

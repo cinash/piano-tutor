@@ -40,9 +40,11 @@ test('downloads the history and imports it back into a browser with none', async
   await expect(rows.locator('td')).toHaveText([
     /\d/,
     'Cicha Noc',
+    'Wait',
     'whole piece',
     '3',
     '0',
+    '—',
     '100%',
     'no',
   ]);

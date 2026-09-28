@@ -45,8 +45,8 @@ describe('AttemptHistory', () => {
     render(<AttemptHistory records={[newer, older]} />);
 
     expect(screen.getAllByTestId('attempt-history-row').map(cellsAfterTheTime)).toEqual([
-      ['Beyer Op. 101 No. 12', 'measures 1–2', '12', '2', '83%', 'no'],
-      ['beyer-op101-38', 'whole piece', '41', '0', '100%', 'yes'],
+      ['Beyer Op. 101 No. 12', 'Wait', 'measures 1–2', '12', '2', '—', '83%', 'no'],
+      ['beyer-op101-38', 'Wait', 'whole piece', '41', '0', '—', '100%', 'yes'],
     ]);
   });
 
@@ -56,11 +56,43 @@ describe('AttemptHistory', () => {
     const [row] = screen.getAllByTestId('attempt-history-row');
     expect(cellsAfterTheTime(row)).toEqual([
       'beyer-op101-38',
+      'Wait',
       'whole piece',
       '0',
       '0',
       '—',
+      '—',
       'yes',
+    ]);
+  });
+
+  it('shows a timed attempt’s speed as its mode, and its missed notes', () => {
+    const timed: AttemptRecord = {
+      ...newer,
+      timed: {
+        speed: 0.75,
+        bpm: 49.5,
+        window: 0.25,
+        metronome: true,
+        missedNoteCount: 3,
+        offTimeNoteCount: 1,
+        hitNoteCount: 8,
+        hitOffsetBeats: 0.4,
+        hitAbsOffsetBeats: 1.2,
+      },
+    };
+    render(<AttemptHistory records={[timed]} />);
+
+    const [row] = screen.getAllByTestId('attempt-history-row');
+    expect(cellsAfterTheTime(row)).toEqual([
+      'Beyer Op. 101 No. 12',
+      'Timed 75%',
+      'measures 1–2',
+      '12',
+      '2',
+      '3',
+      '83%',
+      'no',
     ]);
   });
 });

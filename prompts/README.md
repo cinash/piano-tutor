@@ -31,6 +31,7 @@ judge a brief against, and the guide for writing one.
 | [25](step25.md) Staff scroll    | The marker held a third of the way in, gliding      |
 | [26](step26.md) Remember piano  | Reconnects to the last piano when it is plugged in  |
 | [27](step27.md) Hand position   | Each hand's five keys numbered, next one outlined   |
+| [29](step29.md) Timed play      | Timed mode on a metronome; misses in the history    |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -133,20 +134,8 @@ Step 28 turns the Peters scan of Beyer's Op. 101 into proofread, fingered MusicX
 and bundles none of it: a file reaches the child when a line for it is added to step 22's list of
 pieces.
 
-## Planned — playing in time
-
-| Step                       | What it adds                                        |
-| -------------------------- | --------------------------------------------------- |
-| [29](step29.md) Timed play | A second mode: the piece moves on at Listen's speed |
-
-Wait-mode lets a child learn the notes; timed play asks them to keep going. It is the standard
-design: a metronome clicking from the computer as soon as Timed is chosen (on by default), a fixed
-clock started by the first note on the click, a small window around each note's time, and misses
-passing while the music goes on.
-The staff cursor follows the clock while the keys still show what to play. Wait-mode stays the
-default.
-
 ## Deliberately not planned
 
-**Tempo in practice** was here until the owner asked for timed play; step 29 reopens it in
-the open, and reverses the "Practice is untimed" entry in `DECISIONS.md`.
+**Tempo in practice** was here until the owner asked for timed play; step 29 reopened it in
+the open, retitling the "Practice is untimed" entry in `DECISIONS.md` to "Practice waits by
+default and can be timed".

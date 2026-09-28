@@ -147,7 +147,16 @@ describe('App', () => {
         .getAllByRole('cell')
         .slice(1)
         .map((cell) => cell.textContent),
-    ).toEqual(['Cicha Noc', 'whole piece', String(notesPlayed), '0', '100%', 'yes']);
+    ).toEqual([
+      'Cicha Noc',
+      'Wait',
+      'whole piece',
+      String(notesPlayed),
+      '0',
+      '—',
+      '100%',
+      'yes',
+    ]);
     // Every note of the piece is a separate re-render of the whole app, which takes
     // about 1.6s alone and can pass 5s when the suite runs this file alongside the
     // others. The default timeout was already marginal before step 21 changed the piece.
@@ -394,9 +403,11 @@ describe('folding the finger queue away', () => {
     expect(unfolded.position).toBe('Measure 2 of 22');
     expect(unfolded.attempt).toEqual([
       'Cicha Noc',
+      'Wait',
       'whole piece',
       '3',
       '0',
+      '—',
       '100%',
       'no',
     ]);
@@ -795,6 +806,63 @@ describe('timed play', () => {
 
     expect(expectedPitches(container)).toEqual([69]);
     expect(loadAttempts()).toMatchObject([{ endedAt }]);
+  });
+
+  /** The history's newest row, from its piece to whether it reached the end. */
+  function newestRow() {
+    return within(screen.getAllByTestId('attempt-history-row')[0])
+      .getAllByRole('cell')
+      .slice(1) // the first cell is the wall-clock time the attempt started
+      .map((cell) => cell.textContent);
+  }
+
+  it('records a timed run with its speed, its misses and the child’s timing', async () => {
+    await renderWithFakeTimers();
+    chooseTimedWithoutMetronome();
+
+    playNote(67);
+    advanceInSteps(1_600); // A4 missed
+    playNote(67); // m1 b3's G4, due at 1818: early, inside its window
+
+    expect(newestRow()).toEqual([
+      'Cicha Noc',
+      'Timed 100%',
+      'whole piece',
+      '2',
+      '0',
+      '1',
+      '100%',
+      'no',
+    ]);
+    const [{ timed }] = loadAttempts();
+    expect(timed).toMatchObject({
+      speed: 1,
+      bpm: 66,
+      window: 0.25,
+      metronome: false,
+      missedNoteCount: 1,
+      offTimeNoteCount: 0,
+      hitNoteCount: 1,
+    });
+    expect(timed?.hitOffsetBeats).toBeCloseTo(-0.24);
+    expect(timed?.hitAbsOffsetBeats).toBeCloseTo(0.24);
+  });
+
+  it('records a run the clock carried to the end as not reaching it', async () => {
+    await renderWithFakeTimers();
+    choosePiece('beyer-op101-12');
+    chooseSpeed('150%');
+    chooseTimedWithoutMetronome();
+
+    fireEvent.keyDown(window, { code: CODE_FOR_PITCH[60] }); // No. 12's C4 and C5
+    fireEvent.keyDown(window, { code: CODE_FOR_PITCH[72] });
+    advanceInSteps(20_000); // eight bars of 4/4 at 99 beats a minute
+
+    expect(screen.getByTestId('position-readout').textContent).toBe('Complete');
+    expect(newestRow()).toEqual(
+      expect.arrayContaining(['Beyer Op. 101 No. 12', 'Timed 150%']),
+    );
+    expect(newestRow().at(-1)).toBe('no');
   });
 
   describe('the metronome', () => {

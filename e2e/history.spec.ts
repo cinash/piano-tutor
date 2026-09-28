@@ -10,18 +10,22 @@ async function expectBothAttempts(page: Page) {
   await expect(rows.nth(0).locator('td')).toHaveText([
     /\d/,
     'Cicha Noc',
+    'Wait',
     'whole piece',
     '1',
     '1',
+    '—',
     '0%',
     'no',
   ]);
   await expect(rows.nth(1).locator('td')).toHaveText([
     /\d/,
     'Cicha Noc',
+    'Wait',
     'whole piece',
     '3',
     '0',
+    '—',
     '100%',
     'no',
   ]);
