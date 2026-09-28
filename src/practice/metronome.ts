@@ -72,9 +72,9 @@ export class Metronome {
     return this.context;
   }
 
-  /** How long a sound takes to reach the speakers; 0 where the browser does not say. */
+  /** How long a sound takes to reach the speakers. */
   private get latencyMs(): number {
-    return (this.audio.outputLatency ?? 0) * 1000;
+    return this.audio.outputLatency * 1000;
   }
 
   private scheduleAhead(grid: Grid): void {
@@ -91,10 +91,8 @@ export class Metronome {
     const { audio } = this;
     // Never in the past: a scheduler run late — a background tab's timers are slowed —
     // sounds the click at once, and a negative time would throw.
-    const when = Math.max(
-      audio.currentTime,
-      audio.currentTime + (at - performance.now() - this.latencyMs) / 1000,
-    );
+    const when =
+      audio.currentTime + Math.max(0, (at - performance.now() - this.latencyMs) / 1000);
     const oscillator = audio.createOscillator();
     const envelope = audio.createGain();
     oscillator.frequency.value = this.isAccented(at, msPerBeat) ? ACCENT_HZ : CLICK_HZ;

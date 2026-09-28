@@ -866,16 +866,15 @@ The click is a 30 ms oscillator burst through a gain envelope, higher on an acce
 Audio, no samples. Each one is started at its exact time on the audio clock,
 `oscillator.start(when)`, by a timer that hands each click over about 100 ms before it must
 be sent; a `setTimeout` per click has audible jitter. `when` is converted from the grid's
-`performance.now()` time and brought forward by `AudioContext.outputLatency` (0 where the
-browser does not report it), so the click is heard, not merely sent, on the grid — on
-Bluetooth speakers the output delay is about the width of the window, so it is added to the
-lead too, or a delay longer than the lead would leave every click late and unevenly so. For
-the same reason the grid starts one output delay after the metronome does, the first
-moment a click can be heard. Stopping stops the click already handed over too, so Stop and Wait are
-silent at once; unlike a MIDI message sent ahead (see below), an oscillator can be taken
-back. The `AudioContext` is created or resumed in a click handler, the Timed radio's or the
-checkbox's, because a browser lets audio start only after a user gesture and a note from
-the piano is not one.
+`performance.now()` time and brought forward by `AudioContext.outputLatency`, so the click
+is heard, not merely sent, on the grid — on Bluetooth speakers the output delay is about
+the width of the window, so it is added to the lead too, or a delay longer than the lead
+would leave every click late and unevenly so. For the same reason the grid starts one
+output delay after the metronome does, the first moment a click can be heard. Stopping
+stops the click already handed over too, so Stop and Wait are silent at once; unlike a MIDI
+message sent ahead (see below), an oscillator can be taken back. The `AudioContext` is
+created or resumed in a click handler, the Timed radio's or the checkbox's, because a
+browser lets audio start only after a user gesture and a note from the piano is not one.
 
 The metronome keeps its own grid, laid down when it starts and never re-anchored. The
 child's first note starts the run and is snapped onto it: the clock starts at the nearest
