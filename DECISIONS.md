@@ -49,6 +49,13 @@ ever diffs two `time` values against each other (e.g. the chord-roll window), so
 absolute origin never matters — this keeps recorded fixtures portable and avoids ever
 comparing a live timestamp against a recorded one.
 
+Step 29's timed play is the one exception: it compares a note's `time` with
+`performance.now()`, which the miss timer reads. That holds for the piano, whose Web MIDI
+`timeStamp` is on that timeline, and for the computer keyboard, which stamps
+`performance.now()`. It does not hold for a replay, which re-emits the times it was
+recorded with, so a replay cannot drive timed play — every window would close at once. The
+replay source is dev-only, and this is said where the clock starts.
+
 ## Recorded/replayed fixtures are a raw `MidiEvent[]` JSON array
 
 No wrapper object, no metadata. A fixture recorded from the "Start recording" control
@@ -56,7 +63,7 @@ downloads as exactly the array `ReplayMidiSource` and the Layer 2 mutators expec
 turning a recorded bug into a test is a straight drop into `fixtures/` with no
 translation step.
 
-## Practice is untimed; the Listen demo has speed presets; the falling-note view will not animate on a clock
+## Practice waits by default and can be timed; Listen and timed play share the speed presets; the falling-note view will not animate on a clock
 
 The user descoped the tempo slider for now. Since wait-mode has no time limit and tempo
 was its only other consumer, the falling-note view (step 4) will show the upcoming
@@ -80,6 +87,46 @@ than retiming a demo already running. Practice is still untimed: the owner was a
 does not want a timed mode, and wait-mode already lets a player who knows the piece go as
 fast as they can. The speed is not recorded with attempts, by the owner's choice — the
 demo creates none.
+
+Step 29 reverses that at the owner's request: practice has two modes, chosen by two radios,
+Wait and Timed. Wait-mode is unchanged and stays the default. Timed play is the standard
+design of Synthesia, Simply Piano and flowkey with wait mode off — the music is the clock.
+The first right note starts a fixed clock at the chosen speed, the same five presets Listen
+uses, rather than a second select; from then on every event falls due at its own time and
+the clock never adjusts to the player. A note inside ±¼ quarter-note beat of its event's
+time is a hit, an event whose window closes unplayed is missed and practice moves on, and a
+child who stops simply comes back in with the beat. The first drafts of the step instead
+kept practice silent and re-synced the clock to each note, and grew a rule per review round
+to stop a steady child drifting; every one of those rules made up for a child with nothing
+to keep time by, and all of them went when the design became the standard one.
+
+The window is in beats, not milliseconds, so a slower speed is also more forgiving — 455 ms
+either side at 50%, 152 ms at 150% — and at a quarter beat, one event's window closes where
+the next opens for eighths and longer, so only one is ever open. A right key at the wrong
+time — before its window, one already hit, or a pitch of the event either side — lights red
+and counts as played but not wrong, so accuracy means "the right keys" in both modes and
+timing shows up as misses. The misses are found by a timer set for the current event's
+close, not by the next note; a piano note stamped just inside its window but dispatched
+after that timer ran is judged off-time, a matter of milliseconds, accepted.
+
+With a loop set, the bars before it are played untimed, as in wait-mode, and the clock
+starts on the first right note inside it; timing the lead-in would make the child sit
+through it at tempo after every Restart. The loop runs on at tempo through its wrap, each
+pass one loop length later on the same clock, and pauses after one whole silent pass — a
+miss closing a loop's length after the last note played stops the clock, measured at the
+miss rather than when a timer happens to run, and the next right note starts another. A
+loop never ends, so a child who walked away would otherwise collect misses by the hundred.
+Changing the loop stops the clock, as it stops Listen.
+
+Each timed attempt has one speed and one mode: changing either while Timed is chosen
+restarts practice, keeping the loop, and switching mode always does. A child at bar 12 in
+wait-mode who switches to Timed loses the place; zeroing the counters but keeping it would
+need a reset path Restart does not have, and record a start mid-piece. In wait-mode a speed
+change still only affects the next Listen. The mode resets on a reload, as the speed does,
+so the app never opens onto a clock nobody chose.
+
+The falling-note queue still does not animate on the clock: it shifts when the engine moves,
+which in timed play includes a miss.
 
 ## On-screen keyboard width is a player-configurable preset, not derived from the score
 
@@ -379,8 +426,9 @@ the same fact as its empty-list case.
 
 ## `window.__practiceState` only carries what a Layer 3 test needs
 
-The snapshot (`src/practice/practiceState.ts`) is `nextEventIndex`, `heldNotes` and the
-attempt's two counters — the only fields the Playwright suite asserts on. Add a field
+The snapshot (`src/practice/practiceState.ts`) is `nextEventIndex`, `heldNotes` and three
+of the attempt's counters — notes played, wrong and, since step 29, missed — the only
+fields the Playwright suite asserts on. Add a field
 here when a test actually needs to assert on it, rather than mirroring the practice
 state wholesale. It is built from the whole `PracticeViewState` rather than from
 `EngineState` alone, because the counters live on the view state (step 6) while the
@@ -482,6 +530,13 @@ the end of the piece can't inflate `notesPlayed`. Each counts per `noteOn`, not 
 pitch: pressing the same wrong key twice is two wrong notes out of two played, which is
 what keeps the ratio meaningful — unlike `wrongNotes`, which is a set of what's
 currently sounding wrong.
+
+Step 29 adds `reachedEnd` and five timed counters, all always present and zero in
+wait-mode: missed, off-time and hit notes, and the signed and absolute sums of the hits'
+offsets in beats. An off-time note counts in `notesPlayed` and not in `wrongNoteCount`, so
+accuracy keeps its meaning. `reachedEnd` is true only when the player's own note completed
+the last event, so a timed run the clock carried to the end after the child had stopped
+reads "no"; in wait-mode that is the same fact as `status === 'complete'`.
 
 ## Attempt history lives in `localStorage` and is written through on every change
 
@@ -784,6 +839,11 @@ positions follow the demo, so a child watching it sees the hands move before pla
 passage themselves. That belongs with "where are we": a resting tint asks for nothing.
 The expected-note highlight still stays with practice.
 
+Step 29 adds timed play, which Listen interrupts: pressing it stops a running clock, since
+practice ignores notes while the demo plays and a clock left running would miss every event
+under it. After Stop the next right note starts a new one. A speed or mode change in Timed
+restarts practice without stopping a demo already playing.
+
 ## Notes are sent as they fall due, never scheduled ahead
 
 Web MIDI's `send(data, timestamp)` would let the whole piece be handed to the browser in
@@ -891,8 +951,9 @@ the same loop-aware order, fixes a different position. Drawn all the time there 
 always be one, and the keyboard would carry two positions per hand throughout. The owner
 chose the outline over a line of text under the keyboard, which would take the child's eyes
 off the keys. It is a dashed border in the hand's colour with a faint finger number above
-the current one, so a key in both positions shows both. Practice is untimed, so one note's
-warning is enough; a clock in practice would want it earlier.
+the current one, so a key in both positions shows both. Wait-mode is untimed, so one note's
+warning is enough; timed play (step 29) keeps the same one note, pending the manual check
+of whether a move is outlined early enough at tempo.
 
 ## Beyer Op. 101 Nos. 8-31 come from a LilyPond engraving, at the book's octave, with computed fingering
 
@@ -1086,8 +1147,10 @@ the default for every single-character key typed without Ctrl, Cmd or Alt, so fi
 still work; the event still bubbles to the window, where the virtual keyboard plays the note.
 Arrow keys, Enter and Tab keep working; Space no longer opens the list, and Alt+↓ does. Rejected: blurring
 the select after each change, which throws out a keyboard user after one arrow press, since
-Chromium changes a closed select's value on an arrow key. The Speed and Keyboard range
-selects have the same exposure for digits and were left alone.
+Chromium changes a closed select's value on an arrow key. The Keyboard range select has
+the same exposure for digits and was left alone. The Speed select was too, until step 29
+made a speed change restart a timed attempt: `5` and `7` are note keys (F♯4, A♯4) that
+would jump it to 50% or 75%, so it cancels type-ahead the same way.
 
 The select is shown before anything is connected, unlike the rest of its row: choosing a
 piece before connecting is ordinary, and the staff, queue and keyboard already draw with

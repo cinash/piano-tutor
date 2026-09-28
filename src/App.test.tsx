@@ -148,6 +148,13 @@ function heldPitches(container: HTMLElement) {
     .sort((a, b) => a - b);
 }
 
+/** The keys marked as the ones to press next, lowest first. */
+function expectedPitches(container: HTMLElement) {
+  return Array.from(container.querySelectorAll('[data-expected="true"]'))
+    .map((key) => Number(key.getAttribute('data-note')))
+    .sort((a, b) => a - b);
+}
+
 /** The keys a hand's position is shaded on, lowest first. */
 function positionPitches(container: HTMLElement, hand: 'left' | 'right') {
   return Array.from(container.querySelectorAll(`[data-position-hand="${hand}"]`))
@@ -524,13 +531,6 @@ describe('remembering the piano', () => {
 });
 
 describe('choosing the piece', () => {
-  /** The keys marked as the ones to press next, lowest first. */
-  function expectedPitches(container: HTMLElement) {
-    return Array.from(container.querySelectorAll('[data-expected="true"]'))
-      .map((key) => Number(key.getAttribute('data-note')))
-      .sort((a, b) => a - b);
-  }
-
   const pieceSelect = () => screen.getByTestId('piece-select') as HTMLSelectElement;
 
   it('can be chosen before anything is connected, and starts at its first note', () => {
@@ -607,5 +607,114 @@ describe('choosing the piece', () => {
     expect(fireEvent.keyDown(pieceSelect(), { key: 'ArrowDown' })).toBe(true);
     // A shortcut such as find is left to the browser.
     expect(fireEvent.keyDown(pieceSelect(), { key: 'f', ctrlKey: true })).toBe(true);
+  });
+});
+
+describe('timed play', () => {
+  /** Connects under real timers, as startListening does, then hands the clock over. */
+  async function renderWithFakeTimers() {
+    const rendered = await renderConnectedApp();
+    vi.useFakeTimers();
+    return rendered;
+  }
+
+  /** React sets the timer for the next miss only when an act() ends, so time passes in steps. */
+  function advanceInSteps(ms: number) {
+    for (let left = ms; left > 0; left -= 100) {
+      act(() => vi.advanceTimersByTime(Math.min(100, left)));
+    }
+  }
+
+  function playNote(pitch: number) {
+    fireEvent.keyDown(window, { code: CODE_FOR_PITCH[pitch] });
+    fireEvent.keyUp(window, { code: CODE_FOR_PITCH[pitch] });
+  }
+
+  function chooseSpeed(label: string) {
+    fireEvent.change(screen.getByTestId('demo-speed-select'), {
+      target: { value: label },
+    });
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  // Cicha Noc's G4 starts the clock; A4 falls due 1364 ms later at 100%, and its window
+  // closes 227 ms after that, at 1591 ms. G4 at m1 b3 comes next.
+  it('moves on past a note not played in time', async () => {
+    const { container } = await renderWithFakeTimers();
+    fireEvent.click(screen.getByTestId('mode-timed'));
+
+    playNote(67);
+    advanceInSteps(1_500);
+    expect(expectedPitches(container)).toEqual([69]);
+
+    advanceInSteps(100);
+    expect(expectedPitches(container)).toEqual([67]);
+  });
+
+  it('waits on the note however long it takes in Wait mode', async () => {
+    const { container } = await renderWithFakeTimers();
+
+    playNote(67);
+    advanceInSteps(5_000);
+
+    expect(expectedPitches(container)).toEqual([69]);
+  });
+
+  it('gives a slower speed longer: at 50%, until 3182 ms', async () => {
+    const { container } = await renderWithFakeTimers();
+    chooseSpeed('50%');
+    fireEvent.click(screen.getByTestId('mode-timed'));
+
+    playNote(67);
+    advanceInSteps(1_600);
+    expect(expectedPitches(container)).toEqual([69]);
+
+    advanceInSteps(1_600);
+    expect(expectedPitches(container)).toEqual([67]);
+  });
+
+  it('stops the clock for Listen, leaving practice where it was', async () => {
+    const { container } = await renderWithFakeTimers();
+    fireEvent.click(screen.getByTestId('mode-timed'));
+    playNote(67);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listen-to-piece'));
+    });
+    advanceInSteps(10_000);
+    fireEvent.click(screen.getByTestId('listen-to-piece'));
+    // Stopped, not paused: A4 is still waited on after its time would have passed.
+    advanceInSteps(2_000);
+
+    expect(expectedPitches(container)).toEqual([69]);
+  });
+
+  it('restarts a timed attempt when the speed or the mode changes', async () => {
+    const { container } = await renderWithFakeTimers();
+    fireEvent.click(screen.getByTestId('mode-timed'));
+
+    playNote(67);
+    chooseSpeed('75%');
+    expect(expectedPitches(container)).toEqual([67]);
+
+    playNote(67);
+    fireEvent.click(screen.getByTestId('mode-wait'));
+    expect(expectedPitches(container)).toEqual([67]);
+
+    // Each restart closed the attempt before it.
+    expect(loadAttempts()).toHaveLength(2);
+  });
+
+  it('leaves a wait-mode attempt as it was when the speed changes', async () => {
+    const { container } = await renderWithFakeTimers();
+    playNote(67);
+    const [{ endedAt }] = loadAttempts();
+
+    advanceInSteps(1_000);
+    chooseSpeed('75%');
+
+    expect(expectedPitches(container)).toEqual([69]);
+    expect(loadAttempts()).toMatchObject([{ endedAt }]);
   });
 });

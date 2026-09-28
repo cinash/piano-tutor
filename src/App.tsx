@@ -46,9 +46,11 @@ import {
   notesAt,
   restartPractice,
   setPracticeLoop,
+  stopClock,
   type PracticeViewState,
 } from './practice/practiceView';
 import { loadQueueFolded, saveQueueFolded } from './practice/queueFoldStore';
+import { currentCloseTime, expireDueEvents } from './practice/timedPlay';
 import { AttemptHistory } from './progress/AttemptHistory';
 import {
   isAttemptRecordArray,
@@ -92,6 +94,15 @@ const HAND_OPTIONS: readonly { value: HandSelection; label: string }[] = [
   { value: 'right', label: 'Right hand' },
 ];
 
+type PracticeMode = 'wait' | 'timed';
+
+// Radios rather than a <select>, for the reason HAND_OPTIONS gives: "Timed" would
+// answer to T, which is G4.
+const MODE_OPTIONS: readonly { value: PracticeMode; label: string }[] = [
+  { value: 'wait', label: 'Wait' },
+  { value: 'timed', label: 'Timed' },
+];
+
 export function App() {
   const [view, setView] = useState<PracticeViewState>(createInitialPracticeViewState);
   const [active, setActive] = useState<ActiveSource>({ kind: 'none' });
@@ -111,9 +122,13 @@ export function App() {
   // What the demo is sounding and where in the piece it has reached, and null when no
   // demo is running.
   const [demoStep, setDemoStep] = useState<DemoStep | null>(null);
-  // Not remembered across a reload, and read only when Listen is pressed, so a change
-  // while the demo plays is heard from the next one — see DECISIONS.md.
+  // Not remembered across a reload. Listen reads it when pressed, so a change while the
+  // demo plays is heard from the next one; in Timed it is also the tempo practice runs
+  // at, and a change restarts the attempt — see DECISIONS.md.
   const [demoSpeed, setDemoSpeed] = useState<DemoSpeedPreset>(DEFAULT_DEMO_SPEED);
+  // Not view state, so none of the paths that reset practice has to be told of it; not
+  // remembered across a reload, so the app never opens onto a clock nobody chose.
+  const [mode, setMode] = useState<PracticeMode>('wait');
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
@@ -142,6 +157,10 @@ export function App() {
   // handleEvent is registered once, at attach() time, so it can't close over the score
   // of the render that changed the hand — it reads the current one through this ref.
   const scoreRef = useRef(score);
+  // Refs for the same reason: a closure would see the mode and speed of attach() time,
+  // and the radios only appear after connecting.
+  const modeRef = useRef(mode);
+  const demoSpeedRef = useRef(demoSpeed);
 
   function handleEvent(event: MidiEvent) {
     // Listening is not practising: without this, a child playing along with the demo
@@ -149,7 +168,13 @@ export function App() {
     // isRecordingRef, a ref because handleEvent is registered once, at attach() time.
     if (demoRef.current) return;
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
-    setView((prev) => advancePracticeView(prev, scoreRef.current, event, event.time));
+    const timing =
+      modeRef.current === 'timed'
+        ? { msPerBeat: 60000 / (DEMO_BPM * demoSpeedRef.current.speed) }
+        : null;
+    setView((prev) =>
+      advancePracticeView(prev, scoreRef.current, event, event.time, timing),
+    );
   }
 
   function handleLoopChange(loop: Loop | undefined) {
@@ -194,11 +219,20 @@ export function App() {
     if (event.key.length === 1 && !shortcut) event.preventDefault();
   }
 
+  // Each timed attempt has one mode and one speed, so a change starts it again.
+  function handleModeChange(next: PracticeMode) {
+    setMode(next);
+    setView(restartPractice);
+  }
+
   function handleListen() {
     if (demoRef.current) {
       stopDemo();
       return;
     }
+    // Practice ignores notes while the demo plays, so a running clock would miss every
+    // event under it. After Stop, the next right note starts a new one.
+    setView(stopClock);
     // The filtered score, so "Left hand" plus Listen demonstrates the left hand alone.
     // A null is the schedule running out, and ends the demo the same way Stop does.
     const player = new DemoPlayer(
@@ -219,12 +253,41 @@ export function App() {
     const preset = DEMO_SPEED_PRESETS.find(
       (candidate) => candidate.label === event.target.value,
     );
-    if (preset) setDemoSpeed(preset);
+    if (!preset) return;
+    setDemoSpeed(preset);
+    if (mode === 'timed') setView(restartPractice);
   }
 
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+    demoSpeedRef.current = demoSpeed;
+  }, [mode, demoSpeed]);
+
+  // A timed event nobody played is missed when its window closes, found by a timer rather
+  // than by the next note. performance.now(), the timeline MidiEvent.time is on. The
+  // delay is rounded up, since fake timers truncate a fractional one, and a timer that
+  // still finds the window open waits again: an unchanged view would not re-run this.
+  useEffect(() => {
+    const close = currentCloseTime(view, scoreRef.current);
+    if (close === null) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const waitForClose = () => {
+      timer = setTimeout(
+        () => {
+          const now = performance.now();
+          if (now < close) waitForClose();
+          else setView((prev) => expireDueEvents(prev, scoreRef.current, now));
+        },
+        Math.ceil(close - performance.now()),
+      );
+    };
+    waitForClose();
+    return () => clearTimeout(timer);
+  }, [view]);
 
   // A demo left running past unmount would leave the instrument sounding.
   useEffect(() => stopDemo, [stopDemo]);
@@ -236,7 +299,7 @@ export function App() {
   // The wall clock lives here, not in the clock-free reducer; the open record is written
   // through on every change rather than at an end of attempt — see DECISIONS.md.
   useEffect(() => {
-    const { notesPlayed, wrongNoteCount } = view.attempt;
+    const { notesPlayed, wrongNoteCount, reachedEnd } = view.attempt;
     // Restart, attach() and disconnect() all zero the counters, so this catches every
     // path that ends an attempt. An attempt with no notes is never written down.
     if (notesPlayed === 0) {
@@ -249,7 +312,7 @@ export function App() {
       endedAt: now,
       notesPlayed,
       wrongNoteCount,
-      reachedEnd: view.engine.status === 'complete',
+      reachedEnd,
       loop: view.engine.loop,
       piece: piece.id,
       hands,
@@ -454,11 +517,14 @@ export function App() {
             {/* On this row, not its own: anything below that moves breaks the element
                 snapshots. */}
             <label htmlFor="demo-speed-select">Speed</label>
+            {/* Type-ahead cancelled too: a change restarts a timed attempt, and 5 and 7
+                are note keys that would jump it to 50% or 75%. */}
             <select
               id="demo-speed-select"
               data-testid="demo-speed-select"
               value={demoSpeed.label}
               onChange={handleDemoSpeedChange}
+              onKeyDown={cancelTypeAhead}
             >
               {DEMO_SPEED_PRESETS.map((preset) => (
                 <option key={preset.label} value={preset.label}>
@@ -466,6 +532,22 @@ export function App() {
                 </option>
               ))}
             </select>
+            <span>
+              Mode{' '}
+              {MODE_OPTIONS.map((option) => (
+                <label key={option.value} htmlFor={`mode-${option.value}`}>
+                  <input
+                    id={`mode-${option.value}`}
+                    type="radio"
+                    name="mode"
+                    data-testid={`mode-${option.value}`}
+                    checked={mode === option.value}
+                    onChange={() => handleModeChange(option.value)}
+                  />{' '}
+                  {option.label}{' '}
+                </label>
+              ))}
+            </span>
           </>
         )}
         <label htmlFor="piece-select">Piece</label>
