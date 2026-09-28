@@ -58,6 +58,17 @@ function playPerfectly() {
   }
 }
 
+function playNote(pitch: number) {
+  fireEvent.keyDown(window, { code: CODE_FOR_PITCH[pitch] });
+  fireEvent.keyUp(window, { code: CODE_FOR_PITCH[pitch] });
+}
+
+function chooseSpeed(label: string) {
+  fireEvent.change(screen.getByTestId('demo-speed-select'), {
+    target: { value: label },
+  });
+}
+
 function choosePiece(id: string) {
   fireEvent.change(screen.getByTestId('piece-select'), { target: { value: id } });
 }
@@ -623,17 +634,6 @@ describe('timed play', () => {
     for (let left = ms; left > 0; left -= 100) {
       act(() => vi.advanceTimersByTime(Math.min(100, left)));
     }
-  }
-
-  function playNote(pitch: number) {
-    fireEvent.keyDown(window, { code: CODE_FOR_PITCH[pitch] });
-    fireEvent.keyUp(window, { code: CODE_FOR_PITCH[pitch] });
-  }
-
-  function chooseSpeed(label: string) {
-    fireEvent.change(screen.getByTestId('demo-speed-select'), {
-      target: { value: label },
-    });
   }
 
   afterEach(() => vi.useRealTimers());

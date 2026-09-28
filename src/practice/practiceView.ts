@@ -65,7 +65,10 @@ export function setPracticeLoop(
   return { ...state, engine: setLoop(state.engine, loop), timedClock: undefined };
 }
 
-/** Stops a timed clock, and returns the state itself when none is running. */
+/**
+ * Stops a timed clock, and returns the state itself when none is running, so Listen in
+ * wait-mode does not re-run App's attempt effect and move the open record's `endedAt`.
+ */
 export function stopClock(state: PracticeViewState): PracticeViewState {
   return state.timedClock ? { ...state, timedClock: undefined } : state;
 }
@@ -76,9 +79,9 @@ export function restartPractice(state: PracticeViewState): PracticeViewState {
 }
 
 /**
- * One note, or a release. While a timed clock runs the timed rules judge it; otherwise
- * wait-mode does, and in timed mode (`timing` not null) a note completing an event
- * starts the clock there.
+ * One note, or a release. While a timed clock runs the timed rules judge a note; a
+ * release, and any note with no clock, go to wait-mode, and in timed mode (`timing` not
+ * null) a note completing an event starts the clock there.
  */
 export function advancePracticeView(
   state: PracticeViewState,
@@ -88,7 +91,7 @@ export function advancePracticeView(
   timing: Timing | null,
 ): PracticeViewState {
   const expired = expireDueEvents(state, score, clock);
-  if (expired.timedClock) {
+  if (expired.timedClock && event.type === 'noteOn') {
     return judgeTimedNote(expired, expired.timedClock, score, event, clock);
   }
 

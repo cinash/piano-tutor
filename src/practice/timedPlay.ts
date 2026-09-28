@@ -188,7 +188,7 @@ const withHit = (attempt: AttemptStats, offset: number): AttemptStats => ({
 });
 
 /**
- * A note while the clock runs, after expireDueEvents: a pitch of the current event inside
+ * A note-on while the clock runs, after expireDueEvents: a pitch of the current event inside
  * its window is a hit; one before its window or already hit, or a pitch of the event
  * either side, is off-time — red, played, not wrong; anything else is wrong.
  */
@@ -199,16 +199,7 @@ export function judgeTimedNote(
   event: MidiEvent,
   now: number,
 ): PracticeViewState {
-  const heldNotes = new Set(state.engine.heldNotes);
-  const wrongNotes = new Set(state.wrongNotes);
-
-  if (event.type === 'noteOff') {
-    heldNotes.delete(event.note);
-    wrongNotes.delete(event.note);
-    return { ...state, engine: { ...state.engine, heldNotes }, wrongNotes };
-  }
-
-  heldNotes.add(event.note);
+  const heldNotes = new Set(state.engine.heldNotes).add(event.note);
   const { nextEventIndex, satisfiedNoteIds } = state.engine;
   const current = score.events[nextEventIndex];
   const offset = (now - dueTime(clock, current)) / clock.msPerBeat;
@@ -241,11 +232,10 @@ export function judgeTimedNote(
     hasPitch(current, event.note) ||
     hasPitch(score.events[nextEventIndex - 1], event.note) ||
     hasPitch(score.events[nextEventIndex + 1], event.note);
-  wrongNotes.add(event.note);
   return {
     ...state,
     engine: { ...state.engine, heldNotes },
-    wrongNotes,
+    wrongNotes: new Set(state.wrongNotes).add(event.note),
     attempt: isOffTime
       ? { ...attempt, offTimeNoteCount: attempt.offTimeNoteCount + 1 }
       : { ...attempt, wrongNoteCount: attempt.wrongNoteCount + 1 },

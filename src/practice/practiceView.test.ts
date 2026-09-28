@@ -95,14 +95,10 @@ describe('advancePracticeView', () => {
 
     expect(result.engine.status).toBe('complete');
     expect(result.attempt).toEqual({
+      ...createInitialPracticeViewState().attempt,
       notesPlayed: 5,
       wrongNoteCount: 1,
       reachedEnd: true,
-      missedNoteCount: 0,
-      offTimeNoteCount: 0,
-      hitNoteCount: 0,
-      hitOffsetBeats: 0,
-      hitAbsOffsetBeats: 0,
     });
   });
 });
@@ -130,16 +126,7 @@ describe('restartPractice', () => {
     expect(restarted.engine.satisfiedNoteIds.size).toBe(0);
     expect(restarted.engine.heldNotes.size).toBe(0);
     expect(restarted.wrongNotes.size).toBe(0);
-    expect(restarted.attempt).toEqual({
-      notesPlayed: 0,
-      wrongNoteCount: 0,
-      reachedEnd: false,
-      missedNoteCount: 0,
-      offTimeNoteCount: 0,
-      hitNoteCount: 0,
-      hitOffsetBeats: 0,
-      hitAbsOffsetBeats: 0,
-    });
+    expect(restarted.attempt).toEqual(createInitialPracticeViewState().attempt);
     expect(restarted.engine.loop).toEqual(loop);
   });
 });
