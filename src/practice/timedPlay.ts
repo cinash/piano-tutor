@@ -138,15 +138,18 @@ export function nextClockTime(
   return Math.min(close, nextDueTime(score, timedClock, engine.loop, now) ?? Infinity);
 }
 
-/** The clock's score position at `now`, in unfolded beats: never before its start. */
-const beatsAt = (clock: TimedClock, now: number) =>
-  clock.startTime + Math.max(0, (now - clock.startedAt) / clock.msPerBeat);
-
-/** A position folded into the loop, whose passes repeat it; unchanged with none. */
-function foldIntoLoop(score: Score, loop: Loop | undefined, beats: number): number {
-  if (!loop) return beats;
+/**
+ * Where the music is at `now`, as a score position, never before the clock's start and
+ * folded into the loop, whose passes repeat it; and the events it can be at.
+ */
+function musicAt(score: Score, clock: TimedClock, loop: Loop | undefined, now: number) {
+  const beats = clock.startTime + Math.max(0, (now - clock.startedAt) / clock.msPerBeat);
+  const events = score.events.filter((event) => isInLoop(event, loop));
+  if (!loop) return { position: beats, events };
   const loopStartTime = measureStartTime(score, loop.startMeasure);
-  return loopStartTime + ((beats - loopStartTime) % loopLengthBeats(score, loop));
+  const position =
+    loopStartTime + ((beats - loopStartTime) % loopLengthBeats(score, loop));
+  return { position, events };
 }
 
 /**
@@ -160,32 +163,30 @@ export function clockPosition(
   loop: Loop | undefined,
   now: number,
 ): number {
-  const position = foldIntoLoop(score, loop, beatsAt(clock, now));
-  const events = score.events.filter((event) => isInLoop(event, loop));
+  const { position, events } = musicAt(score, clock, loop, now);
   return (
     events.filter((event) => event.startTime <= position).at(-1)?.startTime ??
     events[0].startTime
   );
 }
 
-/** When the next event after `now` falls due, round the loop if need be; null past the last. */
+/**
+ * When the cursor next moves: the next event after `now` falling due, or past the loop's
+ * last event, the loop's bar line, where it goes back to the start even over a rest. Null
+ * past the piece's last event.
+ */
 function nextDueTime(
   score: Score,
   clock: TimedClock,
   loop: Loop | undefined,
   now: number,
 ): number | null {
-  const beats = beatsAt(clock, now);
-  const position = foldIntoLoop(score, loop, beats);
-  const events = score.events.filter((event) => isInLoop(event, loop));
-  const next = events.find((event) => event.startTime > position);
-  let beatsAhead: number;
-  if (next) beatsAhead = next.startTime - position;
-  // Past the loop's last event: on to its first, one pass later.
-  else if (loop)
-    beatsAhead = loopLengthBeats(score, loop) - (position - events[0].startTime);
-  else return null;
-  return clock.startedAt + (beats + beatsAhead - clock.startTime) * clock.msPerBeat;
+  const { position, events } = musicAt(score, clock, loop, now);
+  const next =
+    events.find((event) => event.startTime > position)?.startTime ??
+    (loop && measureStartTime(score, loop.endMeasure + 1));
+  if (next === undefined) return null;
+  return Math.max(now, clock.startedAt) + (next - position) * clock.msPerBeat;
 }
 
 /** On to the next event, one pass on at a loop's wrap; the last one stops the clock. */

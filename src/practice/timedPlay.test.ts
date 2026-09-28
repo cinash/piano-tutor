@@ -383,12 +383,17 @@ describe('where the music is', () => {
   });
 
   it('is the clock’s own event before a start snapped later than the note', () => {
-    const snapped = play([on(60, START)], undefined, {
+    // C4 in wait-mode, then D4 at 5800 snapped onto a grid putting its beat at 6300.
+    const atD4 = play([on(60, 0)], undefined, null);
+    const snapped = play([on(62, 5800)], atD4, {
       ...TIMING,
       grid: { origin: 5300, msPerBeat: 1000 },
     });
 
-    expect(clockPosition(SCORE, clockOf(snapped), undefined, 5100)).toBe(0);
+    expect(clockOf(snapped)).toMatchObject({ startedAt: 6300, startTime: 1 });
+    // Earlier still, as App's `now` is when a clock starts: still D4, not C4.
+    expect(clockPosition(SCORE, clockOf(snapped), undefined, 0)).toBe(1);
+    expect(clockPosition(SCORE, clockOf(snapped), undefined, 6000)).toBe(1);
   });
 
   it('folds into the loop past its end, onto its first event on the bar line', () => {
@@ -408,6 +413,22 @@ describe('where the music is', () => {
 
     // The next pass's bar line is at 8000; its D4, at 9000.
     expect(clockPosition(restFirst, clock, loop, 8500)).toBe(1);
+  });
+
+  it('wakes at a rest-first loop’s bar line, where the cursor goes back to the start', () => {
+    const restFirst: Score = { ...SCORE, events: [event(1, 1, [62]), event(1, 3, [65])] };
+    const loop = { startMeasure: 1, endMeasure: 1 };
+    const onD4 = advancePracticeView(
+      looped(loop),
+      restFirst,
+      on(62, START),
+      START,
+      TIMING,
+    );
+    // F4 hit on time: the engine wraps to D4, due at 9000 and closing at 9250.
+    const wrapped = advancePracticeView(onD4, restFirst, on(65, 7000), 7000, TIMING);
+
+    expect(nextClockTime(wrapped, restFirst, 7000)).toBe(8000);
   });
 
   it('wakes the timer at the next due time or the current close, whichever comes first', () => {

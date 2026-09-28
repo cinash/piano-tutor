@@ -326,7 +326,9 @@ export function App() {
     if (wake === null) return;
     const timer = setTimeout(
       () => {
-        const firedAt = performance.now();
+        // At least `wake`: a coarse performance.now() can read just short of it, and the
+        // same reading twice would set no new `now` and leave the clock stalled.
+        const firedAt = Math.max(performance.now(), wake);
         setNow(firedAt);
         setView((prev) => expireDueEvents(prev, scoreRef.current, firedAt));
       },
