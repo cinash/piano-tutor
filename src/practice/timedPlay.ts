@@ -122,11 +122,70 @@ function snapToGrid({ origin, msPerBeat }: Grid, startTime: number, now: number)
   return origin + (beat + fraction) * msPerBeat;
 }
 
-/** When the event the engine is on stops being playable in time; null with no clock. */
-export function currentCloseTime(state: PracticeViewState, score: Score): number | null {
-  return state.timedClock
-    ? closeTime(state.timedClock, score.events[state.engine.nextEventIndex])
-    : null;
+/**
+ * When the clock next changes what the screen shows or what is missed: the next event's
+ * due time, where the cursor moves on, or the current event's close, whichever comes
+ * first. Null with no clock.
+ */
+export function nextClockTime(
+  state: PracticeViewState,
+  score: Score,
+  now: number,
+): number | null {
+  const { timedClock, engine } = state;
+  if (!timedClock) return null;
+  const close = closeTime(timedClock, score.events[engine.nextEventIndex]);
+  return Math.min(close, nextDueTime(score, timedClock, engine.loop, now) ?? Infinity);
+}
+
+/** The clock's score position at `now`, in unfolded beats: never before its start. */
+const beatsAt = (clock: TimedClock, now: number) =>
+  clock.startTime + Math.max(0, (now - clock.startedAt) / clock.msPerBeat);
+
+/** A position folded into the loop, whose passes repeat it; unchanged with none. */
+function foldIntoLoop(score: Score, loop: Loop | undefined, beats: number): number {
+  if (!loop) return beats;
+  const loopStartTime = measureStartTime(score, loop.startMeasure);
+  return loopStartTime + ((beats - loopStartTime) % loopLengthBeats(score, loop));
+}
+
+/**
+ * The startTime of the last event whose time has come by `now`, as the score position:
+ * where the music is, for the staff cursor. Before the clock's start, its own startTime;
+ * in a loop bar that opens with a rest, the loop's first event's.
+ */
+export function clockPosition(
+  score: Score,
+  clock: TimedClock,
+  loop: Loop | undefined,
+  now: number,
+): number {
+  const position = foldIntoLoop(score, loop, beatsAt(clock, now));
+  const events = score.events.filter((event) => isInLoop(event, loop));
+  return (
+    events.filter((event) => event.startTime <= position).at(-1)?.startTime ??
+    events[0].startTime
+  );
+}
+
+/** When the next event after `now` falls due, round the loop if need be; null past the last. */
+function nextDueTime(
+  score: Score,
+  clock: TimedClock,
+  loop: Loop | undefined,
+  now: number,
+): number | null {
+  const beats = beatsAt(clock, now);
+  const position = foldIntoLoop(score, loop, beats);
+  const events = score.events.filter((event) => isInLoop(event, loop));
+  const next = events.find((event) => event.startTime > position);
+  let beatsAhead: number;
+  if (next) beatsAhead = next.startTime - position;
+  // Past the loop's last event: on to its first, one pass later.
+  else if (loop)
+    beatsAhead = loopLengthBeats(score, loop) - (position - events[0].startTime);
+  else return null;
+  return clock.startedAt + (beats + beatsAhead - clock.startTime) * clock.msPerBeat;
 }
 
 /** On to the next event, one pass on at a loop's wrap; the last one stops the clock. */

@@ -126,7 +126,13 @@ In wait-mode a speed change still only affects the next Listen. The mode resets 
 reload, as the speed does, so the app never opens onto a clock nobody chose.
 
 The falling-note queue still does not animate on the clock: it shifts when the engine moves,
-which in timed play includes a miss.
+which in timed play includes a miss. The staff cursor does follow the clock, as it follows
+the Listen demo: while a clock runs it marks the last event whose time has come — where
+the music is — and moves on at each due time, folded into a loop at its bar line, while the
+highlighted keys, the finger queue and the hand shading stay with the engine, at most one
+event ahead. With the metronome on the cursor is a second cue; with it off, it is the only
+one on the beat, which is why it is kept. The same timer that finds the misses wakes for
+each due time, and `App` keeps the time it woke as state, so rendering stays pure.
 
 ## On-screen keyboard width is a player-configurable preset, not derived from the score
 

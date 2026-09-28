@@ -51,7 +51,12 @@ import {
 } from './practice/practiceView';
 import { loadQueueFolded, saveQueueFolded } from './practice/queueFoldStore';
 import { Metronome } from './practice/metronome';
-import { currentCloseTime, expireDueEvents, msPerBeatAt } from './practice/timedPlay';
+import {
+  clockPosition,
+  expireDueEvents,
+  msPerBeatAt,
+  nextClockTime,
+} from './practice/timedPlay';
 import { AttemptHistory } from './progress/AttemptHistory';
 import {
   isAttemptRecordArray,
@@ -134,15 +139,22 @@ export function App() {
   const [metronomeOn, setMetronomeOn] = useState(true);
   // One for the app's lifetime; its AudioContext is made on the first click that needs it.
   const [metronome] = useState(() => new Metronome());
+  // performance.now() as of the timed clock's last timer, so rendering stays pure while the
+  // cursor follows the clock.
+  const [now, setNow] = useState(0);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
   const score = filterScoreByHand(piece.score, hands);
 
-  // Where the demo has reached while one plays, so the cursor follows it; the note the
+  // Where the demo has reached while one plays, so the cursor follows it; where the music
+  // is while a timed clock runs, since the engine may be a note ahead of it; the note the
   // engine is waiting for otherwise. The filtered score, which nextEventIndex indexes.
   const staffTarget =
-    demoStep?.startTime ?? score.events[view.engine.nextEventIndex]?.startTime;
+    demoStep?.startTime ??
+    (view.timedClock
+      ? clockPosition(score, view.timedClock, view.engine.loop, now)
+      : score.events[view.engine.nextEventIndex]?.startTime);
 
   // Where the hands sit: practice's place, or while the demo plays, the first event at
   // or after its place, so a silence shows where the next note is. The demo plays the
@@ -306,26 +318,22 @@ export function App() {
   }, [metronome, firstBarStartTime, beatsPerBar]);
 
   // A timed event nobody played is missed when its window closes, found by a timer rather
-  // than by the next note. performance.now(), the timeline MidiEvent.time is on. The
-  // delay is rounded up, since fake timers truncate a fractional one, and a timer that
-  // still finds the window open waits again: an unchanged view would not re-run this.
+  // than by the next note, which also moves the cursor on as each event falls due.
+  // performance.now(), the timeline MidiEvent.time is on. Rounded up, since fake timers
+  // truncate a fractional delay; every firing sets a new `now`, which runs this again.
   useEffect(() => {
-    const close = currentCloseTime(view, scoreRef.current);
-    if (close === null) return;
-    let timer: ReturnType<typeof setTimeout>;
-    const waitForClose = () => {
-      timer = setTimeout(
-        () => {
-          const now = performance.now();
-          if (now < close) waitForClose();
-          else setView((prev) => expireDueEvents(prev, scoreRef.current, now));
-        },
-        Math.ceil(close - performance.now()),
-      );
-    };
-    waitForClose();
+    const wake = nextClockTime(view, scoreRef.current, performance.now());
+    if (wake === null) return;
+    const timer = setTimeout(
+      () => {
+        const firedAt = performance.now();
+        setNow(firedAt);
+        setView((prev) => expireDueEvents(prev, scoreRef.current, firedAt));
+      },
+      Math.ceil(wake - performance.now()),
+    );
     return () => clearTimeout(timer);
-  }, [view]);
+  }, [view, now]);
 
   // A demo left running past unmount would leave the instrument sounding.
   useEffect(() => stopDemo, [stopDemo]);

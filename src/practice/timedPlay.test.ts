@@ -9,7 +9,13 @@ import {
   setPracticeLoop,
   type PracticeViewState,
 } from './practiceView';
-import { expireDueEvents, type Timing } from './timedPlay';
+import {
+  clockPosition,
+  expireDueEvents,
+  nextClockTime,
+  type TimedClock,
+  type Timing,
+} from './timedPlay';
 
 function event(measure: number, startTime: number, pitches: number[]): ScoreEvent {
   return {
@@ -361,5 +367,54 @@ describe('a loop', () => {
     // The first note wrapped the loop too: four passes on.
     expect(state.timedClock).toMatchObject({ passBeats: 16 });
     expect(state.attempt).toMatchObject({ hitNoteCount: 3, missedNoteCount: 0 });
+  });
+});
+
+describe('where the music is', () => {
+  const clockOf = (state: PracticeViewState): TimedClock => state.timedClock!;
+
+  it('stays on an event until the next one falls due, whatever the engine has done', () => {
+    // D4 hit early: the engine is on E4, and the music is still on C4.
+    const early = play([on(62, 5800)], started());
+    const at = (now: number) => clockPosition(SCORE, clockOf(early), undefined, now);
+
+    expect(early.engine.nextEventIndex).toBe(2);
+    expect([at(5999), at(6000), at(6999), at(7000)]).toEqual([0, 1, 1, 2]);
+  });
+
+  it('is the clock’s own event before a start snapped later than the note', () => {
+    const snapped = play([on(60, START)], undefined, {
+      ...TIMING,
+      grid: { origin: 5300, msPerBeat: 1000 },
+    });
+
+    expect(clockPosition(SCORE, clockOf(snapped), undefined, 5100)).toBe(0);
+  });
+
+  it('folds into the loop past its end, onto its first event on the bar line', () => {
+    const loop = { startMeasure: 1, endMeasure: 1 };
+    const clock = clockOf(play([on(60, START)], looped(loop)));
+    const at = (now: number) => clockPosition(SCORE, clock, loop, now);
+
+    expect([at(8999), at(9000), at(10_000), at(13_000)]).toEqual([3, 0, 1, 0]);
+  });
+
+  it('shows the loop’s first event in a bar that opens with a rest', () => {
+    const restFirst: Score = { ...SCORE, events: [event(1, 1, [62]), event(1, 3, [65])] };
+    const loop = { startMeasure: 1, endMeasure: 1 };
+    const clock = clockOf(
+      advancePracticeView(looped(loop), restFirst, on(62, START), START, TIMING),
+    );
+
+    // The next pass's bar line is at 8000; its D4, at 9000.
+    expect(clockPosition(restFirst, clock, loop, 8500)).toBe(1);
+  });
+
+  it('wakes the timer at the next due time or the current close, whichever comes first', () => {
+    const running = started(); // D4 due at 6000, closing at 6250
+
+    expect(nextClockTime(running, SCORE, START)).toBe(6000);
+    expect(nextClockTime(running, SCORE, 6000)).toBe(6250);
+    expect(nextClockTime(createInitialPracticeViewState(), SCORE, START)).toBeNull();
   });
 });

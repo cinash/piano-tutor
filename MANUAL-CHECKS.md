@@ -57,15 +57,6 @@ update it at the end of each step.
    follow along, then to 150% and confirm repeated notes are still heard as separate
    notes rather than as one smeared note. Change the speed while the demo plays, and say
    whether a child is confused that it is only heard from the next "Listen".
-   Then choose "Timed" at 75% on Cicha Noc and confirm the metronome starts clicking from
-   the computer at once. Play along on the piano: confirm the first note starts the run and
-   the bar's first beat is then accented, and that notes played with the click are
-   accepted; stop, and confirm the music goes on without you; come back in with the click
-   and confirm you are accepted again. Clear "Metronome" and confirm the click stops. On
-   Beyer No. 12, a one-bar loop: confirm it runs on at tempo through the wrap, and that
-   after a whole silent pass the misses stop until you play again. Say whether 50% — a
-   click every 1.8 s — is too sparse to follow, whether ±¼ beat feels fair to a child at
-   50% and at 100%, and whether a hand move is outlined early enough.
    Press "Stop" mid-piece and confirm the instrument falls silent at once, with no note
    left sounding, and that "Attempts" gained nothing from the demonstration. With the piano
    selected in the dropdown the demo plays out of the output of that same name, and
@@ -73,6 +64,16 @@ update it at the end of each step.
    stops any of it. Watch the staff while it plays: the green cursor should move along
    with the demo and be on the bar being played, and "Stop" should put it back on the note
    practice was waiting for.
+   Then choose "Timed" at 75% on Cicha Noc and confirm the metronome starts clicking from
+   the computer at once. Play along on the piano: confirm the first note starts the run,
+   the bar's first beat is then accented, and the click is in time with the cursor — if it
+   trails, suspect audio output latency. Confirm notes played with the click are accepted;
+   stop, and confirm the music goes on without you; come back in with the click and confirm
+   you are accepted again. Clear "Metronome" and confirm the click stops. On Beyer No. 12,
+   a one-bar loop: confirm it runs on at tempo through the wrap, and that after a whole
+   silent pass the misses stop until you play again. Say whether 50% — a click every 1.8 s
+   — is too sparse to follow, whether ±¼ beat feels fair to a child at 50% and at 100%, and
+   whether a hand move is outlined early enough.
 10. After a real practice session, close the tab and reopen
     `http://localhost:5173`; confirm the attempt is listed under "Attempts" and that
     its notes, wrong notes, accuracy and range read as a fair account of what was
