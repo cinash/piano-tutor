@@ -13,6 +13,7 @@ import { msPerBeatAt } from './practice/timedPlay';
 import { loadQueueFolded } from './practice/queueFoldStore';
 import { loadAttempts } from './progress/attemptStore';
 import { cichaNocScore } from './score/cichaNoc';
+import { PIECES } from './score/pieces';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
 // property has to be there before that — which is what hoisting this above the imports
@@ -23,6 +24,8 @@ vi.hoisted(() => {
     configurable: true,
   });
 });
+
+const beyerNo12 = PIECES.find((piece) => piece.id === 'beyer-op101-12')!.score;
 
 /**
  * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the fourteen
@@ -168,6 +171,14 @@ function heldPitches(container: HTMLElement) {
   return Array.from(container.querySelectorAll('[data-held="true"]'))
     .map((key) => Number(key.getAttribute('data-note')))
     .sort((a, b) => a - b);
+}
+
+/** The history's newest row, from its piece to whether it reached the end. */
+function newestRow() {
+  return within(screen.getAllByTestId('attempt-history-row')[0])
+    .getAllByRole('cell')
+    .slice(1) // the first cell is the wall-clock time the attempt started
+    .map((cell) => cell.textContent);
 }
 
 /** The keys marked as the ones to press next, lowest first. */
@@ -808,14 +819,6 @@ describe('timed play', () => {
     expect(loadAttempts()).toMatchObject([{ endedAt }]);
   });
 
-  /** The history's newest row, from its piece to whether it reached the end. */
-  function newestRow() {
-    return within(screen.getAllByTestId('attempt-history-row')[0])
-      .getAllByRole('cell')
-      .slice(1) // the first cell is the wall-clock time the attempt started
-      .map((cell) => cell.textContent);
-  }
-
   it('records a timed run with its speed, its misses and the child’s timing', async () => {
     await renderWithFakeTimers();
     chooseTimedWithoutMetronome();
@@ -858,11 +861,19 @@ describe('timed play', () => {
     fireEvent.keyDown(window, { code: CODE_FOR_PITCH[72] });
     advanceInSteps(20_000); // eight bars of 4/4 at 99 beats a minute
 
+    // Every note of the piece but the two played is missed.
+    const notes = beyerNo12.events.flatMap((event) => event.notes).length;
     expect(screen.getByTestId('position-readout').textContent).toBe('Complete');
-    expect(newestRow()).toEqual(
-      expect.arrayContaining(['Beyer Op. 101 No. 12', 'Timed 150%']),
-    );
-    expect(newestRow().at(-1)).toBe('no');
+    expect(newestRow()).toEqual([
+      'Beyer Op. 101 No. 12',
+      'Timed 150%',
+      'whole piece',
+      '2',
+      '0',
+      String(notes - 2),
+      '100%',
+      'no',
+    ]);
   });
 
   describe('the metronome', () => {

@@ -200,7 +200,6 @@ export function App() {
   // so its grid is read from it directly.
   const modeRef = useRef(mode);
   const demoSpeedRef = useRef(demoSpeed);
-  const metronomeOnRef = useRef(metronomeOn);
 
   function handleEvent(event: MidiEvent) {
     // Listening is not practising: without this, a child playing along with the demo
@@ -313,8 +312,7 @@ export function App() {
   useEffect(() => {
     modeRef.current = mode;
     demoSpeedRef.current = demoSpeed;
-    metronomeOnRef.current = metronomeOn;
-  }, [mode, demoSpeed, metronomeOn]);
+  }, [mode, demoSpeed]);
 
   // Clicking exactly while it is wanted, so it comes back after a reconnect or a Stop,
   // and on a new grid when the speed changes.
@@ -393,12 +391,13 @@ export function App() {
       loop: view.engine.loop,
       piece: piece.id,
       hands,
-      // Through refs: as dependencies, a wait-mode speed change would re-run this and
-      // move the open record's endedAt. A timed attempt restarts on a change to any of
-      // them, so they hold what it was played with.
+      // Mode and speed through refs: as dependencies, a wait-mode speed change would
+      // re-run this and move the open record's endedAt. A timed attempt restarts on either,
+      // so the refs hold what it was played with. The metronome setting cannot change in
+      // Wait, so it is an ordinary dependency.
       timed:
         modeRef.current === 'timed'
-          ? timedRecord(view.attempt, demoSpeedRef.current.speed, metronomeOnRef.current)
+          ? timedRecord(view.attempt, demoSpeedRef.current.speed, metronomeOn)
           : undefined,
     };
     const openStartedAt = openAttemptRef.current;
@@ -418,7 +417,7 @@ export function App() {
           : record,
       ),
     );
-  }, [view, piece.id, hands]);
+  }, [view, piece.id, hands, metronomeOn]);
 
   useEffect(() => saveAttempts(attempts), [attempts]);
 

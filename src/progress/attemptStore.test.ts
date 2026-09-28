@@ -57,13 +57,13 @@ describe('attemptStore', () => {
   });
 
   it('reads a record with a malformed timed field as no history', () => {
-    for (const malformed of [
-      null,
-      'yes',
-      { ...timed.timed, metronome: 'on' },
-      { ...timed.timed, missedNoteCount: undefined },
-      { ...timed.timed, hitOffsetBeats: '0.5' },
-    ]) {
+    const everyFieldMistyped = Object.keys(timed.timed!).map((key) => ({
+      ...timed.timed,
+      [key]: 'mistyped',
+    }));
+    const missingOne = { ...timed.timed, missedNoteCount: undefined };
+
+    for (const malformed of [null, 'yes', missingOne, ...everyFieldMistyped]) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...timed, timed: malformed }]));
       expect(loadAttempts()).toEqual([]);
     }
