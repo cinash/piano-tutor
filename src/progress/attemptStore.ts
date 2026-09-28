@@ -1,6 +1,6 @@
 import type { Loop } from '../engine/types';
 import { HAND_SELECTIONS } from '../score/filterScoreByHand';
-import type { AttemptRecord } from './types';
+import type { AttemptRecord, TimedRecord } from './types';
 
 const STORAGE_KEY = 'piano-tutor.attempts.v1';
 
@@ -12,6 +12,25 @@ function isLoop(value: unknown): value is Loop {
     typeof value.startMeasure === 'number' &&
     'endMeasure' in value &&
     typeof value.endMeasure === 'number'
+  );
+}
+
+function isTimedRecord(value: unknown): value is TimedRecord {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  const numbers = [
+    'speed',
+    'bpm',
+    'window',
+    'missedNoteCount',
+    'offTimeNoteCount',
+    'hitNoteCount',
+    'hitOffsetBeats',
+    'hitAbsOffsetBeats',
+  ];
+  return (
+    numbers.every((key) => typeof record[key] === 'number') &&
+    typeof record.metronome === 'boolean'
   );
 }
 
@@ -29,7 +48,8 @@ export function isAttemptRecordArray(value: unknown): value is AttemptRecord[] {
         typeof item.reachedEnd === 'boolean' &&
         (item.loop === undefined || isLoop(item.loop)) &&
         typeof item.piece === 'string' &&
-        HAND_SELECTIONS.includes(item.hands),
+        HAND_SELECTIONS.includes(item.hands) &&
+        (item.timed === undefined || isTimedRecord(item.timed)),
     )
   );
 }

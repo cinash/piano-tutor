@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { measureStartTime, timeSignatureAt } from './measureStartTime';
 import { PIECES } from './pieces';
 
 // C3 to G5: VirtualKeyboardSource's map, which is not exported for a test's sake.
@@ -35,4 +36,24 @@ describe('PIECES', () => {
       }
     },
   );
+
+  // What timed play assumes of every piece: one signature over quarter-note beats, so the
+  // click and its accents are periodic; no pickup or short bar, so a bar starts where
+  // measureStartTime says; and events at least half a beat apart, so the ±¼-beat windows
+  // never overlap. A piece added that fails this needs timed play extended, leaving out,
+  // or offering for wait-mode only — the decision of whoever adds its line.
+  it.each(PIECES)('$id is one that timed play can keep time through', ({ score }) => {
+    const startTimes = score.events.map((event) => event.startTime);
+
+    // parseScore records only a change, so nothing after bar 1 means one signature.
+    expect(score.timeSignatures.filter((signature) => signature.measure > 1)).toEqual([]);
+    expect(timeSignatureAt(score, 1).beatType).toBe(4);
+    for (const { measure, startTime } of score.events) {
+      expect(startTime).toBeGreaterThanOrEqual(measureStartTime(score, measure));
+      expect(startTime).toBeLessThan(measureStartTime(score, measure + 1));
+    }
+    for (let i = 1; i < startTimes.length; i++) {
+      expect(startTimes[i] - startTimes[i - 1]).toBeGreaterThanOrEqual(0.5);
+    }
+  });
 });

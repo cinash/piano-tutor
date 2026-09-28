@@ -10,6 +10,10 @@ function formatLoop(loop: Loop | undefined): string {
   return loop ? `measures ${loop.startMeasure}–${loop.endMeasure}` : 'whole piece';
 }
 
+function formatMode(record: AttemptRecord): string {
+  return record.timed ? `Timed ${Math.round(record.timed.speed * 100)}%` : 'Wait';
+}
+
 /** Accuracy is derived here rather than stored — see DECISIONS.md. */
 function formatAccuracy(record: AttemptRecord): string {
   if (record.notesPlayed === 0) return '—';
@@ -28,9 +32,11 @@ export function AttemptHistory({ records }: AttemptHistoryProps) {
         <tr>
           <th scope="col">When</th>
           <th scope="col">Piece</th>
+          <th scope="col">Mode</th>
           <th scope="col">Range</th>
           <th scope="col">Notes</th>
           <th scope="col">Wrong</th>
+          <th scope="col">Missed</th>
           <th scope="col">Accuracy</th>
           <th scope="col">Reached end</th>
         </tr>
@@ -40,9 +46,11 @@ export function AttemptHistory({ records }: AttemptHistoryProps) {
           <tr key={record.startedAt} data-testid="attempt-history-row">
             <td>{new Date(record.startedAt).toLocaleString()}</td>
             <td>{pieceTitle(record.piece)}</td>
+            <td>{formatMode(record)}</td>
             <td>{formatLoop(record.loop)}</td>
             <td>{record.notesPlayed}</td>
             <td>{record.wrongNoteCount}</td>
+            <td>{record.timed ? record.timed.missedNoteCount : '—'}</td>
             <td>{formatAccuracy(record)}</td>
             <td>{record.reachedEnd ? 'yes' : 'no'}</td>
           </tr>

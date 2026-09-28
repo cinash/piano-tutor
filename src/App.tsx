@@ -46,9 +46,19 @@ import {
   notesAt,
   restartPractice,
   setPracticeLoop,
+  stopClock,
+  type AttemptStats,
   type PracticeViewState,
 } from './practice/practiceView';
 import { loadQueueFolded, saveQueueFolded } from './practice/queueFoldStore';
+import { Metronome } from './practice/metronome';
+import {
+  clockPosition,
+  expireDueEvents,
+  msPerBeatAt,
+  nextClockTime,
+  TIMED_WINDOW,
+} from './practice/timedPlay';
 import { AttemptHistory } from './progress/AttemptHistory';
 import {
   isAttemptRecordArray,
@@ -56,9 +66,10 @@ import {
   saveAttempts,
 } from './progress/attemptStore';
 import { mergeAttempts } from './progress/mergeAttempts';
-import type { AttemptRecord } from './progress/types';
+import type { AttemptRecord, TimedRecord } from './progress/types';
 import { StaffView } from './score/StaffView';
 import { loadPiece, savePiece } from './score/pieceStore';
+import { timeSignatureAt } from './score/measureStartTime';
 import { PIECES, type Piece } from './score/pieces';
 import { filterScoreByHand, type HandSelection } from './score/filterScoreByHand';
 
@@ -92,6 +103,34 @@ const HAND_OPTIONS: readonly { value: HandSelection; label: string }[] = [
   { value: 'right', label: 'Right hand' },
 ];
 
+type PracticeMode = 'wait' | 'timed';
+
+// Radios rather than a <select>, for the reason HAND_OPTIONS gives: "Timed" would
+// answer to T, which is G4.
+const MODE_OPTIONS: readonly { value: PracticeMode; label: string }[] = [
+  { value: 'wait', label: 'Wait' },
+  { value: 'timed', label: 'Timed' },
+];
+
+/** A timed attempt as its record keeps it: how it was played, and its counters. */
+function timedRecord(
+  attempt: AttemptStats,
+  speed: number,
+  metronome: boolean,
+): TimedRecord {
+  return {
+    speed,
+    bpm: DEMO_BPM * speed,
+    window: TIMED_WINDOW,
+    metronome,
+    missedNoteCount: attempt.missedNoteCount,
+    offTimeNoteCount: attempt.offTimeNoteCount,
+    hitNoteCount: attempt.hitNoteCount,
+    hitOffsetBeats: attempt.hitOffsetBeats,
+    hitAbsOffsetBeats: attempt.hitAbsOffsetBeats,
+  };
+}
+
 export function App() {
   const [view, setView] = useState<PracticeViewState>(createInitialPracticeViewState);
   const [active, setActive] = useState<ActiveSource>({ kind: 'none' });
@@ -111,18 +150,32 @@ export function App() {
   // What the demo is sounding and where in the piece it has reached, and null when no
   // demo is running.
   const [demoStep, setDemoStep] = useState<DemoStep | null>(null);
-  // Not remembered across a reload, and read only when Listen is pressed, so a change
-  // while the demo plays is heard from the next one — see DECISIONS.md.
+  // Not remembered across a reload. Listen reads it when pressed, so a change while the
+  // demo plays is heard from the next one; in Timed it is also the tempo practice runs
+  // at, and a change restarts the attempt — see DECISIONS.md.
   const [demoSpeed, setDemoSpeed] = useState<DemoSpeedPreset>(DEFAULT_DEMO_SPEED);
+  // Not view state, so none of the paths that reset practice has to be told of it; not
+  // remembered across a reload, so the app never opens onto a clock nobody chose.
+  const [mode, setMode] = useState<PracticeMode>('wait');
+  const [metronomeOn, setMetronomeOn] = useState(true);
+  // One for the app's lifetime; its AudioContext is made on the first click that needs it.
+  const [metronome] = useState(() => new Metronome());
+  // performance.now() as of the timed clock's last timer, so rendering stays pure while the
+  // cursor follows the clock.
+  const [timerFiredAt, setTimerFiredAt] = useState(0);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
   const score = filterScoreByHand(piece.score, hands);
 
-  // Where the demo has reached while one plays, so the cursor follows it; the note the
+  // Where the demo has reached while one plays, so the cursor follows it; where the music
+  // is while a timed clock runs, since the engine may be a note ahead of it; the note the
   // engine is waiting for otherwise. The filtered score, which nextEventIndex indexes.
   const staffTarget =
-    demoStep?.startTime ?? score.events[view.engine.nextEventIndex]?.startTime;
+    demoStep?.startTime ??
+    (view.timedClock
+      ? clockPosition(score, view.timedClock, view.engine.loop, timerFiredAt)
+      : score.events[view.engine.nextEventIndex]?.startTime);
 
   // Where the hands sit: practice's place, or while the demo plays, the first event at
   // or after its place, so a silence shows where the next note is. The demo plays the
@@ -142,6 +195,11 @@ export function App() {
   // handleEvent is registered once, at attach() time, so it can't close over the score
   // of the render that changed the hand — it reads the current one through this ref.
   const scoreRef = useRef(score);
+  // Refs for the same reason: a closure would see the mode and speed of attach() time,
+  // and the radios only appear after connecting. The metronome is one object throughout,
+  // so its grid is read from it directly.
+  const modeRef = useRef(mode);
+  const demoSpeedRef = useRef(demoSpeed);
 
   function handleEvent(event: MidiEvent) {
     // Listening is not practising: without this, a child playing along with the demo
@@ -149,7 +207,13 @@ export function App() {
     // isRecordingRef, a ref because handleEvent is registered once, at attach() time.
     if (demoRef.current) return;
     if (isRecordingRef.current) recordedEventsRef.current.push(event);
-    setView((prev) => advancePracticeView(prev, scoreRef.current, event, event.time));
+    const timing =
+      modeRef.current === 'timed'
+        ? { msPerBeat: msPerBeatAt(demoSpeedRef.current.speed), grid: metronome.grid }
+        : null;
+    setView((prev) =>
+      advancePracticeView(prev, scoreRef.current, event, event.time, timing),
+    );
   }
 
   function handleLoopChange(loop: Loop | undefined) {
@@ -194,11 +258,28 @@ export function App() {
     if (event.key.length === 1 && !shortcut) event.preventDefault();
   }
 
+  // Each timed attempt has one mode, one speed and one metronome setting, so a change
+  // starts it again. Both controls are clicks, where a browser lets audio start.
+  function handleModeChange(next: PracticeMode) {
+    metronome.wake();
+    setMode(next);
+    setView(restartPractice);
+  }
+
+  function handleMetronomeChange(event: ChangeEvent<HTMLInputElement>) {
+    metronome.wake();
+    setMetronomeOn(event.target.checked);
+    setView(restartPractice);
+  }
+
   function handleListen() {
     if (demoRef.current) {
       stopDemo();
       return;
     }
+    // Practice ignores notes while the demo plays, so a running clock would miss every
+    // event under it. After Stop, the next right note starts a new one.
+    setView(stopClock);
     // The filtered score, so "Left hand" plus Listen demonstrates the left hand alone.
     // A null is the schedule running out, and ends the demo the same way Stop does.
     const player = new DemoPlayer(
@@ -219,12 +300,69 @@ export function App() {
     const preset = DEMO_SPEED_PRESETS.find(
       (candidate) => candidate.label === event.target.value,
     );
-    if (preset) setDemoSpeed(preset);
+    if (!preset) return;
+    setDemoSpeed(preset);
+    if (mode === 'timed') setView(restartPractice);
   }
 
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+    demoSpeedRef.current = demoSpeed;
+  }, [mode, demoSpeed]);
+
+  // Clicking exactly while it is wanted, so it comes back after a reconnect or a Stop,
+  // and on a new grid when the speed changes.
+  const isConnected = active.kind !== 'none';
+  const clicking = mode === 'timed' && metronomeOn && isConnected && demoStep === null;
+  const msPerBeat = msPerBeatAt(demoSpeed.speed);
+  useEffect(() => {
+    if (!clicking) return;
+    metronome.start(msPerBeat);
+    return () => metronome.stop();
+  }, [metronome, clicking, msPerBeat]);
+
+  // While a clock runs, each bar's first beat is accented: counted from where the piece's
+  // first bar would have begun on this clock, which a whole-bar loop's passes keep in step.
+  const { timedClock } = view;
+  const firstBarStartTime = timedClock
+    ? timedClock.startedAt - timedClock.startTime * timedClock.msPerBeat
+    : null;
+  const beatsPerBar = timeSignatureAt(score, 1).beats;
+  useEffect(() => {
+    metronome.accentFrom(
+      firstBarStartTime === null ? null : { firstBarStartTime, beatsPerBar },
+    );
+  }, [metronome, firstBarStartTime, beatsPerBar]);
+
+  // A timed event nobody played is missed when its window closes, found by a timer rather
+  // than by the next note, which also moves the cursor on as each event falls due.
+  // performance.now(), the timeline MidiEvent.time is on. Rounded up, since fake timers
+  // truncate a fractional delay; every firing sets a new `timerFiredAt`, which runs this
+  // again.
+  useEffect(() => {
+    // Never before the last firing: a coarse performance.now() can read short of the time
+    // it fired for, and would then wake for that same time again, set nothing new, and
+    // leave the clock stalled.
+    const wake = nextClockTime(
+      view,
+      scoreRef.current,
+      Math.max(performance.now(), timerFiredAt),
+    );
+    if (wake === null) return;
+    const timer = setTimeout(
+      () => {
+        const firedAt = Math.max(performance.now(), wake);
+        setTimerFiredAt(firedAt);
+        setView((prev) => expireDueEvents(prev, scoreRef.current, firedAt));
+      },
+      Math.ceil(wake - performance.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [view, timerFiredAt]);
 
   // A demo left running past unmount would leave the instrument sounding.
   useEffect(() => stopDemo, [stopDemo]);
@@ -236,7 +374,7 @@ export function App() {
   // The wall clock lives here, not in the clock-free reducer; the open record is written
   // through on every change rather than at an end of attempt — see DECISIONS.md.
   useEffect(() => {
-    const { notesPlayed, wrongNoteCount } = view.attempt;
+    const { notesPlayed, wrongNoteCount, reachedEnd } = view.attempt;
     // Restart, attach() and disconnect() all zero the counters, so this catches every
     // path that ends an attempt. An attempt with no notes is never written down.
     if (notesPlayed === 0) {
@@ -249,10 +387,18 @@ export function App() {
       endedAt: now,
       notesPlayed,
       wrongNoteCount,
-      reachedEnd: view.engine.status === 'complete',
+      reachedEnd,
       loop: view.engine.loop,
       piece: piece.id,
       hands,
+      // Mode and speed through refs: as dependencies, a wait-mode speed change would
+      // re-run this and move the open record's endedAt. A timed attempt restarts on either,
+      // so the refs hold what it was played with. The metronome setting cannot change in
+      // Wait, so it is an ordinary dependency.
+      timed:
+        modeRef.current === 'timed'
+          ? timedRecord(view.attempt, demoSpeedRef.current.speed, metronomeOn)
+          : undefined,
     };
     const openStartedAt = openAttemptRef.current;
 
@@ -271,7 +417,7 @@ export function App() {
           : record,
       ),
     );
-  }, [view, piece.id, hands]);
+  }, [view, piece.id, hands, metronomeOn]);
 
   useEffect(() => saveAttempts(attempts), [attempts]);
 
@@ -420,8 +566,6 @@ export function App() {
     }
   }
 
-  const isConnected = active.kind !== 'none';
-
   return (
     <div>
       <div className="toolbar">
@@ -454,11 +598,14 @@ export function App() {
             {/* On this row, not its own: anything below that moves breaks the element
                 snapshots. */}
             <label htmlFor="demo-speed-select">Speed</label>
+            {/* Type-ahead cancelled too: a change restarts a timed attempt, and 5 and 7
+                are note keys that would jump it to 50% or 75%. */}
             <select
               id="demo-speed-select"
               data-testid="demo-speed-select"
               value={demoSpeed.label}
               onChange={handleDemoSpeedChange}
+              onKeyDown={cancelTypeAhead}
             >
               {DEMO_SPEED_PRESETS.map((preset) => (
                 <option key={preset.label} value={preset.label}>
@@ -466,6 +613,33 @@ export function App() {
                 </option>
               ))}
             </select>
+            <span>
+              Mode{' '}
+              {MODE_OPTIONS.map((option) => (
+                <label key={option.value} htmlFor={`mode-${option.value}`}>
+                  <input
+                    id={`mode-${option.value}`}
+                    type="radio"
+                    name="mode"
+                    data-testid={`mode-${option.value}`}
+                    checked={mode === option.value}
+                    onChange={() => handleModeChange(option.value)}
+                  />{' '}
+                  {option.label}{' '}
+                </label>
+              ))}
+            </span>
+            <label htmlFor="metronome-checkbox">
+              <input
+                id="metronome-checkbox"
+                type="checkbox"
+                data-testid="metronome-checkbox"
+                checked={metronomeOn}
+                disabled={mode === 'wait'}
+                onChange={handleMetronomeChange}
+              />{' '}
+              Metronome
+            </label>
           </>
         )}
         <label htmlFor="piece-select">Piece</label>

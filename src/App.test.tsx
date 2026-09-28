@@ -8,9 +8,12 @@ import {
   fakeMidiAccess,
   stubRequestMidiAccess,
 } from './midi/fakeMidiAccess';
+import { ACCENT_HZ, CLICK_HZ } from './practice/metronome';
+import { msPerBeatAt } from './practice/timedPlay';
 import { loadQueueFolded } from './practice/queueFoldStore';
 import { loadAttempts } from './progress/attemptStore';
 import { cichaNocScore } from './score/cichaNoc';
+import { PIECES } from './score/pieces';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
 // property has to be there before that — which is what hoisting this above the imports
@@ -21,6 +24,8 @@ vi.hoisted(() => {
     configurable: true,
   });
 });
+
+const beyerNo12 = PIECES.find((piece) => piece.id === 'beyer-op101-12')!.score;
 
 /**
  * VirtualKeyboardSource's mapping (src/midi/VirtualKeyboardSource.ts), for the fourteen
@@ -56,6 +61,17 @@ function playPerfectly() {
     for (const code of codes) fireEvent.keyDown(window, { code });
     for (const code of codes) fireEvent.keyUp(window, { code });
   }
+}
+
+function playNote(pitch: number) {
+  fireEvent.keyDown(window, { code: CODE_FOR_PITCH[pitch] });
+  fireEvent.keyUp(window, { code: CODE_FOR_PITCH[pitch] });
+}
+
+function chooseSpeed(label: string) {
+  fireEvent.change(screen.getByTestId('demo-speed-select'), {
+    target: { value: label },
+  });
 }
 
 function choosePiece(id: string) {
@@ -134,7 +150,16 @@ describe('App', () => {
         .getAllByRole('cell')
         .slice(1)
         .map((cell) => cell.textContent),
-    ).toEqual(['Cicha Noc', 'whole piece', String(notesPlayed), '0', '100%', 'yes']);
+    ).toEqual([
+      'Cicha Noc',
+      'Wait',
+      'whole piece',
+      String(notesPlayed),
+      '0',
+      '—',
+      '100%',
+      'yes',
+    ]);
     // Every note of the piece is a separate re-render of the whole app, which takes
     // about 1.6s alone and can pass 5s when the suite runs this file alongside the
     // others. The default timeout was already marginal before step 21 changed the piece.
@@ -144,6 +169,21 @@ describe('App', () => {
 /** The pitches the on-screen keyboard is showing as sounding, lowest first. */
 function heldPitches(container: HTMLElement) {
   return Array.from(container.querySelectorAll('[data-held="true"]'))
+    .map((key) => Number(key.getAttribute('data-note')))
+    .sort((a, b) => a - b);
+}
+
+/** The history's newest row, from its piece to whether it reached the end. */
+function newestRow() {
+  return within(screen.getAllByTestId('attempt-history-row')[0])
+    .getAllByRole('cell')
+    .slice(1) // the first cell is the wall-clock time the attempt started
+    .map((cell) => cell.textContent);
+}
+
+/** The keys marked as the ones to press next, lowest first. */
+function expectedPitches(container: HTMLElement) {
+  return Array.from(container.querySelectorAll('[data-expected="true"]'))
     .map((key) => Number(key.getAttribute('data-note')))
     .sort((a, b) => a - b);
 }
@@ -374,9 +414,11 @@ describe('folding the finger queue away', () => {
     expect(unfolded.position).toBe('Measure 2 of 22');
     expect(unfolded.attempt).toEqual([
       'Cicha Noc',
+      'Wait',
       'whole piece',
       '3',
       '0',
+      '—',
       '100%',
       'no',
     ]);
@@ -524,13 +566,6 @@ describe('remembering the piano', () => {
 });
 
 describe('choosing the piece', () => {
-  /** The keys marked as the ones to press next, lowest first. */
-  function expectedPitches(container: HTMLElement) {
-    return Array.from(container.querySelectorAll('[data-expected="true"]'))
-      .map((key) => Number(key.getAttribute('data-note')))
-      .sort((a, b) => a - b);
-  }
-
   const pieceSelect = () => screen.getByTestId('piece-select') as HTMLSelectElement;
 
   it('can be chosen before anything is connected, and starts at its first note', () => {
@@ -607,5 +642,368 @@ describe('choosing the piece', () => {
     expect(fireEvent.keyDown(pieceSelect(), { key: 'ArrowDown' })).toBe(true);
     // A shortcut such as find is left to the browser.
     expect(fireEvent.keyDown(pieceSelect(), { key: 'f', ctrlKey: true })).toBe(true);
+  });
+});
+
+/** A click the stubbed AudioContext sounded, heard at `at` in performance.now() time. */
+interface Click {
+  at: number;
+  hz: number;
+}
+
+let clicks: Click[] = [];
+let outputLatency = 0;
+
+/**
+ * jsdom has no Web Audio, so this stands in for it as fakeMidiAccess does for Web MIDI:
+ * each oscillator started is a click, heard `outputLatency` seconds after it is sent, and
+ * one stopped with no time before it sounded is a click taken back. Its clock is
+ * performance.now(), which the fake timers drive.
+ */
+class FakeAudioContext {
+  readonly destination = {};
+
+  get outputLatency() {
+    return outputLatency;
+  }
+
+  get currentTime() {
+    return performance.now() / 1000;
+  }
+
+  resume() {
+    return Promise.resolve();
+  }
+
+  createGain() {
+    return {
+      gain: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+      connect: (node: unknown) => node,
+    };
+  }
+
+  createOscillator() {
+    let click: Click | undefined;
+    const oscillator = {
+      frequency: { value: 0 },
+      onended: null,
+      connect: (node: unknown) => node,
+      start: (when: number) => {
+        click = { at: (when + outputLatency) * 1000, hz: oscillator.frequency.value };
+        clicks.push(click);
+      },
+      stop: (when?: number) => {
+        if (when === undefined && click && click.at > performance.now()) {
+          clicks = clicks.filter((other) => other !== click);
+        }
+      },
+    };
+    return oscillator;
+  }
+}
+
+describe('timed play', () => {
+  /** Connects under real timers, as startListening does, then hands the clock over. */
+  async function renderWithFakeTimers() {
+    const rendered = await renderConnectedApp();
+    vi.useFakeTimers();
+    return rendered;
+  }
+
+  /** React sets the timer for the next miss only when an act() ends, so time passes in steps. */
+  function advanceInSteps(ms: number) {
+    for (let left = ms; left > 0; left -= 100) {
+      act(() => vi.advanceTimersByTime(Math.min(100, left)));
+    }
+  }
+
+  /** Timed with the metronome cleared, so no snap moves the clock off the first note. */
+  function chooseTimedWithoutMetronome() {
+    fireEvent.click(screen.getByTestId('mode-timed'));
+    fireEvent.click(screen.getByTestId('metronome-checkbox'));
+  }
+
+  // Choosing Timed starts the metronome, so every test here has its stand-in.
+  beforeEach(() => {
+    clicks = [];
+    outputLatency = 0;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  // Cicha Noc's G4 starts the clock; A4 falls due 1364 ms later at 100%, and its window
+  // closes 227 ms after that, at 1591 ms. G4 at m1 b3 comes next.
+  it('moves on past a note not played in time', async () => {
+    const { container } = await renderWithFakeTimers();
+    chooseTimedWithoutMetronome();
+
+    playNote(67);
+    advanceInSteps(1_500);
+    expect(expectedPitches(container)).toEqual([69]);
+
+    advanceInSteps(100);
+    expect(expectedPitches(container)).toEqual([67]);
+  });
+
+  it('waits on the note however long it takes in Wait mode', async () => {
+    const { container } = await renderWithFakeTimers();
+
+    playNote(67);
+    advanceInSteps(5_000);
+
+    expect(expectedPitches(container)).toEqual([69]);
+  });
+
+  it('gives a slower speed longer: at 50%, until 3182 ms', async () => {
+    const { container } = await renderWithFakeTimers();
+    chooseSpeed('50%');
+    chooseTimedWithoutMetronome();
+
+    playNote(67);
+    advanceInSteps(1_600);
+    expect(expectedPitches(container)).toEqual([69]);
+
+    advanceInSteps(1_600);
+    expect(expectedPitches(container)).toEqual([67]);
+  });
+
+  it('stops the clock for Listen, leaving practice where it was', async () => {
+    const { container } = await renderWithFakeTimers();
+    chooseTimedWithoutMetronome();
+    playNote(67);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listen-to-piece'));
+    });
+    advanceInSteps(10_000);
+    fireEvent.click(screen.getByTestId('listen-to-piece'));
+    // Stopped, not paused: A4 is still waited on after its time would have passed.
+    advanceInSteps(2_000);
+
+    expect(expectedPitches(container)).toEqual([69]);
+  });
+
+  it('restarts a timed attempt when the speed, the metronome or the mode changes', async () => {
+    const { container } = await renderWithFakeTimers();
+    chooseTimedWithoutMetronome();
+
+    playNote(67);
+    chooseSpeed('75%');
+    expect(expectedPitches(container)).toEqual([67]);
+
+    playNote(67);
+    fireEvent.click(screen.getByTestId('metronome-checkbox'));
+    expect(expectedPitches(container)).toEqual([67]);
+
+    playNote(67);
+    fireEvent.click(screen.getByTestId('mode-wait'));
+    expect(expectedPitches(container)).toEqual([67]);
+
+    // Each restart closed the attempt before it.
+    expect(loadAttempts()).toHaveLength(3);
+  });
+
+  it('leaves a wait-mode attempt as it was when the speed changes', async () => {
+    const { container } = await renderWithFakeTimers();
+    playNote(67);
+    const [{ endedAt }] = loadAttempts();
+
+    advanceInSteps(1_000);
+    chooseSpeed('75%');
+
+    expect(expectedPitches(container)).toEqual([69]);
+    expect(loadAttempts()).toMatchObject([{ endedAt }]);
+  });
+
+  it('records a timed run with its speed, its misses and the child’s timing', async () => {
+    await renderWithFakeTimers();
+    chooseTimedWithoutMetronome();
+
+    playNote(67);
+    advanceInSteps(1_600); // A4 missed
+    playNote(67); // m1 b3's G4, due at 1818: early, inside its window
+
+    expect(newestRow()).toEqual([
+      'Cicha Noc',
+      'Timed 100%',
+      'whole piece',
+      '2',
+      '0',
+      '1',
+      '100%',
+      'no',
+    ]);
+    const [{ timed }] = loadAttempts();
+    expect(timed).toMatchObject({
+      speed: 1,
+      bpm: 66,
+      window: 0.25,
+      metronome: false,
+      missedNoteCount: 1,
+      offTimeNoteCount: 0,
+      hitNoteCount: 1,
+    });
+    expect(timed?.hitOffsetBeats).toBeCloseTo(-0.24);
+    expect(timed?.hitAbsOffsetBeats).toBeCloseTo(0.24);
+  });
+
+  it('records a run the clock carried to the end as not reaching it', async () => {
+    await renderWithFakeTimers();
+    choosePiece('beyer-op101-12');
+    chooseSpeed('150%');
+    chooseTimedWithoutMetronome();
+
+    fireEvent.keyDown(window, { code: CODE_FOR_PITCH[60] }); // No. 12's C4 and C5
+    fireEvent.keyDown(window, { code: CODE_FOR_PITCH[72] });
+    advanceInSteps(20_000); // eight bars of 4/4 at 99 beats a minute
+
+    // Every note of the piece but the two played is missed.
+    const notes = beyerNo12.events.flatMap((event) => event.notes).length;
+    expect(screen.getByTestId('position-readout').textContent).toBe('Complete');
+    expect(newestRow()).toEqual([
+      'Beyer Op. 101 No. 12',
+      'Timed 150%',
+      'whole piece',
+      '2',
+      '0',
+      String(notes - 2),
+      '100%',
+      'no',
+    ]);
+  });
+
+  describe('the metronome', () => {
+    /** The clicks sounded from `since`, in ms after it, rounded, and whether accented. */
+    function clicksFrom(since: number) {
+      return clicks
+        .filter((click) => click.at >= since)
+        .map((click) => [Math.round(click.at - since), click.hz === ACCENT_HZ]);
+    }
+
+    /** At 100%, a click every 909 ms: the first `count` of them after `since`. */
+    const everyBeat = (
+      count: number,
+      accented: (beat: number) => boolean = () => false,
+    ) =>
+      Array.from({ length: count }, (_, beat) => [
+        Math.round(beat * msPerBeatAt(1)),
+        accented(beat),
+      ]);
+
+    it('clicks from the moment Timed is chosen, a beat apart, none accented', async () => {
+      await renderWithFakeTimers();
+      const chosenAt = performance.now();
+
+      fireEvent.click(screen.getByTestId('mode-timed'));
+      advanceInSteps(2_000);
+
+      expect(clicksFrom(chosenAt)).toEqual(everyBeat(3));
+      expect(clicks.every((click) => click.hz === CLICK_HZ)).toBe(true);
+    });
+
+    it('is heard on the beat through slow speakers, from as soon as they can sound', async () => {
+      outputLatency = 0.3; // Bluetooth: more than the lead a click is scheduled with
+      await renderWithFakeTimers();
+      const chosenAt = performance.now();
+
+      fireEvent.click(screen.getByTestId('mode-timed'));
+      advanceInSteps(2_000);
+
+      expect(clicksFrom(chosenAt + 300)).toEqual(everyBeat(3));
+    });
+
+    it('starts the clock on the nearest click, and accents each bar from then', async () => {
+      const { container } = await renderWithFakeTimers();
+      const chosenAt = performance.now();
+      fireEvent.click(screen.getByTestId('mode-timed'));
+
+      advanceInSteps(300);
+      playNote(67);
+      // Snapped back onto the first click, A4's window closes 1591 ms after it, not
+      // after the note.
+      advanceInSteps(1_200);
+      expect(expectedPitches(container)).toEqual([69]);
+      advanceInSteps(100);
+      expect(expectedPitches(container)).toEqual([67]);
+
+      // Cicha Noc is in 3/4. The first click was sounded before the clock started.
+      advanceInSteps(4_000);
+      expect(clicksFrom(chosenAt)).toEqual(
+        everyBeat(7, (beat) => beat > 0 && beat % 3 === 0),
+      );
+    });
+
+    it('carries on unbroken, accents and all, through a one-bar loop’s wrap', async () => {
+      await renderWithFakeTimers();
+      fireEvent.click(screen.getByTestId('loop-enabled-checkbox'));
+      fireEvent.change(screen.getByTestId('loop-end-input'), { target: { value: '1' } });
+      const chosenAt = performance.now();
+      fireEvent.click(screen.getByTestId('mode-timed'));
+
+      // Bar 1 twice, in time: G4, A4 at 1½ beats, G4 at 2, and G4 again at 3.
+      for (const [pitch, wait] of [
+        [67, 0],
+        [69, 1364],
+        [67, 455],
+        [67, 909],
+        [69, 1364],
+        [67, 455],
+      ]) {
+        advanceInSteps(wait);
+        playNote(pitch);
+      }
+      advanceInSteps(1_000);
+
+      expect(loadAttempts()).toMatchObject([{ notesPlayed: 6, wrongNoteCount: 0 }]);
+      expect(clicksFrom(chosenAt)).toEqual(
+        everyBeat(7, (beat) => beat > 0 && beat % 3 === 0),
+      );
+    });
+
+    it('is silent with the checkbox cleared', async () => {
+      await renderWithFakeTimers();
+      chooseTimedWithoutMetronome();
+      const clearedAt = performance.now();
+
+      advanceInSteps(2_000);
+
+      // Only the click sounded the instant Timed was chosen, before it was cleared.
+      expect(clicks.filter((click) => click.at > clearedAt)).toEqual([]);
+    });
+
+    it('stops when Wait is chosen', async () => {
+      await renderWithFakeTimers();
+      fireEvent.click(screen.getByTestId('mode-timed'));
+      // Past 809 ms, so the click due at 909 is already handed over and must be taken back.
+      advanceInSteps(850);
+      fireEvent.click(screen.getByTestId('mode-wait'));
+      const waitAt = performance.now();
+
+      advanceInSteps(2_000);
+
+      expect(clicksFrom(waitAt)).toEqual([]);
+    });
+
+    it('is silent while Listen plays, and clicks again after Stop', async () => {
+      await renderWithFakeTimers();
+      fireEvent.click(screen.getByTestId('mode-timed'));
+      advanceInSteps(850); // as above: the next click is already handed over
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('listen-to-piece'));
+      });
+      const listenAt = performance.now();
+      advanceInSteps(2_000);
+      expect(clicksFrom(listenAt)).toEqual([]);
+
+      fireEvent.click(screen.getByTestId('listen-to-piece'));
+      const stoppedAt = performance.now();
+      advanceInSteps(1_000);
+      expect(clicksFrom(stoppedAt)).toEqual(everyBeat(2));
+    });
   });
 });

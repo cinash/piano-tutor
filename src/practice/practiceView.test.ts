@@ -43,7 +43,7 @@ const SCORE: Score = {
 
 function play(events: MidiEvent[]) {
   return events.reduce(
-    (state, event) => advancePracticeView(state, SCORE, event, event.time),
+    (state, event) => advancePracticeView(state, SCORE, event, event.time, null),
     createInitialPracticeViewState(),
   );
 }
@@ -58,6 +58,7 @@ describe('advancePracticeView', () => {
       SCORE,
       { type: 'noteOff', note: 64, time: 10 },
       10,
+      null,
     );
     expect(released.wrongNotes.size).toBe(0);
   });
@@ -93,7 +94,12 @@ describe('advancePracticeView', () => {
     ]);
 
     expect(result.engine.status).toBe('complete');
-    expect(result.attempt).toEqual({ notesPlayed: 5, wrongNoteCount: 1 });
+    expect(result.attempt).toEqual({
+      ...createInitialPracticeViewState().attempt,
+      notesPlayed: 5,
+      wrongNoteCount: 1,
+      reachedEnd: true,
+    });
   });
 });
 
@@ -120,7 +126,7 @@ describe('restartPractice', () => {
     expect(restarted.engine.satisfiedNoteIds.size).toBe(0);
     expect(restarted.engine.heldNotes.size).toBe(0);
     expect(restarted.wrongNotes.size).toBe(0);
-    expect(restarted.attempt).toEqual({ notesPlayed: 0, wrongNoteCount: 0 });
+    expect(restarted.attempt).toEqual(createInitialPracticeViewState().attempt);
     expect(restarted.engine.loop).toEqual(loop);
   });
 });

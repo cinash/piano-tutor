@@ -9,6 +9,7 @@ declare global {
       heldNotes: number[];
       notesPlayed: number;
       wrongNoteCount: number;
+      missedNoteCount: number;
     };
   }
 }
