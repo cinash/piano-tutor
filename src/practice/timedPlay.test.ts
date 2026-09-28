@@ -371,6 +371,9 @@ describe('a loop', () => {
 });
 
 describe('where the music is', () => {
+  /** A one-bar loop whose bar opens with a rest: D4 on beat 2, F4 on beat 4. */
+  const restFirst: Score = { ...SCORE, events: [event(1, 1, [62]), event(1, 3, [65])] };
+  const barLoop = { startMeasure: 1, endMeasure: 1 };
   const clockOf = (state: PracticeViewState): TimedClock => state.timedClock!;
 
   it('stays on an event until the next one falls due, whatever the engine has done', () => {
@@ -405,21 +408,17 @@ describe('where the music is', () => {
   });
 
   it('shows the loop’s first event in a bar that opens with a rest', () => {
-    const restFirst: Score = { ...SCORE, events: [event(1, 1, [62]), event(1, 3, [65])] };
-    const loop = { startMeasure: 1, endMeasure: 1 };
     const clock = clockOf(
-      advancePracticeView(looped(loop), restFirst, on(62, START), START, TIMING),
+      advancePracticeView(looped(barLoop), restFirst, on(62, START), START, TIMING),
     );
 
     // The next pass's bar line is at 8000; its D4, at 9000.
-    expect(clockPosition(restFirst, clock, loop, 8500)).toBe(1);
+    expect(clockPosition(restFirst, clock, barLoop, 8500)).toBe(1);
   });
 
   it('wakes at a rest-first loop’s bar line, where the cursor goes back to the start', () => {
-    const restFirst: Score = { ...SCORE, events: [event(1, 1, [62]), event(1, 3, [65])] };
-    const loop = { startMeasure: 1, endMeasure: 1 };
     const onD4 = advancePracticeView(
-      looped(loop),
+      looped(barLoop),
       restFirst,
       on(62, START),
       START,

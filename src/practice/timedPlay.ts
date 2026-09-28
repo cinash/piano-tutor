@@ -124,8 +124,8 @@ function snapToGrid({ origin, msPerBeat }: Grid, startTime: number, now: number)
 
 /**
  * When the clock next changes what the screen shows or what is missed: the next event's
- * due time, where the cursor moves on, or the current event's close, whichever comes
- * first. Null with no clock.
+ * due time or the loop's bar line, where the cursor moves on, or the current event's
+ * close, whichever comes first. Null with no clock.
  */
 export function nextClockTime(
   state: PracticeViewState,

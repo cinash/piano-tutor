@@ -141,7 +141,7 @@ export function App() {
   const [metronome] = useState(() => new Metronome());
   // performance.now() as of the timed clock's last timer, so rendering stays pure while the
   // cursor follows the clock.
-  const [now, setNow] = useState(0);
+  const [timerFiredAt, setTimerFiredAt] = useState(0);
 
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
@@ -153,7 +153,7 @@ export function App() {
   const staffTarget =
     demoStep?.startTime ??
     (view.timedClock
-      ? clockPosition(score, view.timedClock, view.engine.loop, now)
+      ? clockPosition(score, view.timedClock, view.engine.loop, timerFiredAt)
       : score.events[view.engine.nextEventIndex]?.startTime);
 
   // Where the hands sit: practice's place, or while the demo plays, the first event at
@@ -320,22 +320,28 @@ export function App() {
   // A timed event nobody played is missed when its window closes, found by a timer rather
   // than by the next note, which also moves the cursor on as each event falls due.
   // performance.now(), the timeline MidiEvent.time is on. Rounded up, since fake timers
-  // truncate a fractional delay; every firing sets a new `now`, which runs this again.
+  // truncate a fractional delay; every firing sets a new `timerFiredAt`, which runs this
+  // again.
   useEffect(() => {
-    const wake = nextClockTime(view, scoreRef.current, performance.now());
+    // Never before the last firing: a coarse performance.now() can read short of the time
+    // it fired for, and would then wake for that same time again, set nothing new, and
+    // leave the clock stalled.
+    const wake = nextClockTime(
+      view,
+      scoreRef.current,
+      Math.max(performance.now(), timerFiredAt),
+    );
     if (wake === null) return;
     const timer = setTimeout(
       () => {
-        // At least `wake`: a coarse performance.now() can read just short of it, and the
-        // same reading twice would set no new `now` and leave the clock stalled.
         const firedAt = Math.max(performance.now(), wake);
-        setNow(firedAt);
+        setTimerFiredAt(firedAt);
         setView((prev) => expireDueEvents(prev, scoreRef.current, firedAt));
       },
       Math.ceil(wake - performance.now()),
     );
     return () => clearTimeout(timer);
-  }, [view, now]);
+  }, [view, timerFiredAt]);
 
   // A demo left running past unmount would leave the instrument sounding.
   useEffect(() => stopDemo, [stopDemo]);
