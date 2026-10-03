@@ -15,6 +15,10 @@ test('the built app works under its Content-Security-Policy', async ({ page }) =
 
   await connectVirtualKeyboard(page);
   await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1);
+  // Relative, so the build also loads under /piano-tutor/ on GitHub Pages.
+  expect(await page.locator('script[type="module"]').getAttribute('src')).toMatch(
+    /^\.\/assets\//,
+  );
   await expect(page.getByTestId('staff').locator('svg')).toBeVisible();
   await expect(page.getByTestId('staff').locator('img')).toBeVisible();
 
