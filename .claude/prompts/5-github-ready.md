@@ -1,8 +1,8 @@
 # Publish to GitHub, part 1 of 2 — in the dev container
 
 Get the repository ready to publish at `https://cinash.github.io/piano-tutor/`. Branch
-`github-ready`, created off `main` **only after** the history rewrite that removed a personal
-detail has landed. Otherwise the merge brings the old history back. `CLAUDE.md` applies,
+`github-ready`, created off `main` **only after** the owner confirms that the history rewrite
+removing a personal detail has landed. Otherwise the merge brings the old history back. `CLAUDE.md` applies,
 including the two-reviewer pass. Part 2 (`6-publish-to-github.md`) runs on the host afterwards.
 
 ## The owner's decisions
@@ -17,9 +17,10 @@ including the two-reviewer pass. Part 2 (`6-publish-to-github.md`) runs on the h
 1. **`LICENSE`**: the standard MIT text, then a paragraph on the music files that is true for
    each one (re-check with `grep -L '<rights>'` over the tracked `*.musicxml`):
    - Beyer Nos. 8-31 are not MIT; their terms are in their `<rights>`.
-   - `cicha-noc.musicxml` is the owner's arrangement, and no licence is granted for it.
+   - `cicha-noc.musicxml` is the owner's arrangement, and no licence is granted for it, nor for
+     `src/score/fixtures/cicha-noc.snapshot.json`, which holds the same notes.
    - The PDMX files (`scripts/beyer/fixtures/*`, `beyer_op101_no38.musicxml`) are CC0.
-   - `src/score/fixtures/*` are MIT.
+   - The rest of `src/score/fixtures/` is MIT.
 
    README gets a "Licence" section that says the same. Add `"license": "MIT"` to
    `package.json`, then run `npm install --package-lock-only`; the lockfile diff should be that
@@ -32,8 +33,8 @@ including the two-reviewer pass. Part 2 (`6-publish-to-github.md`) runs on the h
    - **`ci` job**, on every push and pull request: `npm run ci`. On failure, upload
      `test-results/` and `playwright-report/`. On a push to `main`, upload `dist/` with
      `actions/upload-pages-artifact`. That is the build the CSP spec tested.
-   - **`deploy` job**: needs `ci`, runs on a push to `main` only, and does nothing but
-     `actions/deploy-pages`.
+   - **`deploy` job**: needs `ci`, runs on a push to `main` only, declares
+     `environment: github-pages`, and does nothing but `actions/deploy-pages`.
    - **Locked down:**
      - `permissions: contents: read` at the top, and only `deploy` gets `pages: write` and
        `id-token: write`;
@@ -46,7 +47,8 @@ including the two-reviewer pass. Part 2 (`6-publish-to-github.md`) runs on the h
    must agree across `.devcontainer/Dockerfile:6`, the root `Dockerfile:3` and the workflow.
    Fix the script's header and README's "Version pinning" (`:121-135`) to match.
 5. **README "Published copy"**: where the app is; that `main` deploys on green CI; that every
-   commit on `main` becomes public, so music without terms that allow publishing stays out; and
+   commit on `main` becomes public, so new music goes in only if its terms allow publishing (Beyer
+   8-31 were published by the owner's choice); and
    the owner's push routine from the host:
    - `git log origin/main..main` to see what is going out;
    - `gh auth login --hostname github.com --git-protocol https --web --scopes workflow`,

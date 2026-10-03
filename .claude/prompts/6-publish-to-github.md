@@ -63,7 +63,9 @@ GitHub's current docs, and read each setting back.
 - CodeQL default setup;
 - Pages from the workflow, with the `github-pages` environment limited to `main`.
 
-Then push `main` only. Never `--all` or `--tags`.
+Then add the remote over HTTPS, so the one-command helper is what authenticates (an SSH URL
+would use the host's SSH key instead): `git remote add origin https://github.com/cinash/piano-tutor.git`.
+Push `main` only. Never `--all` or `--tags`.
 
 ## Done when
 
