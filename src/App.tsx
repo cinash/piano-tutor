@@ -77,7 +77,13 @@ import {
   hasPitchOutside,
   timedPlayable,
 } from './score/pieceRules';
-import { checkUpload, loadUploads, newUpload, saveUploads } from './score/uploads';
+import {
+  checkUpload,
+  loadUploads,
+  newUpload,
+  saveUploads,
+  uploadContext,
+} from './score/uploads';
 import { filterScoreByHand, type HandSelection } from './score/filterScoreByHand';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
@@ -179,11 +185,12 @@ export function App() {
   const score = filterScoreByHand(piece.score, hands);
   // Judged on the whole piece, so hiding one hand's fast notes cannot offer Timed.
   const waitOnly = !timedPlayable(piece.score);
-  // Only for an upload, the one kind of piece with a title of its own: the bundled pieces are
-  // all in range, as pieces.test.ts checks.
-  const outsideComputerKeyboard =
-    piece.title !== undefined &&
-    hasPitchOutside(piece.score, COMPUTER_KEYBOARD_LOW, COMPUTER_KEYBOARD_HIGH);
+  // Only an upload can show it: pieces.test.ts keeps every bundled piece in range.
+  const outsideComputerKeyboard = hasPitchOutside(
+    piece.score,
+    COMPUTER_KEYBOARD_LOW,
+    COMPUTER_KEYBOARD_HIGH,
+  );
   const outsideOnScreenKeyboard = hasPitchOutside(
     piece.score,
     DEFAULT_KEYBOARD_PRESET.low,
@@ -527,14 +534,14 @@ export function App() {
 
   // A refusal, or a full store, changes nothing but the alert line.
   async function uploadPiece(file: File) {
-    const checked = checkUpload(new Uint8Array(await file.arrayBuffer()), file.name, {
-      bundledTitles: PIECES.map((candidate) => candidate.score.title),
-      storedTitles: uploads.map((upload) => upload.title),
-      storedBytes: uploads.reduce(
-        (sum, upload) => sum + new TextEncoder().encode(upload.xml).length,
-        0,
+    const checked = checkUpload(
+      new Uint8Array(await file.arrayBuffer()),
+      file.name,
+      uploadContext(
+        PIECES.map((candidate) => candidate.score.title),
+        uploads,
       ),
-    });
+    );
     if (!checked.ok) {
       setError(checked.message);
       return;

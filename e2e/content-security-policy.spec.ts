@@ -1,17 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+import { recordCspViolations } from './page';
 import { connectVirtualKeyboard, playOpeningMeasure } from './virtualKeyboard';
 
 // Runs against the built app, the only one that carries the policy (see vite.config.ts), so
 // a dependency that starts injecting a style or loading an image the policy blocks fails here
 // rather than on GitHub Pages. OSMD's cursor is a data: image, and drawing it is part of this.
 test('the built app works under its Content-Security-Policy', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.cspViolations = [];
-    document.addEventListener('securitypolicyviolation', (event) => {
-      window.cspViolations.push(`${event.violatedDirective} ${event.blockedURI}`);
-    });
-  });
+  await recordCspViolations(page);
 
   await connectVirtualKeyboard(page);
   await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1);

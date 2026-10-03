@@ -1,28 +1,18 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
+import { recordCspViolations, staffWidth } from './page';
 import { connectVirtualKeyboard, playChord } from './virtualKeyboard';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, '..', 'src', 'score', 'fixtures', 'uploads');
 
-const staffWidth = (page: Page) =>
-  page
-    .getByTestId('staff')
-    .locator('svg')
-    .evaluate((svg) => svg.getBoundingClientRect().width);
-
 // Against the built app, under its Content-Security-Policy, as content-security-policy.spec.ts
 // is: an uploaded file is drawn by the same OSMD, and must not need anything the policy blocks.
 test('an uploaded piece is drawn, played, and remembered', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.cspViolations = [];
-    document.addEventListener('securitypolicyviolation', (event) => {
-      window.cspViolations.push(`${event.violatedDirective} ${event.blockedURI}`);
-    });
-  });
+  await recordCspViolations(page);
   await connectVirtualKeyboard(page);
   const staff = page.getByTestId('staff');
   const input = page.getByTestId('upload-piece-input');

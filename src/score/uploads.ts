@@ -15,6 +15,21 @@ export interface UploadContext {
   storedBytes: number;
 }
 
+export function uploadContext(
+  bundledTitles: readonly string[],
+  uploads: readonly Upload[],
+): UploadContext {
+  const encoder = new TextEncoder();
+  return {
+    bundledTitles,
+    storedTitles: uploads.map((upload) => upload.title),
+    storedBytes: uploads.reduce(
+      (sum, upload) => sum + encoder.encode(upload.xml).length,
+      0,
+    ),
+  };
+}
+
 export interface Accepted {
   ok: true;
   xml: string;
@@ -222,12 +237,6 @@ export function storedUploads(): readonly Upload[] {
  */
 export function loadUploads(): readonly Upload[] {
   const stored = readStored();
-  if (!stored) {
-    console.warn(`Ignoring ${STORAGE_KEY}: it is not a list of uploaded pieces.`);
-    current = [];
-    return current;
-  }
-
   const kept = stored.flatMap(({ id, title, xml }) => {
     const score = scoreOf(xml);
     if (!score)
@@ -239,17 +248,22 @@ export function loadUploads(): readonly Upload[] {
   return current;
 }
 
-/** The stored records, none when nothing is stored, or undefined for a value that is not a list of them. */
-function readStored(): UploadRecord[] | undefined {
+/**
+ * The stored records: none when nothing is stored, and none, with a warning, for a value
+ * that is not a list of them.
+ */
+function readStored(): UploadRecord[] {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw === null) return [];
   let stored: unknown;
   try {
     stored = JSON.parse(raw);
   } catch {
-    return undefined;
+    stored = undefined;
   }
-  return Array.isArray(stored) && stored.every(isUploadRecord) ? stored : undefined;
+  if (Array.isArray(stored) && stored.every(isUploadRecord)) return stored;
+  console.warn(`Ignoring ${STORAGE_KEY}: it is not a list of uploaded pieces.`);
+  return [];
 }
 
 function isUploadRecord(value: unknown): value is UploadRecord {

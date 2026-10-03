@@ -656,6 +656,8 @@ describe('choosing the piece', () => {
 describe('uploading a piece', () => {
   const pieceSelect = () => screen.getByTestId('piece-select') as HTMLSelectElement;
   const yours = () => pieceSelect().querySelector('optgroup[label="Yours"]');
+  const modeInput = (mode: 'wait' | 'timed') =>
+    screen.getByTestId(`mode-${mode}`) as HTMLInputElement;
   const kotek = scoreXml({ title: 'Kotek', bars: [FINGERED_BAR, FINGERED_BAR] });
   const triplets = scoreXml({
     title: 'Triolki',
@@ -757,15 +759,15 @@ describe('uploading a piece', () => {
     vi.stubGlobal('AudioContext', FakeAudioContext); // choosing Timed starts the metronome
     await renderConnectedApp();
     expect(screen.queryByTestId('wait-only-note')).toBeNull();
-    expect((screen.getByTestId('mode-timed') as HTMLInputElement).disabled).toBe(false);
+    expect(modeInput('timed').disabled).toBe(false);
     fireEvent.click(screen.getByTestId('mode-timed'));
 
     upload(triplets);
 
     await waitFor(() => expect(pieceSelect().value).toBe('upload-triolki'));
     expect(pieceSelect().selectedOptions[0].textContent).toBe('Triolki (Wait mode only)');
-    expect((screen.getByTestId('mode-wait') as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByTestId('mode-timed') as HTMLInputElement).disabled).toBe(true);
+    expect(modeInput('wait').checked).toBe(true);
+    expect(modeInput('timed').disabled).toBe(true);
     expect(screen.getByTestId('wait-only-note').textContent).toBe(
       'Timed mode cannot keep time through this piece yet; it plays in Wait mode.',
     );
@@ -773,8 +775,8 @@ describe('uploading a piece', () => {
     // Leaving it frees Timed, but does not choose it again.
     choosePiece('cicha-noc');
     expect(screen.queryByTestId('wait-only-note')).toBeNull();
-    expect((screen.getByTestId('mode-timed') as HTMLInputElement).disabled).toBe(false);
-    expect((screen.getByTestId('mode-wait') as HTMLInputElement).checked).toBe(true);
+    expect(modeInput('timed').disabled).toBe(false);
+    expect(modeInput('wait').checked).toBe(true);
   });
 
   it('warns of notes off the computer keyboard, and again after a reload', async () => {
