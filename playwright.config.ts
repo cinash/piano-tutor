@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
 const BASE_URL = `http://localhost:${PORT}`;
-const PREVIEW_PORT = 4173;
+// Not vite preview's default 4173, so a preview left running does not stop the suite.
+const PREVIEW_PORT = 4180;
 const PREVIEW_URL = `http://localhost:${PREVIEW_PORT}`;
 
 export default defineConfig({
