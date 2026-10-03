@@ -116,13 +116,37 @@ and any https origin is a secure context, so Web MIDI is available there. Whiche
 machine's browser opens that URL is the one whose USB piano the app sees; the cluster
 never touches the hardware.
 
+## Published copy
+
+The app is published at `https://cinash.github.io/piano-tutor/`, from the public repository
+`cinash/piano-tutor`. `.github/workflows/ci.yml` runs `npm run ci` on every push and pull
+request, and a push to `main` that passes is deployed to GitHub Pages. Pages serves https, so
+Web MIDI works there, as on the tailnet copy.
+
+Every commit on `main` becomes public when it is pushed, history included. New music goes in
+only if its terms allow publishing it; Beyer Nos. 8-31 are published by the owner's choice
+(see Licence below).
+
+The owner pushes from the host, never from the container:
+
+```sh
+git log origin/main..main   # what is about to go out
+gh auth login --hostname github.com --git-protocol https --web --scopes workflow
+# answer No to "Authenticate Git with your GitHub credentials?"
+git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main
+gh auth logout --hostname github.com
+```
+
+Never run `gh auth setup-git`: VS Code relays the host's git credentials into the dev
+container, so a credential helper configured on the host is one the container can reach.
+
 ## Version pinning
 
 Every dependency is pinned to an exact version, and every base image is pinned by digest —
-the dev container's, and the two the production `Dockerfile` builds from.
+the dev container's, the two the production `Dockerfile` builds from, and the one CI runs in.
 
-Two versions have to be written in more than one place, and `npm run ci` starts by
-running `scripts/check-version-lockstep.mjs`, which fails if either has drifted.
+Three versions have to be written in more than one place, and `npm run ci` starts by
+running `scripts/check-version-lockstep.mjs`, which fails if any has drifted.
 
 The Playwright package version and the browser build baked into the image must match, so
 the check compares `package.json`, the `PLAYWRIGHT_VERSION` build argument in
@@ -132,8 +156,24 @@ Claude Code is installed into the image and its VS Code extension is pinned to t
 version, so the check compares `CLAUDE_CODE_VERSION` in `.devcontainer/Dockerfile`
 against the pinned `anthropic.claude-code` extension in `.devcontainer/devcontainer.json`.
 
-Bumping either means changing every file that names it and rebuilding the container.
+The Node image is named by tag and digest in `.devcontainer/Dockerfile`, in the production
+`Dockerfile`'s build stage and in `.github/workflows/ci.yml`. CI runs in the dev container's
+image because the screenshot baselines were rendered there, so the check compares all three.
+
+Bumping any of them means changing every file that names it and rebuilding the container.
 
 TypeScript is held at the 6.x line rather than 7.x: TypeScript 7 is the native compiler
 rewrite, and the current `typescript-eslint` release declares support for
 `>=4.8.4 <6.1.0`, so moving to 7 would mean giving up linting.
+
+## Licence
+
+The code is under the MIT licence, in `LICENSE`. Some of the music is not:
+
+- Beyer Nos. 8-31 (`beyer_op101_musicxml/beyer_op101_no08.musicxml` to `no31`): their terms
+  are in each file's `<rights>`.
+- `cicha-noc.musicxml` is the owner's own arrangement. No licence is granted for it, nor for
+  `src/score/fixtures/cicha-noc.snapshot.json`, which holds the same notes.
+- The files from the PDMX dataset, `scripts/beyer/fixtures/*` and
+  `beyer_op101_musicxml/beyer_op101_no38.musicxml`, are CC0.
+- The rest of `src/score/fixtures/` is MIT.

@@ -1,8 +1,9 @@
 /**
  * Some versions have to be written in more than one place, where nothing but a comment
  * would otherwise hold them together. This asserts that every place agrees, and runs as
- * the first step of `npm run ci`. Why each version has to be repeated is at the matching
- * `ARG` in `.devcontainer/Dockerfile`.
+ * the first step of `npm run ci`. Why Playwright and Claude Code are repeated is at the
+ * matching `ARG` in `.devcontainer/Dockerfile`; why the Node image is, at `container:` in
+ * `.github/workflows/ci.yml`.
  */
 import { readFileSync } from 'node:fs';
 
@@ -13,6 +14,7 @@ const dockerfile = readText('../.devcontainer/Dockerfile');
 const devcontainer = readText('../.devcontainer/devcontainer.json');
 const dockerfileArg = (name) =>
   dockerfile.match(new RegExp(String.raw`^ARG\s+${name}=(\S+)`, 'm'))?.[1];
+const nodeImage = (text) => text.match(/\bnode:\S+@sha256:[0-9a-f]{64}/)?.[0];
 
 const playwrightSources = [
   {
@@ -57,6 +59,20 @@ const checks = [
       {
         name: '.devcontainer/devcontainer.json extension anthropic.claude-code',
         version: devcontainer.match(/"anthropic\.claude-code@([^"]+)"/)?.[1],
+      },
+    ],
+  },
+  {
+    subject: 'Node image',
+    sources: [
+      { name: '.devcontainer/Dockerfile FROM', version: nodeImage(dockerfile) },
+      {
+        name: 'Dockerfile FROM ... AS build',
+        version: nodeImage(readText('../Dockerfile')),
+      },
+      {
+        name: '.github/workflows/ci.yml container',
+        version: nodeImage(readText('../.github/workflows/ci.yml')),
       },
     ],
   },
