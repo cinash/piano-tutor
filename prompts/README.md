@@ -142,8 +142,9 @@ pieces.
 
 Step 22 made the pieces a build-time list on purpose, so the owner's own arrangement cannot reach
 the child without a rebuild. This step reverses that for uploads. Uploads can neither replace nor remove a
-piece. The plan gate's round cap was reached with one owner decision open (rhythm the Timed mode cannot keep
-time through, refused by default), so the brief is handed back for that answer.
+piece; replacing and removing are later features. Rhythm that Timed mode cannot keep time through is accepted
+as wait-only. The plan gate's round cap was reached before the owner settled that point, so the brief's
+last changes have not been through a review round.
 
 ## Deliberately not planned
 
