@@ -38,7 +38,7 @@ think is wrong but that the document states clearly is theirs to fight, not your
 
 - **Claims about the code that are not true any more.** A brief that cites a file, a symbol or a
   line number is making a checkable claim: check it. `step22.md` as first drafted (commit
-  `11dfb29`) names `App.tsx:93`, `practiceView.ts:41` and four test files by name — that precision
+  `14b9653`) names `App.tsx:93`, `practiceView.ts:41` and four test files by name — that precision
   is the house style, and a citation that has gone stale sends the implementer to the wrong place.
 
 - **Contradictions with the record.** The project has already decided things and written them down.
@@ -47,7 +47,7 @@ think is wrong but that the document states clearly is theirs to fight, not your
   "deliberately not planned" without saying that is what it is doing.
 
 - **Unmet preconditions.** Something the step needs that does not exist yet: a second piece of
-  music, a device, a file, another step. `step22.md` as first drafted (commit `11dfb29`) did this
+  music, a device, a file, another step. `step22.md` as first drafted (commit `14b9653`) did this
   correctly: it headed a section "This step needs a second piece, and the owner has to supply it",
   and said plainly "Do not start until one has." A brief that depends on something absent and does
   not say so is a finding; one that says so is not.
@@ -66,7 +66,7 @@ think is wrong but that the document states clearly is theirs to fight, not your
 - **What the document says twice.** Nothing else in this gate pushes a brief to get shorter:
   both plan reviewers ask for more, and the code reviewer that used to trim briefs by accident no
   longer reads them. Three rounds on the steps 9-14 plan had to cut "prose written to argue with a
-  reviewer rather than instruct an implementer" (`05f811f`, `de19dd7`, `10cabde`). Name the
+  reviewer rather than instruct an implementer" (`ae0a21e`, `cbf24c0`, `282579e`). Name the
   paragraph that only restates the one above it, and the section that argues with a reviewer
   instead of instructing an implementer. A brief too long to hold in one sitting is describing a
   step that should be split, which is the one version of this finding that blocks.
