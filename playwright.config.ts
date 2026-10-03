@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
 const BASE_URL = `http://localhost:${PORT}`;
+// Not vite preview's default 4173, so a preview left running does not stop the suite.
+const PREVIEW_PORT = 4180;
+const PREVIEW_URL = `http://localhost:${PREVIEW_PORT}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -16,11 +19,30 @@ export default defineConfig({
   },
   // Chromium only. The e2e suite drives a fake MIDI source, never real hardware —
   // the USB piano is spoken to by Chrome on the host, which the container cannot reach.
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm run dev',
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-  },
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: 'content-security-policy.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // The Content-Security-Policy exists only in the build, so its spec runs against that.
+    {
+      name: 'built',
+      testMatch: 'content-security-policy.spec.ts',
+      use: { ...devices['Desktop Chrome'], baseURL: PREVIEW_URL },
+    },
+  ],
+  webServer: [
+    {
+      command: 'npm run dev',
+      url: BASE_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      command: `npx vite build && npx vite preview --port ${PREVIEW_PORT} --strictPort`,
+      url: PREVIEW_URL,
+      timeout: 60_000,
+    },
+  ],
 });
