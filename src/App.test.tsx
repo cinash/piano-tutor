@@ -813,6 +813,46 @@ describe('uploading a piece', () => {
       "Some notes are also outside the on-screen keyboard's default range (C2–B5).",
     );
   });
+
+  it('can be chosen again from the dropdown after another piece', async () => {
+    const { container } = await renderConnectedApp();
+    upload(kotek);
+    await waitFor(() => expect(pieceSelect().value).toBe('upload-kotek'));
+    choosePiece('cicha-noc');
+
+    choosePiece('upload-kotek');
+
+    expect(screen.getByTestId('position-readout').textContent).toBe('Measure 1 of 2');
+    expect(expectedPitches(container)).toEqual([48, 60]); // Kotek's C3 and C4
+    for (const code of ['KeyQ', 'KeyZ']) fireEvent.keyDown(window, { code });
+    expect(newestRow()[0]).toBe('Kotek');
+  });
+
+  it('refuses a second upload with the same title, keeping the first', async () => {
+    render(<App />);
+    upload(kotek);
+    await waitFor(() => expect(pieceSelect().value).toBe('upload-kotek'));
+
+    upload(scoreXml({ title: 'Kotek', bars: [FINGERED_BAR] }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'A piece with this name is already uploaded',
+    );
+    expect(
+      within(yours() as HTMLElement)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Kotek']);
+  });
+
+  it('refuses an upload titled as a built-in piece', async () => {
+    render(<App />);
+
+    upload(scoreXml({ title: 'Cicha Noc', bars: [FINGERED_BAR] }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain('already built in');
+    expect(yours()).toBeNull();
+  });
 });
 
 /** A click the stubbed AudioContext sounded, heard at `at` in performance.now() time. */

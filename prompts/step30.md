@@ -85,6 +85,11 @@ and it shows whether or not the device is connected.
 `data-testid="range-warning"`, placed directly above the staff and below the second toolbar row, so the row's width is unchanged. It is derived from the
 score on each render, so it appears again after a reload.
 
+**As shipped.** The code differs from this brief's wording in a few places. `uploads.ts` imports `PIECES` (for `uploadContext`) and `pieces.ts` does not
+import `uploads.ts`, the reverse of the direction above. Nothing writes to a module copy of the uploads: `App` holds them in state and derives the merged
+list each render. `pieceTitle` takes that list as a parameter, so its signature changed, and `AttemptHistory` takes a `pieces` prop to pass it. `Piece.title`
+is required, set from the score for the bundled pieces, rather than optional for uploads.
+
 ## Validation
 
 `pieceRules.ts` holds the rules the bundled pieces meet in `src/score/pieces.test.ts`, and both the test and the validator import it: the timed check, the
