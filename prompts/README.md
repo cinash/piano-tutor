@@ -136,14 +136,14 @@ pieces.
 
 ## Planned — the owner's own music
 
-| Step                      | What it adds                                    |
-| ------------------------- | ----------------------------------------------- |
-| [30](step30.md) Own music | The owner's fingered MusicXML: upload or folder |
+| Step                      | What it adds                                           |
+| ------------------------- | ------------------------------------------------------ |
+| [30](step30.md) Own music | The owner's fingered MusicXML, uploaded in the browser |
 
 Step 22 made the pieces a build-time list on purpose, so the owner's own arrangement cannot reach
-the child without a rebuild. This step either reverses that for uploads or takes the owner's files
-from a folder read at build time, depending on the first of its five owner questions; nothing is
-built until they are answered.
+the child without a rebuild. This step reverses that for uploads. Uploads can neither replace nor remove a
+piece; replacing and removing are later features. Rhythm that Timed mode cannot keep time through is accepted
+as wait-only, and Timed mode for those pieces is later work.
 
 ## Deliberately not planned
 
