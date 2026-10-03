@@ -23,12 +23,15 @@ import beyerNo31Xml from '../../beyer_op101_musicxml/beyer_op101_no31.musicxml?r
 import { cichaNocScore, cichaNocXml } from './cichaNoc';
 import { parseScore } from './parseScore';
 import type { Score } from './types';
+import { storedUploads } from './uploads';
 
 export interface Piece {
   /** Stored in the history, so it names this piece for good; the file and title may change. */
   id: string;
   xml: string;
   score: Score;
+  /** An upload's title, which may come from its file name; a bundled piece's is its score's. */
+  title?: string;
 }
 
 function piece(id: string, xml: string): Piece {
@@ -66,7 +69,13 @@ export const PIECES: readonly Piece[] = [
   piece('beyer-op101-31', beyerNo31Xml),
 ];
 
+/** Every piece offered: the bundled ones, then the owner's uploads in upload order. */
+export function allPieces(): readonly Piece[] {
+  return [...PIECES, ...storedUploads()];
+}
+
 /** The title of the offered piece with this id, or the id itself for one not offered. */
 export function pieceTitle(id: string): string {
-  return PIECES.find((piece) => piece.id === id)?.score.title ?? id;
+  const piece = allPieces().find((candidate) => candidate.id === id);
+  return piece ? (piece.title ?? piece.score.title) : id;
 }

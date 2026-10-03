@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
@@ -14,6 +14,14 @@ import { loadQueueFolded } from './practice/queueFoldStore';
 import { loadAttempts } from './progress/attemptStore';
 import { cichaNocScore } from './score/cichaNoc';
 import { PIECES } from './score/pieces';
+import {
+  FINGERED_BAR,
+  LEFT_WHOLE,
+  note,
+  repeatNote,
+  scoreXml,
+  twoHands,
+} from './score/fixtures/uploads/scoreXml';
 
 // App decides once, as it is imported, whether the browser has Web MIDI at all, so the
 // property has to be there before that — which is what hoisting this above the imports
@@ -642,6 +650,158 @@ describe('choosing the piece', () => {
     expect(fireEvent.keyDown(pieceSelect(), { key: 'ArrowDown' })).toBe(true);
     // A shortcut such as find is left to the browser.
     expect(fireEvent.keyDown(pieceSelect(), { key: 'f', ctrlKey: true })).toBe(true);
+  });
+});
+
+describe('uploading a piece', () => {
+  const pieceSelect = () => screen.getByTestId('piece-select') as HTMLSelectElement;
+  const yours = () => pieceSelect().querySelector('optgroup[label="Yours"]');
+  const kotek = scoreXml({ title: 'Kotek', bars: [FINGERED_BAR, FINGERED_BAR] });
+  const triplets = scoreXml({
+    title: 'Triolki',
+    bars: [twoHands(repeatNote(12, 4), LEFT_WHOLE)],
+  });
+  /** One right-hand whole note at `octave`, with the usual C3 below it. */
+  const lowNote = (octave: number) =>
+    scoreXml({
+      title: 'Nisko',
+      bars: [twoHands(note('C', octave, 48, { finger: '1' }), LEFT_WHOLE)],
+    });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  /** Picks the file through the real input; reading it is asynchronous, so wait on the result. */
+  function upload(xml: string, fileName = 'upload.musicxml') {
+    fireEvent.change(screen.getByTestId('upload-piece-input'), {
+      target: { files: [new File([xml], fileName)] },
+    });
+  }
+
+  it('offers the upload under "Yours" and selects it, starting at its first note', async () => {
+    render(<App />);
+    expect(yours()).toBeNull();
+
+    upload(kotek);
+
+    await waitFor(() => expect(pieceSelect().value).toBe('upload-kotek'));
+    expect(within(yours() as HTMLElement).getByRole('option').textContent).toBe('Kotek');
+    expect(screen.getByTestId('position-readout').textContent).toBe('Measure 1 of 2');
+  });
+
+  it('shows a refusal in the alert line, and leaves the piece and the list as they were', async () => {
+    render(<App />);
+    choosePiece('beyer-op101-12');
+
+    upload(scoreXml({ title: 'Kotek', bars: [twoHands(note('C', 4, 48), LEFT_WHOLE)] }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Measure 1 has a note with no finger (1 to 5).',
+    );
+    expect(pieceSelect().value).toBe('beyer-op101-12');
+    expect(yours()).toBeNull();
+  });
+
+  it('clears a refusal on the next successful upload', async () => {
+    render(<App />);
+    upload('<not xml');
+    await screen.findByRole('alert');
+
+    upload(kotek);
+
+    await waitFor(() => expect(pieceSelect().value).toBe('upload-kotek'));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('shows the storage error when the piece cannot be saved, and does not offer it', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key) => {
+      if (key === 'piano-tutor.uploaded-pieces.v1')
+        throw new DOMException('', 'QuotaExceededError');
+    });
+    render(<App />);
+
+    upload(kotek);
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Could not save this piece; browser storage is full.',
+    );
+    expect(pieceSelect().value).toBe('cicha-noc');
+    expect(yours()).toBeNull();
+  });
+
+  it.each([
+    ['its title', kotek, 'other-name.musicxml', 'Kotek'],
+    [
+      'its file name when it has no title',
+      scoreXml({ title: '', bars: [FINGERED_BAR] }),
+      'Piesek.musicxml',
+      'Piesek',
+    ],
+  ])(
+    'names the upload in the Piece column by %s',
+    async (_name, xml, fileName, title) => {
+      await renderConnectedApp();
+      upload(xml, fileName);
+      await waitFor(() => expect(pieceSelect().value).toMatch(/^upload-/));
+
+      for (const code of ['KeyQ', 'KeyZ']) fireEvent.keyDown(window, { code }); // C4 and C3
+
+      const row = screen.getByTestId('attempt-history-row');
+      expect(within(row).getAllByRole('cell')[1].textContent).toBe(title);
+    },
+  );
+
+  it('plays a piece Timed cannot keep time through in Wait mode, and says so', async () => {
+    vi.stubGlobal('AudioContext', FakeAudioContext); // choosing Timed starts the metronome
+    await renderConnectedApp();
+    expect(screen.queryByTestId('wait-only-note')).toBeNull();
+    expect((screen.getByTestId('mode-timed') as HTMLInputElement).disabled).toBe(false);
+    fireEvent.click(screen.getByTestId('mode-timed'));
+
+    upload(triplets);
+
+    await waitFor(() => expect(pieceSelect().value).toBe('upload-triolki'));
+    expect(pieceSelect().selectedOptions[0].textContent).toBe('Triolki (Wait mode only)');
+    expect((screen.getByTestId('mode-wait') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByTestId('mode-timed') as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTestId('wait-only-note').textContent).toBe(
+      'Timed mode cannot keep time through this piece yet; it plays in Wait mode.',
+    );
+
+    // Leaving it frees Timed, but does not choose it again.
+    choosePiece('cicha-noc');
+    expect(screen.queryByTestId('wait-only-note')).toBeNull();
+    expect((screen.getByTestId('mode-timed') as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByTestId('mode-wait') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('warns of notes off the computer keyboard, and again after a reload', async () => {
+    const { unmount } = render(<App />);
+    expect(screen.queryByTestId('range-warning')).toBeNull();
+
+    upload(lowNote(2)); // C2: off the computer keyboard, on the on-screen one
+    const warning =
+      "Some notes are outside the computer keyboard's range (C3–G5); the piano plays them.";
+    expect((await screen.findByTestId('range-warning')).textContent).toBe(warning);
+    unmount();
+
+    render(<App />);
+
+    expect(screen.getByTestId('range-warning').textContent).toBe(warning);
+    choosePiece('cicha-noc');
+    expect(screen.queryByTestId('range-warning')).toBeNull();
+  });
+
+  it('adds a second line for a note off the on-screen keyboard too', async () => {
+    render(<App />);
+
+    upload(lowNote(1)); // C1
+
+    expect((await screen.findByTestId('range-warning')).textContent).toContain(
+      "Some notes are also outside the on-screen keyboard's default range (C2–B5).",
+    );
   });
 });
 

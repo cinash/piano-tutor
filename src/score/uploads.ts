@@ -192,3 +192,120 @@ function fillProblem(measures: Element[]): string | undefined {
 function barOf(el: Element): string {
   return el.closest('measure')?.getAttribute('number') ?? '?';
 }
+
+const STORAGE_KEY = 'piano-tutor.uploaded-pieces.v1';
+
+/** What storage keeps of an upload: the raw XML, so a later parser re-reads it. */
+interface UploadRecord {
+  /** `upload-` and a slug of the title, made once at upload, so a title keeps its id. */
+  id: string;
+  title: string;
+  xml: string;
+}
+
+/** A stored upload with its score, which is a `Piece` in all but name. */
+export interface Upload extends UploadRecord {
+  score: Score;
+}
+
+// The list the start-up check kept, and every upload saved since: what pieces.ts offers.
+let current: readonly Upload[] = [];
+
+export function storedUploads(): readonly Upload[] {
+  return current;
+}
+
+/**
+ * Reads the stored uploads, dropping any record that no longer parses into a piece with a
+ * note, and writes the list back without it, so storage matches what is offered. Checks 1
+ * to 6 are not run again: a rule added later never removes a file the upload accepted.
+ */
+export function loadUploads(): readonly Upload[] {
+  const stored = readStored();
+  if (!stored) {
+    console.warn(`Ignoring ${STORAGE_KEY}: it is not a list of uploaded pieces.`);
+    current = [];
+    return current;
+  }
+
+  const kept = stored.flatMap(({ id, title, xml }) => {
+    const score = scoreOf(xml);
+    if (!score)
+      console.warn(`Dropping the uploaded piece "${title}": it no longer loads.`);
+    return score ? [{ id, title, xml, score }] : [];
+  });
+  if (kept.length < stored.length) saveUploads(kept);
+  current = kept;
+  return current;
+}
+
+/** The stored records, none when nothing is stored, or undefined for a value that is not a list of them. */
+function readStored(): UploadRecord[] | undefined {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw === null) return [];
+  let stored: unknown;
+  try {
+    stored = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+  return Array.isArray(stored) && stored.every(isUploadRecord) ? stored : undefined;
+}
+
+function isUploadRecord(value: unknown): value is UploadRecord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'title' in value &&
+    typeof value.title === 'string' &&
+    'xml' in value &&
+    typeof value.xml === 'string'
+  );
+}
+
+/** What playing needs of a stored file: it parses, and it has a note. */
+function scoreOf(xml: string): Score | undefined {
+  try {
+    const score = parseScore(xml);
+    return score.events.length > 0 ? score : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Stores the list and offers it. Throws, offering nothing new, when storage is full. */
+export function saveUploads(uploads: readonly Upload[]): void {
+  const records: UploadRecord[] = uploads.map(({ id, title, xml }) => ({
+    id,
+    title,
+    xml,
+  }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  current = uploads;
+}
+
+/** The new upload for a checked file, its id unique among `uploads`. */
+export function newUpload(
+  { title, xml, score }: Accepted,
+  uploads: readonly Upload[],
+): Upload {
+  const base = `upload-${slug(title)}`;
+  let id = base;
+  for (let n = 2; uploads.some((upload) => upload.id === id); n++) id = `${base}-${n}`;
+  return { id, title, xml, score };
+}
+
+/** ASCII only: accents dropped, ł read as l, and a title with no Latin letters as `piece`. */
+function slug(title: string): string {
+  return (
+    title
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .replace(/[łŁ]/g, 'l')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'piece'
+  );
+}

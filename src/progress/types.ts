@@ -25,7 +25,7 @@ export interface AttemptRecord {
   wrongNoteCount: number;
   reachedEnd: boolean;
   loop?: Loop;
-  piece: string; // the piece's id in PIECES, which names it for good
+  piece: string; // the piece's id, bundled or an upload's, which names it for good
   hands: HandSelection;
   timed?: TimedRecord; // absent in wait-mode, and on every record from before step 29
 }

@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_KEYBOARD_PRESET } from '../config';
 import {
   MAX_FILE_BYTES,
   MAX_TOTAL_BYTES,
   checkUpload,
+  loadUploads,
+  newUpload,
+  saveUploads,
+  storedUploads,
   type Accepted,
   type UploadContext,
 } from './uploads';
@@ -340,5 +344,91 @@ describe('checkUpload accepts', () => {
     );
 
     expect(timedPlayable(result.score)).toBe(false);
+  });
+});
+
+describe('stored uploads', () => {
+  const KEY = 'piano-tutor.uploaded-pieces.v1';
+  const upload = (title: string, fileName?: string) =>
+    newUpload(accepted(scoreXml({ title, bars: [FINGERED_BAR] }), fileName), []);
+  const storedIds = () =>
+    (JSON.parse(localStorage.getItem(KEY)!) as { id: string }[]).map(({ id }) => id);
+
+  beforeEach(() => {
+    localStorage.clear();
+    loadUploads();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    ['Kotek', 'upload-kotek'],
+    ['Łódka  mała!', 'upload-lodka-mala'],
+    ['Котик', 'upload-piece'],
+  ])('ids %s as %s', (title, id) => {
+    expect(upload(title).id).toBe(id);
+  });
+
+  it('gives a clashing slug the next free suffix', () => {
+    const first = upload('Котик');
+    const second = newUpload(
+      accepted(scoreXml({ title: 'Ёжик', bars: [FINGERED_BAR] })),
+      [first],
+    );
+
+    expect(second.id).toBe('upload-piece-2');
+  });
+
+  it('keeps a title taken from the file name, which the start-up check cannot recompute', () => {
+    saveUploads([upload('', 'Kotek.musicxml')]);
+
+    expect(loadUploads().map(({ id, title }) => ({ id, title }))).toEqual([
+      { id: 'upload-kotek', title: 'Kotek' },
+    ]);
+  });
+
+  it('drops a record that no longer loads, writes the rest back, and says so', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const broken = { id: 'upload-broken', title: 'Broken', xml: '<not xml' };
+    const { id, title, xml } = upload('Kotek');
+    localStorage.setItem(KEY, JSON.stringify([broken, { id, title, xml }]));
+
+    expect(loadUploads().map((stored) => stored.id)).toEqual(['upload-kotek']);
+    expect(storedIds()).toEqual(['upload-kotek']);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"Broken"'));
+
+    // The dropped title is free again, and takes its old id, so its history re-attaches.
+    expect(
+      newUpload(
+        accepted(scoreXml({ title: 'Broken', bars: [FINGERED_BAR] })),
+        storedUploads(),
+      ).id,
+    ).toBe('upload-broken');
+  });
+
+  it.each([
+    ['not JSON', '{'],
+    ['not a list', '{"id": "upload-kotek"}'],
+    ['a list of something else', '[1, 2]'],
+  ])('treats a stored value that is %s as no uploads, with a warning', (_name, value) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    localStorage.setItem(KEY, value);
+
+    expect(loadUploads()).toEqual([]);
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it('throws on a full store, and neither stores nor offers the new piece', () => {
+    const kotek = upload('Kotek');
+    saveUploads([kotek]);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    });
+
+    expect(() => saveUploads([kotek, upload('Piesek')])).toThrow('quota');
+    expect(storedUploads()).toEqual([kotek]);
+    expect(storedIds()).toEqual(['upload-kotek']);
   });
 });

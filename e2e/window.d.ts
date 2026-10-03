@@ -11,7 +11,7 @@ declare global {
       wrongNoteCount: number;
       missedNoteCount: number;
     };
-    /** Set by content-security-policy.spec.ts's init script, before the app loads. */
+    /** Set by the init script in content-security-policy.spec.ts and uploads.spec.ts. */
     cspViolations: string[];
   }
 }

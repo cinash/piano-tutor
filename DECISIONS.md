@@ -745,7 +745,16 @@ Measured rather than assumed, and measured again when step 21 replaced the arran
 walking OSMD's cursor from end to end yields 44 onsets, every event's `startTime` matches
 one of them, and OSMD offers none that is not an event. The piece's divisions are 2, so
 every `startTime` is a multiple of a half beat and the comparison is between dyadic
-fractions — exact in floating point, and no tolerance is needed.
+fractions — exact in floating point, and for such onsets no tolerance is needed.
+
+Triplets are not dyadic, and step 30's uploads can carry them. OSMD computes an onset as a
+whole part plus a fraction, which rounds twice where the parser rounds once, so a triplet
+onset can read one unit in the last place below the `startTime` it equals — measured on
+four bars of eighth-note triplets, from the second bar on. The strict comparison then steps
+past it, and the cursor sits one note late. The comparison therefore allows `1e-9` of a
+whole note, far below the gap between any two onsets a score can write;
+`src/score/StaffView.cursor.test.tsx` walks OSMD's own iterator over a triplet piece and
+fails without it. Scoring is unaffected: the engine never reads OSMD's timestamps.
 
 ## The cursor is reset and re-scanned on every move, never tracked
 
