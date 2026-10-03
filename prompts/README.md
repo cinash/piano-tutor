@@ -136,15 +136,17 @@ pieces.
 
 ## Planned — the owner's own music
 
-| Step                      | What it adds                                           |
-| ------------------------- | ------------------------------------------------------ |
-| [30](step30.md) Own music | The owner's fingered MusicXML, uploaded in the browser |
+| Step                                       | What it adds                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| [30](step30.md) Own music                  | The owner's fingered MusicXML, uploaded in the browser              |
+| [31](step31.md) Replace and remove uploads | Correcting an upload in place, and taking one off the list          |
+| [32](step32.md) Timed for wait-only pieces | Extending Timed mode to the rhythms it cannot yet keep time through |
+| [33](step33.md) Guard the history write    | A full browser store shows a message, not a crash                   |
 
 Step 22 made the pieces a build-time list on purpose, so the owner's own arrangement cannot reach
 the child without a rebuild. This step reverses that for uploads. Uploads can neither replace nor remove a
-piece; replacing and removing are later features. Rhythm that Timed mode cannot keep time through is accepted
-as wait-only. The plan gate's round cap was reached before the owner settled that point, so the brief's
-last changes have not been through a review round.
+piece; replacing and removing are step 31. Rhythm that Timed mode cannot keep time through is accepted
+as wait-only, and step 32 extends Timed mode to it.
 
 ## Deliberately not planned
 
