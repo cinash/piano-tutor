@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { measureStartTime, timeSignatureAt } from './measureStartTime';
 import { PIECES } from './pieces';
-
-// C3 to G5: VirtualKeyboardSource's map, which is not exported for a test's sake.
-const COMPUTER_KEYBOARD_LOW = 48;
-const COMPUTER_KEYBOARD_HIGH = 79;
+import {
+  COMPUTER_KEYBOARD_HIGH,
+  COMPUTER_KEYBOARD_LOW,
+  isFingered,
+  timedPlayable,
+} from './pieceRules';
 
 describe('PIECES', () => {
   it('offers Cicha Noc, then Beyer Nos. 8, 9 and 12-31 in book order', () => {
@@ -29,7 +30,7 @@ describe('PIECES', () => {
       const notes = score.events.flatMap((event) => event.notes);
 
       expect(notes.length).toBeGreaterThan(0);
-      expect(notes.filter((note) => note.finger === undefined)).toEqual([]);
+      expect(notes.filter((note) => !isFingered(note.finger))).toEqual([]);
       for (const { pitch } of notes) {
         expect(pitch).toBeGreaterThanOrEqual(COMPUTER_KEYBOARD_LOW);
         expect(pitch).toBeLessThanOrEqual(COMPUTER_KEYBOARD_HIGH);
@@ -37,23 +38,9 @@ describe('PIECES', () => {
     },
   );
 
-  // What timed play assumes of every piece: one signature over quarter-note beats, so the
-  // click and its accents are periodic; no pickup or short bar, so a bar starts where
-  // measureStartTime says; and events at least half a beat apart, so the ±¼-beat windows
-  // never overlap. A piece added that fails this needs timed play extended, leaving out,
-  // or offering for wait-mode only — the decision of whoever adds its line.
+  // A piece added that fails this needs timed play extended, leaving out, or offering for
+  // wait-mode only — the decision of whoever adds its line. The rule is in pieceRules.ts.
   it.each(PIECES)('$id is one that timed play can keep time through', ({ score }) => {
-    const startTimes = score.events.map((event) => event.startTime);
-
-    // parseScore records only a change, so nothing after bar 1 means one signature.
-    expect(score.timeSignatures.filter((signature) => signature.measure > 1)).toEqual([]);
-    expect(timeSignatureAt(score, 1).beatType).toBe(4);
-    for (const { measure, startTime } of score.events) {
-      expect(startTime).toBeGreaterThanOrEqual(measureStartTime(score, measure));
-      expect(startTime).toBeLessThan(measureStartTime(score, measure + 1));
-    }
-    for (let i = 1; i < startTimes.length; i++) {
-      expect(startTimes[i] - startTimes[i - 1]).toBeGreaterThanOrEqual(0.5);
-    }
+    expect(timedPlayable(score)).toBe(true);
   });
 });
