@@ -1,10 +1,9 @@
 /**
  * Some versions have to be written in more than one place, where nothing but a comment
  * would otherwise hold them together. This asserts that every place agrees, and runs as
- * the first step of `npm run ci`. Why Playwright and Claude Code have to be repeated is at
- * the matching `ARG` in `.devcontainer/Dockerfile`. The Node image is named by tag and digest
- * three times — the dev container, the production build and the CI workflow — so that CI
- * renders the screenshots in the image their baselines came from, and builds what ships.
+ * the first step of `npm run ci`. Why Playwright and Claude Code are repeated is at the
+ * matching `ARG` in `.devcontainer/Dockerfile`; why the Node image is, at `container:` in
+ * `.github/workflows/ci.yml`.
  */
 import { readFileSync } from 'node:fs';
 

@@ -1301,7 +1301,7 @@ credentials, and nothing runs on `pull_request_target` or uses a secret. One run
 branch, without cancelling the one in progress, so a queued run superseded by a newer push shows
 as cancelled.
 
-On GitHub (part 2, run from the host): a ruleset on `main` blocks deletion and force-push with
+In the repository's settings on GitHub: a ruleset on `main` blocks deletion and force-push with
 no bypass, but requires no pull request or status check, because the owner merges locally and
 pushes `main` directly. Actions are limited to GitHub-owned ones, the default token is read-only
 and cannot approve pull requests, and workflows from forks wait for approval. Dependabot raises

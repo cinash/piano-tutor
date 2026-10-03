@@ -26,8 +26,7 @@ The licence above covers the code. Not all of the music in this repository is
 under it:
 
 - Beyer Nos. 8-31 (beyer_op101_musicxml/beyer_op101_no08.musicxml to
-  beyer_op101_no31.musicxml) are not under the MIT licence. Their terms are in
-  each file's <rights> element.
+  beyer_op101_no31.musicxml): their terms are in each file's <rights> element.
 - cicha-noc.musicxml is the owner's own arrangement. No licence is granted for
   it, nor for src/score/fixtures/cicha-noc.snapshot.json, which holds the same
   notes.

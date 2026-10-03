@@ -170,8 +170,8 @@ rewrite, and the current `typescript-eslint` release declares support for
 
 The code is under the MIT licence, in `LICENSE`. Some of the music is not:
 
-- Beyer Nos. 8-31 (`beyer_op101_musicxml/beyer_op101_no08.musicxml` to `no31`) are not MIT.
-  Their terms are in each file's `<rights>`.
+- Beyer Nos. 8-31 (`beyer_op101_musicxml/beyer_op101_no08.musicxml` to `no31`): their terms
+  are in each file's `<rights>`.
 - `cicha-noc.musicxml` is the owner's own arrangement. No licence is granted for it, nor for
   `src/score/fixtures/cicha-noc.snapshot.json`, which holds the same notes.
 - The files from the PDMX dataset, `scripts/beyer/fixtures/*` and
