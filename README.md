@@ -10,6 +10,26 @@ history that can be exported as JSON. See `prompts/README.md` for the plan step 
 `DECISIONS.md` for non-obvious choices, and `MANUAL-CHECKS.md` for what to verify by hand
 with the real piano.
 
+## How this was built
+
+This is a vibe coded application. The code was written by an AI coding agent (Claude Code),
+directed by Marcin, who planned each step, reviewed the results and decided what shipped.
+The workflow is written down in `CLAUDE.md`, `.claude/agents/` and `.claude/skills/`:
+
+- **Plan before code.** Each step is a numbered brief in `prompts/`. Two planning reviewers,
+  run in parallel, argue the trade-offs and list the questions only the owner can answer.
+  A brief goes to the implementing agent only once those are settled.
+- **Isolated changes.** Each piece of work is done in its own git worktree and merged into
+  `main` with a merge commit once it passes the gate.
+- **One gate.** `npm run ci` must be green before work counts as finished. It runs the lint,
+  format, type, build, unit, fixture, and end-to-end checks in one sequence.
+- **Two reviewers on every change.** Before a change is committed, a functionality reviewer
+  asks whether it does what was requested, and a clean-code reviewer asks whether it is as
+  simple as it could be. Both run on Opus. Each finding is labelled blocking or non-blocking;
+  blocking findings are fixed and the review runs again, capped at three rounds.
+- **Hardware stays manual.** The agent cannot reach the piano, so `MANUAL-CHECKS.md` lists
+  what Marcin verifies by hand on the host.
+
 ## Opening the container
 
 Open the folder in VS Code with the Dev Containers extension installed, then run
