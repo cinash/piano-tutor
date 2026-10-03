@@ -11,8 +11,8 @@ no finger: refused. Rhythm that Timed mode cannot keep time through (6/8, 2/2, 3
 accepted and marked as working only in Wait mode. A stored record that fails the start-up check is dropped with a warning. A file whose title
 matches an existing upload or a bundled piece is refused, and a correction is uploaded under a new title as a new piece.
 
-**Deferred, each with its own brief:** replacing and removing uploads (`prompts/step31.md`); Timed mode for wait-only pieces (`prompts/step32.md`);
-guarding the history write (`prompts/step33.md`). Until removal exists, a correction leaves the old piece listed.
+**Deferred, not in this step:** replacing and removing uploads; Timed mode for wait-only pieces;
+guarding the history write. Until removal exists, a correction leaves the old piece listed.
 
 **One open decision**, with a default that ships if the owner says nothing: see "Open owner decision" at the end.
 
@@ -148,7 +148,7 @@ Checks run in this order, stopping at the first failure. Each gives one message 
   this warning is new. The next successful upload overwrites the bad value.
 - **Quota.** A quota error on the upload's own `setItem` is shown in the alert line: "Could not save this piece; browser storage is full." The piece is not
   added and is not offered for the session.
-- **Nothing is removed or replaced in this step** (`prompts/step31.md`). Records stay in storage until the site's data is cleared, which also deletes the
+- **Nothing is removed or replaced in this step.** Records stay in storage until the site's data is cleared, which also deletes the
   history.
 - `App` holds the uploads in state and writes them through to the module at the point of change (not in an effect), so the Piece column never shows a bare
   id for a render. `pieceTitle` keeps its signature. An id nothing resolves shows bare.
@@ -195,9 +195,9 @@ Checks run in this order, stopping at the first failure. Each gives one message 
 
 - **Editing fingering or notes in the app.** The owner fingers the file before uploading it.
 - **Compressed `.mxl`**, as above.
-- **Replacing or removing uploads**, `prompts/step31.md`.
-- **Timed mode for wait-only pieces**, `prompts/step32.md`.
-- **Guarding the history write**, `prompts/step33.md`. This step brings the 2 MB cap closer, so the write matters more; it is still a separate change.
+- **Replacing or removing uploads.**
+- **Timed mode for wait-only pieces.**
+- **Guarding the history write.** This step brings the 2 MB cap closer, so the write matters more; it is still a separate change.
 - **Carrying uploads through the progress export.** An attempt's `upload-` id reaches another copy as a bare id, which is the rule step 22 set for an id
   nothing offers (`DECISIONS.md`, the Piece column). Carrying the uploads inside the export is the likely answer once cross-copy use arrives, and it changes the
   exported shape, which is a one-way door (`DECISIONS.md`: "Exported progress is a bare `AttemptRecord[]`").
@@ -221,7 +221,7 @@ Checks run in this order, stopping at the first failure. Each gives one message 
 - **The history and the uploads share browser storage.** An attempt record is roughly 150 to 350 bytes (an estimate). At a few dozen attempts a day, the history
   reaches megabytes within a year or two. The history's `setItem` is unguarded (`src/progress/attemptStore.ts`, line 70) and is called from an effect in `App`
   (`src/App.tsx`, around line 422) with no error boundary, so a full store throws there and React unmounts the app mid-attempt. The trigger for IndexedDB is this
-  growth as well as step 28. The guard is `prompts/step33.md`.
+  growth as well as step 28.
 - **Bundled pieces load on demand**, as step 28 grows the list toward 109 pieces (`DECISIONS.md`, the explicit list entry). That would end the synchronous
   `PIECES` and `loadPiece` this design relies on. Uploads are read synchronously either way; the growth above is the real trigger to revisit `localStorage`.
 - **The storage key and record shape** become a persisted format the moment the first file is saved. A later change needs a version bump and a reader for the old one.
@@ -326,4 +326,4 @@ screenshots on antialiasing). The container never talks to the piano, so none of
 
 ## Finally
 
-Add this step to `prompts/README.md` as Planned, and move it to Shipped when it lands. Steps 31 to 33 are added to the same table as Planned.
+Add this step to `prompts/README.md` as Planned, and move it to Shipped when it lands.
