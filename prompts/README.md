@@ -32,6 +32,7 @@ judge a brief against, and the guide for writing one.
 | [26](step26.md) Remember piano  | Reconnects to the last piano when it is plugged in  |
 | [27](step27.md) Hand position   | Each hand's five keys numbered, next one outlined   |
 | [29](step29.md) Timed play      | Timed mode on a metronome; misses in the history    |
+| [30](step30.md) Own music       | Owner's fingered MusicXML, uploaded in the browser  |
 
 > The step files carry no `Status:` line; this table is where the shipped/planned split lives.
 
@@ -133,17 +134,6 @@ replay picker is dev-only.
 Step 28 turns the Peters scan of Beyer's Op. 101 into proofread, fingered MusicXML, in batches,
 and bundles none of it: a file reaches the child when a line for it is added to step 22's list of
 pieces.
-
-## Planned — the owner's own music
-
-| Step                      | What it adds                                           |
-| ------------------------- | ------------------------------------------------------ |
-| [30](step30.md) Own music | The owner's fingered MusicXML, uploaded in the browser |
-
-Step 22 made the pieces a build-time list on purpose, so the owner's own arrangement cannot reach
-the child without a rebuild. This step reverses that for uploads. Uploads can neither replace nor remove a
-piece; replacing and removing are later features. Rhythm that Timed mode cannot keep time through is accepted
-as wait-only, and Timed mode for those pieces is later work.
 
 ## Deliberately not planned
 

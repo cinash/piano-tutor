@@ -1,5 +1,6 @@
 import { isFingered } from './pieceRules';
 import { numberContent, parseScore } from './parseScore';
+import { PIECES, type Piece } from './pieces';
 import type { Score } from './types';
 
 export const MAX_FILE_BYTES = 1_000_000;
@@ -15,13 +16,10 @@ export interface UploadContext {
   storedBytes: number;
 }
 
-export function uploadContext(
-  bundledTitles: readonly string[],
-  uploads: readonly Upload[],
-): UploadContext {
+export function uploadContext(uploads: readonly Piece[]): UploadContext {
   const encoder = new TextEncoder();
   return {
-    bundledTitles,
+    bundledTitles: PIECES.map((piece) => piece.title),
     storedTitles: uploads.map((upload) => upload.title),
     storedBytes: uploads.reduce(
       (sum, upload) => sum + encoder.encode(upload.xml).length,
@@ -218,34 +216,21 @@ interface UploadRecord {
   xml: string;
 }
 
-/** A stored upload with its score, which is a `Piece` in all but name. */
-export interface Upload extends UploadRecord {
-  score: Score;
-}
-
-// The list the start-up check kept, and every upload saved since: what pieces.ts offers.
-let current: readonly Upload[] = [];
-
-export function storedUploads(): readonly Upload[] {
-  return current;
-}
-
 /**
  * Reads the stored uploads, dropping any record that no longer parses into a piece with a
  * note, and writes the list back without it, so storage matches what is offered. Checks 1
  * to 6 are not run again: a rule added later never removes a file the upload accepted.
  */
-export function loadUploads(): readonly Upload[] {
+export function loadUploads(): readonly Piece[] {
   const stored = readStored();
   const kept = stored.flatMap(({ id, title, xml }) => {
     const score = scoreOf(xml);
-    if (!score)
-      console.warn(`Dropping the uploaded piece "${title}": it no longer loads.`);
-    return score ? [{ id, title, xml, score }] : [];
+    if (score) return [{ id, title, xml, score }];
+    console.warn(`Dropping the uploaded piece "${title}": it no longer loads.`);
+    return [];
   });
   if (kept.length < stored.length) saveUploads(kept);
-  current = kept;
-  return current;
+  return kept;
 }
 
 /**
@@ -289,22 +274,21 @@ function scoreOf(xml: string): Score | undefined {
   }
 }
 
-/** Stores the list and offers it. Throws, offering nothing new, when storage is full. */
-export function saveUploads(uploads: readonly Upload[]): void {
+/** Stores the list. Throws, storing nothing new, when storage is full. */
+export function saveUploads(uploads: readonly Piece[]): void {
   const records: UploadRecord[] = uploads.map(({ id, title, xml }) => ({
     id,
     title,
     xml,
   }));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  current = uploads;
 }
 
 /** The new upload for a checked file, its id unique among `uploads`. */
 export function newUpload(
   { title, xml, score }: Accepted,
-  uploads: readonly Upload[],
-): Upload {
+  uploads: readonly Piece[],
+): Piece {
   const base = `upload-${slug(title)}`;
   let id = base;
   for (let n = 2; uploads.some((upload) => upload.id === id); n++) id = `${base}-${n}`;

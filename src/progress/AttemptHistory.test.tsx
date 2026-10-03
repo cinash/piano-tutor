@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { PIECES } from '../score/pieces';
 import { AttemptHistory } from './AttemptHistory';
 import type { AttemptRecord } from './types';
 
@@ -35,14 +36,14 @@ function cellsAfterTheTime(row: HTMLElement): string[] {
 
 describe('AttemptHistory', () => {
   it('shows an empty state before the first attempt', () => {
-    render(<AttemptHistory records={[]} />);
+    render(<AttemptHistory records={[]} pieces={PIECES} />);
 
     expect(screen.getByTestId('attempt-history-empty')).toBeDefined();
     expect(screen.queryByTestId('attempt-history')).toBeNull();
   });
 
   it('lists the records in the order given, with accuracy derived from the counters', () => {
-    render(<AttemptHistory records={[newer, older]} />);
+    render(<AttemptHistory records={[newer, older]} pieces={PIECES} />);
 
     expect(screen.getAllByTestId('attempt-history-row').map(cellsAfterTheTime)).toEqual([
       ['Beyer Op. 101 No. 12', 'Wait', 'measures 1–2', '12', '2', '—', '83%', 'no'],
@@ -51,7 +52,7 @@ describe('AttemptHistory', () => {
   });
 
   it('shows a dash rather than NaN% for an attempt with no notes', () => {
-    render(<AttemptHistory records={[{ ...older, notesPlayed: 0 }]} />);
+    render(<AttemptHistory records={[{ ...older, notesPlayed: 0 }]} pieces={PIECES} />);
 
     const [row] = screen.getAllByTestId('attempt-history-row');
     expect(cellsAfterTheTime(row)).toEqual([
@@ -81,7 +82,7 @@ describe('AttemptHistory', () => {
         hitAbsOffsetBeats: 1.2,
       },
     };
-    render(<AttemptHistory records={[timed]} />);
+    render(<AttemptHistory records={[timed]} pieces={PIECES} />);
 
     const [row] = screen.getAllByTestId('attempt-history-row');
     expect(cellsAfterTheTime(row)).toEqual([

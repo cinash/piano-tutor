@@ -717,20 +717,28 @@ describe('uploading a piece', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('shows the storage error when the piece cannot be saved, and does not offer it', async () => {
+  it('shows the storage error when the piece cannot be saved, and keeps the list as it was', async () => {
+    render(<App />);
+    upload(kotek);
+    await waitFor(() => expect(pieceSelect().value).toBe('upload-kotek'));
+    const stored = localStorage.getItem('piano-tutor.uploaded-pieces.v1');
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key) => {
       if (key === 'piano-tutor.uploaded-pieces.v1')
         throw new DOMException('', 'QuotaExceededError');
     });
-    render(<App />);
 
-    upload(kotek);
+    upload(scoreXml({ title: 'Piesek', bars: [FINGERED_BAR] }));
 
     expect((await screen.findByRole('alert')).textContent).toBe(
       'Could not save this piece; browser storage is full.',
     );
-    expect(pieceSelect().value).toBe('cicha-noc');
-    expect(yours()).toBeNull();
+    expect(pieceSelect().value).toBe('upload-kotek');
+    expect(
+      within(yours() as HTMLElement)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Kotek']);
+    expect(localStorage.getItem('piano-tutor.uploaded-pieces.v1')).toBe(stored);
   });
 
   it.each([

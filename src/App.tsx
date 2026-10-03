@@ -70,7 +70,7 @@ import type { AttemptRecord, TimedRecord } from './progress/types';
 import { StaffView } from './score/StaffView';
 import { loadPiece, savePiece } from './score/pieceStore';
 import { timeSignatureAt } from './score/measureStartTime';
-import { PIECES, allPieces, type Piece } from './score/pieces';
+import { PIECES, type Piece } from './score/pieces';
 import {
   COMPUTER_KEYBOARD_HIGH,
   COMPUTER_KEYBOARD_LOW,
@@ -155,11 +155,9 @@ export function App() {
     DEFAULT_KEYBOARD_PRESET,
   );
   const [hands, setHands] = useState<HandSelection>('both');
-  // Read before the piece, so a remembered upload is found. A new one goes through
-  // saveUploads as it is added, not from an effect, so no render offers it half-known.
   const [uploads, setUploads] = useState(loadUploads);
   // Remembered across a reload, unlike hands, range and speed — see DECISIONS.md.
-  const [piece, setPiece] = useState<Piece>(loadPiece);
+  const [piece, setPiece] = useState(() => loadPiece([...PIECES, ...uploads]));
   // A display choice, and deliberately not engine state: practice must be identical
   // folded and unfolded — see DECISIONS.md.
   const [queueFolded, setQueueFolded] = useState(loadQueueFolded);
@@ -180,6 +178,7 @@ export function App() {
   // cursor follows the clock.
   const [timerFiredAt, setTimerFiredAt] = useState(0);
 
+  const pieces = [...PIECES, ...uploads];
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
   const score = filterScoreByHand(piece.score, hands);
@@ -268,9 +267,7 @@ export function App() {
     setView(restartPractice);
   }
 
-  function handlePieceChange(id: string) {
-    const next = allPieces().find((candidate) => candidate.id === id);
-    if (!next) return;
+  function choosePiece(next: Piece) {
     setPiece(next);
     // Not put back on leaving the piece: the mode stays Wait until the child chooses Timed.
     if (!timedPlayable(next.score)) setMode('wait');
@@ -537,10 +534,7 @@ export function App() {
     const checked = checkUpload(
       new Uint8Array(await file.arrayBuffer()),
       file.name,
-      uploadContext(
-        PIECES.map((candidate) => candidate.score.title),
-        uploads,
-      ),
+      uploadContext(uploads),
     );
     if (!checked.ok) {
       setError(checked.message);
@@ -555,7 +549,7 @@ export function App() {
       return;
     }
     setUploads(next);
-    handlePieceChange(upload.id);
+    choosePiece(upload);
     setError(null);
   }
 
@@ -714,12 +708,14 @@ export function App() {
           id="piece-select"
           data-testid="piece-select"
           value={piece.id}
-          onChange={(event) => handlePieceChange(event.target.value)}
+          onChange={(event) =>
+            choosePiece(pieces.find((candidate) => candidate.id === event.target.value)!)
+          }
           onKeyDown={cancelTypeAhead}
         >
           {PIECES.map((candidate) => (
             <option key={candidate.id} value={candidate.id}>
-              {candidate.score.title}
+              {candidate.title}
             </option>
           ))}
           {uploads.length > 0 && (
@@ -823,7 +819,7 @@ export function App() {
         handPositions={handPositions(score, positionIndex, positionLoop)}
         nextHandPositions={nextHandPositions(score, positionIndex, positionLoop)}
       />
-      <AttemptHistory records={attempts} />
+      <AttemptHistory records={attempts} pieces={pieces} />
       <div>
         <button
           type="button"

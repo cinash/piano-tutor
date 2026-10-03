@@ -8,7 +8,6 @@ import {
   loadUploads,
   newUpload,
   saveUploads,
-  storedUploads,
   type Accepted,
   type UploadContext,
 } from './uploads';
@@ -354,10 +353,7 @@ describe('stored uploads', () => {
   const storedIds = () =>
     (JSON.parse(localStorage.getItem(KEY)!) as { id: string }[]).map(({ id }) => id);
 
-  beforeEach(() => {
-    localStorage.clear();
-    loadUploads();
-  });
+  beforeEach(() => localStorage.clear());
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -395,16 +391,14 @@ describe('stored uploads', () => {
     const { id, title, xml } = upload('Kotek');
     localStorage.setItem(KEY, JSON.stringify([broken, { id, title, xml }]));
 
-    expect(loadUploads().map((stored) => stored.id)).toEqual(['upload-kotek']);
+    const kept = loadUploads();
+    expect(kept.map((stored) => stored.id)).toEqual(['upload-kotek']);
     expect(storedIds()).toEqual(['upload-kotek']);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('"Broken"'));
 
     // The dropped title is free again, and takes its old id, so its history re-attaches.
     expect(
-      newUpload(
-        accepted(scoreXml({ title: 'Broken', bars: [FINGERED_BAR] })),
-        storedUploads(),
-      ).id,
+      newUpload(accepted(scoreXml({ title: 'Broken', bars: [FINGERED_BAR] })), kept).id,
     ).toBe('upload-broken');
   });
 
@@ -420,7 +414,7 @@ describe('stored uploads', () => {
     expect(warn).toHaveBeenCalledOnce();
   });
 
-  it('throws on a full store, and neither stores nor offers the new piece', () => {
+  it('throws on a full store, and does not store the new piece', () => {
     const kotek = upload('Kotek');
     saveUploads([kotek]);
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -428,7 +422,6 @@ describe('stored uploads', () => {
     });
 
     expect(() => saveUploads([kotek, upload('Piesek')])).toThrow('quota');
-    expect(storedUploads()).toEqual([kotek]);
     expect(storedIds()).toEqual(['upload-kotek']);
   });
 });

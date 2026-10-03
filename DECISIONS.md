@@ -1218,7 +1218,7 @@ toward 109 pieces, and the change is local to `pieces.ts`.
 
 Step 30 reverses the entry above for one kind of piece: a MusicXML file the owner uploads
 is offered without a commit, under a "Yours" group after the bundled pieces, in upload
-order (`allPieces()` in `pieces.ts`). The reason is privacy. The repository is going
+order (`pieces` in `App`). The reason is privacy. The repository is going
 public, and some of the owner's arrangements are of music still under copyright, so a
 committed file would be a published one. The bundled list is unchanged: a Beyer file still
 reaches the child only by its line in `PIECES`, and an upload never replaces a bundled
@@ -1330,16 +1330,15 @@ reading. The title is stored because it may come from the file name, which is no
 The record is a persisted format from the first save: a change to it needs a `v2` and a
 reader for `v1`.
 
-`loadUploads()` runs before `App` reads its initial piece, so a remembered upload is found.
-It re-parses each record and keeps what playing needs — it parses, and it has a note. A
-record that fails is dropped with a `console.warn`, and the array is written back without
-it, so storage, the 2 MB total, the title check and the id check all count what the list
-offers. A value under the key that is not a list of records is read as none, with a
-warning, and the next upload overwrites it. The owner's own file is the copy that matters
-and can be uploaded again, so dropping costs little, while a kept record that cannot be
-drawn would be offered and fail. The upload's other checks are not run again at start-up:
-a rule added later, or a bundled piece that later takes the same title, never removes a
-file the upload accepted.
+`loadUploads()` re-parses each record and keeps what playing needs — it parses, and it has
+a note. A record that fails is dropped with a `console.warn`, and the array is written
+back without it, so storage, the 2 MB total, the title check and the id check all count
+what the list offers. A value under the key that is not a list of records is read as none,
+with a warning, and the next upload overwrites it. The owner's own file is the copy that
+matters and can be uploaded again, so dropping costs little, while a kept record that
+cannot be drawn would be offered and fail. The upload's other checks are not run again at
+start-up: a rule added later, or a bundled piece that later takes the same title, never
+removes a file the upload accepted.
 
 ## An upload is capped at 1 MB, and all uploads together at 2 MB
 
@@ -1357,9 +1356,9 @@ Whether 2 MB is right is the owner's call once a few real files exist.
 ## An upload's id is a slug of its title, made once and stored
 
 An upload's id is `upload-` and an ASCII slug of its title — accents dropped, `ł` read as
-`l`, `piece` for a title with no Latin letter — with `-2`, `-3` for a clash. It is made at
-upload and stored in the record, never recomputed, so it names one piece for good, as a
-bundled id does, and goes into the history the same way.
+`l`, `piece` for a title with no Latin letter or digit — with `-2`, `-3` for a clash. It
+is made at upload and stored in the record, never recomputed, so it names one piece for
+good, as a bundled id does, and goes into the history the same way.
 
 Rejected: a random id, under which the same piece uploaded on two copies — `localhost` and
 the tailnet — would have two ids and so two histories; a slug agrees whenever both copies
@@ -1376,7 +1375,8 @@ refused; a corrected file goes up under a new title, as a new piece with its own
 its own history, and the earlier one stays listed beside it. So corrections pile up in
 "Yours", and the child can keep practising a fingering that was since corrected. Joining
 the histories later is an alias map from old id to new, read with the history; no record
-needs rewriting. Records stay until the site's data is cleared.
+needs rewriting. The start-up check's drop of a record that no longer loads is the only
+removal.
 
 Not yet answered by the owner: whether a re-upload of a piece the start-up check dropped
 gets its old history back. As built it does — the dropped record leaves nothing behind, so

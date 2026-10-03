@@ -23,7 +23,6 @@ import beyerNo31Xml from '../../beyer_op101_musicxml/beyer_op101_no31.musicxml?r
 import { cichaNocScore, cichaNocXml } from './cichaNoc';
 import { parseScore } from './parseScore';
 import type { Score } from './types';
-import { storedUploads } from './uploads';
 
 export interface Piece {
   /** Stored in the history, so it names this piece for good; the file and title may change. */
@@ -31,11 +30,12 @@ export interface Piece {
   xml: string;
   score: Score;
   /** An upload's title, which may come from its file name; a bundled piece's is its score's. */
-  title?: string;
+  title: string;
 }
 
 function piece(id: string, xml: string): Piece {
-  return { id, xml, score: parseScore(xml) };
+  const score = parseScore(xml);
+  return { id, xml, score, title: score.title };
 }
 
 /**
@@ -44,7 +44,7 @@ function piece(id: string, xml: string): Piece {
  * also says why Nos. 10, 11 and 38 are not offered.
  */
 export const PIECES: readonly Piece[] = [
-  { id: 'cicha-noc', xml: cichaNocXml, score: cichaNocScore },
+  { id: 'cicha-noc', xml: cichaNocXml, score: cichaNocScore, title: cichaNocScore.title },
   piece('beyer-op101-08', beyerNo08Xml),
   piece('beyer-op101-09', beyerNo09Xml),
   piece('beyer-op101-12', beyerNo12Xml),
@@ -69,13 +69,7 @@ export const PIECES: readonly Piece[] = [
   piece('beyer-op101-31', beyerNo31Xml),
 ];
 
-/** Every piece offered: the bundled ones, then the owner's uploads in upload order. */
-export function allPieces(): readonly Piece[] {
-  return [...PIECES, ...storedUploads()];
-}
-
-/** The title of the offered piece with this id, or the id itself for one not offered. */
-export function pieceTitle(id: string): string {
-  const piece = allPieces().find((candidate) => candidate.id === id);
-  return piece ? (piece.title ?? piece.score.title) : id;
+/** The title of the piece in `pieces` with this id, or the id itself for one not offered. */
+export function pieceTitle(id: string, pieces: readonly Piece[]): string {
+  return pieces.find((candidate) => candidate.id === id)?.title ?? id;
 }
