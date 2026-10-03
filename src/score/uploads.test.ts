@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
+import { DEFAULT_KEYBOARD_PRESET } from '../config';
 import {
   MAX_FILE_BYTES,
   MAX_TOTAL_BYTES,
   checkUpload,
+  type Accepted,
   type UploadContext,
 } from './uploads';
 import {
+  COMPUTER_KEYBOARD_HIGH,
+  COMPUTER_KEYBOARD_LOW,
+  hasPitchOutside,
+  timedPlayable,
+} from './pieceRules';
+import {
   FINGERED_BAR,
+  LEFT_WHOLE,
   QUARTER,
+  attributes,
   backup,
   note,
+  repeatNote,
   rest,
   scoreXml,
   twoHands,
@@ -33,16 +44,12 @@ function check(
   });
 }
 
-function attributes(beats: number, beatType: number, staves = 2): string {
-  return (
-    '<attributes><divisions>12</divisions><key><fifths>0</fifths></key>' +
-    `<time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time>` +
-    `<staves>${staves}</staves></attributes>`
-  );
+/** The accepted result, or a failure that names the refusal. */
+function accepted(xml: string, fileName?: string): Accepted {
+  const result = check(xml, fileName);
+  if (!result.ok) throw new Error(`expected acceptance, got: ${result.message}`);
+  return result;
 }
-
-const quarters = (count: number, finger = '1') =>
-  Array.from({ length: count }, () => note('C', 4, QUARTER, { finger })).join('');
 
 describe('checkUpload refusals, in the brief’s order', () => {
   it('refuses a compressed .mxl by its content, not its name', () => {
@@ -57,20 +64,21 @@ describe('checkUpload refusals, in the brief’s order', () => {
   it('refuses a file over 1 MB before reading it', () => {
     const big = new Uint8Array(MAX_FILE_BYTES + 1);
 
-    expect(checkUpload(big, 'big.musicxml', context)).toMatchObject({
+    expect(checkUpload(big, 'big.musicxml', context)).toEqual({
       ok: false,
       message: 'This file is larger than 1 MB.',
     });
   });
 
   it('refuses a file that would take the stored total past 2 MB', () => {
-    const result = check(scoreXml({ bars: [FINGERED_BAR] }), 'tune.musicxml', {
-      storedBytes: MAX_TOTAL_BYTES,
-    });
-
-    expect(result).toMatchObject({
+    expect(
+      check(scoreXml({ bars: [FINGERED_BAR] }), 'tune.musicxml', {
+        storedBytes: MAX_TOTAL_BYTES,
+      }),
+    ).toEqual({
       ok: false,
-      message: expect.stringContaining('storage'),
+      message:
+        "Browser storage for your pieces is full. To make room, download your progress first, then clear the site's data.",
     });
   });
 
@@ -99,25 +107,24 @@ describe('checkUpload refusals, in the brief’s order', () => {
       scoreXml({
         bars: [
           FINGERED_BAR,
-          twoHands(
-            note('C', 4, 36, { finger: '1' }),
-            note('C', 3, 48, { staff: 2, finger: '5' }),
-          ),
+          twoHands(note('C', 4, 36, { finger: '1' }), LEFT_WHOLE),
           FINGERED_BAR,
         ],
       }),
       /Measure 2 is short/,
     ],
     [
-      'an overlong bar',
+      'a left hand that is short while the right hand is full',
       scoreXml({
         bars: [
-          twoHands(
-            note('C', 4, 60, { finger: '1' }),
-            note('C', 3, 48, { staff: 2, finger: '5' }),
-          ),
+          twoHands(repeatNote(4, QUARTER), note('C', 3, 36, { staff: 2, finger: '5' })),
         ],
       }),
+      /Measure 1 is short/,
+    ],
+    [
+      'an overlong bar',
+      scoreXml({ bars: [twoHands(note('C', 4, 60, { finger: '1' }), LEFT_WHOLE)] }),
       /Measure 1 is longer/,
     ],
     [
@@ -130,7 +137,10 @@ describe('checkUpload refusals, in the brief’s order', () => {
     ],
     [
       'a single staff',
-      scoreXml({ attributes: attributes(4, 4, 1), bars: [quarters(4), quarters(4)] }),
+      scoreXml({
+        attributes: attributes(4, 4, 1),
+        bars: [repeatNote(4, QUARTER), repeatNote(4, QUARTER)],
+      }),
       /one staff/,
     ],
     [
@@ -183,49 +193,10 @@ describe('checkUpload refusals, in the brief’s order', () => {
       'a note with no finger',
       scoreXml({
         bars: [
-          twoHands(
-            note('C', 4, QUARTER) + note('D', 4, 36, { finger: '2' }),
-            note('C', 3, 48, { staff: 2, finger: '5' }),
-          ),
+          twoHands(note('C', 4, QUARTER) + note('D', 4, 36, { finger: '2' }), LEFT_WHOLE),
         ],
       }),
       /Measure 1 has a note with no finger/,
-    ],
-    [
-      'a finger of 0',
-      scoreXml({
-        bars: [
-          twoHands(
-            note('C', 4, 48, { finger: '0' }),
-            note('C', 3, 48, { staff: 2, finger: '5' }),
-          ),
-        ],
-      }),
-      /no finger/,
-    ],
-    [
-      'a finger of 6',
-      scoreXml({
-        bars: [
-          twoHands(
-            note('C', 4, 48, { finger: '6' }),
-            note('C', 3, 48, { staff: 2, finger: '5' }),
-          ),
-        ],
-      }),
-      /no finger/,
-    ],
-    [
-      'a finger written as a range',
-      scoreXml({
-        bars: [
-          twoHands(
-            note('C', 4, 48, { finger: '3-4' }),
-            note('C', 3, 48, { staff: 2, finger: '5' }),
-          ),
-        ],
-      }),
-      /no finger/,
     ],
   ])('refuses %s', (_name, xml, message) => {
     const result = check(xml);
@@ -234,12 +205,26 @@ describe('checkUpload refusals, in the brief’s order', () => {
     if (!result.ok) expect(result.message).toMatch(message);
   });
 
+  it.each(['0', '6', '3-4'])(
+    'refuses a finger of %s, which is not on the keyboard',
+    (finger) => {
+      const xml = scoreXml({
+        bars: [twoHands(note('C', 4, 48, { finger }), LEFT_WHOLE)],
+      });
+
+      expect(check(xml)).toEqual({
+        ok: false,
+        message: 'Measure 1 has a note with no finger (1 to 5).',
+      });
+    },
+  );
+
   it('refuses a title that matches an upload already stored', () => {
     expect(
       check(scoreXml({ title: 'test tune', bars: [FINGERED_BAR] }), 'x.musicxml', {
         storedTitles: ['Test Tune'],
       }),
-    ).toMatchObject({
+    ).toEqual({
       ok: false,
       message:
         'A piece with this name is already uploaded; give the file a different title.',
@@ -249,125 +234,110 @@ describe('checkUpload refusals, in the brief’s order', () => {
 
 describe('checkUpload accepts', () => {
   it('a fingered two-hand piece in 4/4, which timed play can keep time through', () => {
-    expect(check(scoreXml({ bars: [FINGERED_BAR, FINGERED_BAR] }))).toMatchObject({
-      ok: true,
-      title: 'Test Tune',
-      waitOnly: false,
-      outsideKeyboard: false,
-      outsidePreset: false,
-    });
+    const result = accepted(scoreXml({ bars: [FINGERED_BAR, FINGERED_BAR] }));
+
+    expect(result.title).toBe('Test Tune');
+    expect(timedPlayable(result.score)).toBe(true);
+    expect(
+      hasPitchOutside(result.score, COMPUTER_KEYBOARD_LOW, COMPUTER_KEYBOARD_HIGH),
+    ).toBe(false);
+  });
+
+  it('a bar whose left hand ends with a forward that fills the rest of the bar', () => {
+    const leftWithGap =
+      note('C', 3, 24, { staff: 2, finger: '5' }) +
+      '<forward><duration>24</duration><staff>2</staff></forward>';
+
+    expect(
+      accepted(scoreXml({ bars: [twoHands(repeatNote(4, QUARTER), leftWithGap)] })).title,
+    ).toBe('Test Tune');
   });
 
   it('a file with a .xml extension, because the content decides', () => {
-    expect(check(scoreXml({ bars: [FINGERED_BAR] }), 'tune.xml')).toMatchObject({
-      ok: true,
-    });
+    expect(accepted(scoreXml({ bars: [FINGERED_BAR] }), 'tune.xml').title).toBe(
+      'Test Tune',
+    );
   });
 
   it('takes the title from the file name when the file has no title', () => {
     expect(
-      check(scoreXml({ title: '', bars: [FINGERED_BAR] }), 'Kotek.musicxml'),
-    ).toMatchObject({
-      ok: true,
-      title: 'Kotek',
-    });
+      accepted(scoreXml({ title: '', bars: [FINGERED_BAR] }), 'Kotek.musicxml').title,
+    ).toBe('Kotek');
   });
 
-  it('a note outside C3 to G5 is accepted, with the keyboard warning', () => {
-    const bar = twoHands(
-      note('C', 2, 48, { finger: '1' }),
-      note('C', 3, 48, { staff: 2, finger: '5' }),
+  it('a note outside C3 to G5 is accepted, and shows the keyboard warning', () => {
+    const result = accepted(
+      scoreXml({ bars: [twoHands(note('C', 2, 48, { finger: '1' }), LEFT_WHOLE)] }),
     );
 
-    expect(check(scoreXml({ bars: [bar] }))).toMatchObject({
-      ok: true,
-      outsideKeyboard: true,
-      outsidePreset: false,
-    });
+    expect(
+      hasPitchOutside(result.score, COMPUTER_KEYBOARD_LOW, COMPUTER_KEYBOARD_HIGH),
+    ).toBe(true);
+    expect(
+      hasPitchOutside(
+        result.score,
+        DEFAULT_KEYBOARD_PRESET.low,
+        DEFAULT_KEYBOARD_PRESET.high,
+      ),
+    ).toBe(false);
   });
 
   it('a note outside even the on-screen preset gets the second warning', () => {
-    const bar = twoHands(
-      note('C', 1, 48, { finger: '1' }),
-      note('C', 3, 48, { staff: 2, finger: '5' }),
+    const result = accepted(
+      scoreXml({ bars: [twoHands(note('C', 1, 48, { finger: '1' }), LEFT_WHOLE)] }),
     );
 
-    expect(check(scoreXml({ bars: [bar] }))).toMatchObject({
-      ok: true,
-      outsideKeyboard: true,
-      outsidePreset: true,
-    });
+    expect(
+      hasPitchOutside(
+        result.score,
+        DEFAULT_KEYBOARD_PRESET.low,
+        DEFAULT_KEYBOARD_PRESET.high,
+      ),
+    ).toBe(true);
   });
 
   it('a bass staff that only rests, because a one-handed piece is common', () => {
-    const bar = twoHands(
-      quarters(4),
-      '<note><rest/><duration>48</duration><staff>2</staff></note>',
-    );
+    const bar = twoHands(repeatNote(4, QUARTER), rest(48, 2));
 
-    expect(check(scoreXml({ bars: [bar] }))).toMatchObject({ ok: true });
+    expect(accepted(scoreXml({ bars: [bar] })).title).toBe('Test Tune');
   });
 
   it.each([
     [
       '6/8',
       attributes(6, 8),
-      twoHands(
-        Array.from({ length: 6 }, () => note('C', 4, 6, { finger: '1' })).join(''),
-        note('C', 3, 36, { staff: 2, finger: '5' }),
-        36,
-      ),
+      twoHands(repeatNote(6, 6), note('C', 3, 36, { staff: 2, finger: '5' }), 36),
     ],
     ['2/2', attributes(2, 2), FINGERED_BAR],
     [
       '3/8',
       attributes(3, 8),
-      twoHands(
-        Array.from({ length: 3 }, () => note('C', 4, 6, { finger: '1' })).join(''),
-        note('C', 3, 18, { staff: 2, finger: '5' }),
-        18,
-      ),
+      twoHands(repeatNote(3, 6), note('C', 3, 18, { staff: 2, finger: '5' }), 18),
     ],
-    [
-      'sixteenth notes',
-      attributes(4, 4),
-      twoHands(
-        Array.from({ length: 16 }, () => note('C', 4, 3, { finger: '1' })).join(''),
-        note('C', 3, 48, { staff: 2, finger: '5' }),
-      ),
-    ],
-    [
-      'triplet eighths',
-      attributes(4, 4),
-      twoHands(
-        Array.from({ length: 12 }, () => note('C', 4, 4, { finger: '1' })).join(''),
-        note('C', 3, 48, { staff: 2, finger: '5' }),
-      ),
-    ],
-  ])('accepts %s as wait-only, not refused', (_name, attrs, bar) => {
-    expect(check(scoreXml({ attributes: attrs, bars: [bar] }))).toMatchObject({
-      ok: true,
-      waitOnly: true,
-    });
+    ['sixteenth notes', attributes(4, 4), twoHands(repeatNote(16, 3), LEFT_WHOLE)],
+    ['triplet eighths', attributes(4, 4), twoHands(repeatNote(12, 4), LEFT_WHOLE)],
+  ])('accepts %s, marked wait-only rather than refused', (_name, opening, bar) => {
+    expect(
+      timedPlayable(accepted(scoreXml({ attributes: opening, bars: [bar] })).score),
+    ).toBe(false);
   });
 
-  it('a mid-piece time change is accepted as wait-only', () => {
+  it('a mid-piece time change is accepted, and marked wait-only', () => {
     const threeFour = twoHands(
-      Array.from({ length: 3 }, () => note('C', 4, QUARTER, { finger: '1' })).join(''),
+      repeatNote(3, QUARTER),
       note('C', 3, 36, { staff: 2, finger: '5' }),
       36,
     );
+    const result = accepted(
+      scoreXml({
+        bars: [
+          FINGERED_BAR,
+          '<attributes><time><beats>3</beats><beat-type>4</beat-type></time></attributes>' +
+            threeFour,
+        ],
+      }),
+    );
 
-    expect(
-      check(
-        scoreXml({
-          bars: [
-            FINGERED_BAR,
-            '<attributes><time><beats>3</beats><beat-type>4</beat-type></time></attributes>' +
-              threeFour,
-          ],
-        }),
-      ),
-    ).toMatchObject({ ok: true, waitOnly: true });
+    expect(timedPlayable(result.score)).toBe(false);
   });
 });

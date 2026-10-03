@@ -5,23 +5,29 @@ import type { Finger, Score } from './types';
 export const COMPUTER_KEYBOARD_LOW = 48;
 export const COMPUTER_KEYBOARD_HIGH = 79;
 
-// The on-screen keyboard's default preset, C2 to B5 (src/config.ts).
-export const DEFAULT_PRESET_LOW = 36;
-export const DEFAULT_PRESET_HIGH = 83;
-
-/** A finger the keyboard can show: a whole number from 1 to 5, the range FINGER_COLORS covers. */
+/**
+ * Whether a finger is one the keyboard shows: 1 to 5. The type says so already, but
+ * readFinger casts the text without checking it, so `0`, `6` and `NaN` reach here.
+ */
 export function isFingered(finger: Finger | undefined): boolean {
   return finger !== undefined && Number.isInteger(finger) && finger >= 1 && finger <= 5;
+}
+
+export function hasPitchOutside(score: Score, low: number, high: number): boolean {
+  return score.events.some((event) =>
+    event.notes.some((note) => note.pitch < low || note.pitch > high),
+  );
 }
 
 /**
  * What timed play assumes of a piece: one signature over quarter-note beats, so the click
  * and its accents are periodic; no pickup or short bar, so a bar starts where
  * measureStartTime says; and events at least half a beat apart, so the ±¼-beat windows
- * never overlap. A piece that fails this is wait-mode only for uploads, and needs timed
+ * never overlap. A piece that fails this is wait-mode only for an upload, and needs timed
  * play extended, or leaving out, for a bundled piece.
  */
 export function timedPlayable(score: Score): boolean {
+  // parseScore records a time signature only when it changes, so one after bar 1 is a change.
   if (score.timeSignatures.some((signature) => signature.measure > 1)) return false;
   if (timeSignatureAt(score, 1).beatType !== 4) return false;
 

@@ -1,13 +1,17 @@
 /**
  * Builds MusicXML for the upload validator's fixtures. Each test states the one thing it varies,
- * so a refusal is traceable to the line that caused it. Divisions are 12 per quarter note.
+ * so a refusal is traceable to the line that causes it. Divisions are 12 per quarter note.
  */
 
 export const QUARTER = 12;
 
-export const DEFAULT_ATTRIBUTES =
-  '<attributes><divisions>12</divisions><key><fifths>0</fifths></key>' +
-  '<time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves></attributes>';
+export function attributes(beats: number, beatType: number, staves = 2): string {
+  return (
+    '<attributes><divisions>12</divisions><key><fifths>0</fifths></key>' +
+    `<time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time>` +
+    `<staves>${staves}</staves></attributes>`
+  );
+}
 
 export function note(
   step: string,
@@ -33,12 +37,20 @@ export function backup(duration: number): string {
   return `<backup><duration>${duration}</duration></backup>`;
 }
 
+/** `count` fingered notes of one duration, all C4 in the right hand. */
+export function repeatNote(count: number, duration: number, finger = '1'): string {
+  return Array.from({ length: count }, () => note('C', 4, duration, { finger })).join('');
+}
+
+/** A fingered whole-bar C3 on staff 2 in 4/4, the usual left hand. */
+export const LEFT_WHOLE = note('C', 3, 48, { staff: 2, finger: '5' });
+
 /** Right hand on staff 1, then back to the start of the bar for the left hand on staff 2. */
 export function twoHands(right: string, left: string, length = 48): string {
   return right + backup(length) + left;
 }
 
-export interface ScoreOptions {
+interface ScoreOptions {
   title?: string;
   /** Inserted at the start of the first bar. */
   attributes?: string;
@@ -50,14 +62,13 @@ export interface ScoreOptions {
 
 export function scoreXml({
   title = 'Test Tune',
-  attributes = DEFAULT_ATTRIBUTES,
+  attributes: opening = attributes(4, 4),
   bars,
   extraParts = '',
 }: ScoreOptions): string {
   const measures = bars
     .map(
-      (bar, i) =>
-        `<measure number="${i + 1}">${i === 0 ? attributes : ''}${bar}</measure>`,
+      (bar, i) => `<measure number="${i + 1}">${i === 0 ? opening : ''}${bar}</measure>`,
     )
     .join('');
   return (
@@ -70,11 +81,5 @@ export function scoreXml({
   );
 }
 
-/** Four fingered quarter notes in the right hand, a fingered whole note in the left: one 4/4 bar. */
-export const FINGERED_BAR = twoHands(
-  note('C', 4, QUARTER, { finger: '1' }) +
-    note('D', 4, QUARTER, { finger: '2' }) +
-    note('E', 4, QUARTER, { finger: '3' }) +
-    note('F', 4, QUARTER, { finger: '4' }),
-  note('C', 3, 48, { staff: 2, finger: '5' }),
-);
+/** Four fingered quarter notes in the right hand, the fingered whole note in the left: one 4/4 bar. */
+export const FINGERED_BAR = twoHands(repeatNote(4, QUARTER), LEFT_WHOLE);
