@@ -166,7 +166,7 @@ passed on the very bug its step existed to prevent. What they do not do is **off
 choice**. Step 9 is the episode. Round 1 cut a `keyboardRangeForScore()` derivation whose branches
 could not run — correct, and it still stands — and the width left behind was a constant nobody had
 consulted anyone about. Asked directly, four octaves or five or all 88, the player said
-configurable, and the step was rewritten (`9ff142f`, `prompts/step9.md:14`). That question was put
+configurable, and the step was rewritten (`51d5bd6`, `prompts/step9.md:14`). That question was put
 by hand, by an author who happened to think of it. This gate is that question made routine.
 
 ### Which gate applies
@@ -228,7 +228,7 @@ carried to the next batch rather than dropped. `SKILL.md` says how to phrase the
 This replaces "green CI" as the finishing condition — `npm run ci` still has to pass, it is simply
 no longer what says the work is done. A brief is finished when every **ask** has been answered, or,
 where the step's instructions hold unchanged under either answer, is recorded in it as a named
-precondition saying what happens under each. `step22.md` as first drafted (commit `11dfb29`) is
+precondition saying what happens under each. `step22.md` as first drafted (commit `14b9653`) is
 the worked example: it could not start until a second piece existed, and it said what happens
 whether the owner authors one or the project transcribes public-domain material.
 
