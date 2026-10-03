@@ -20,6 +20,7 @@ import {
   QUARTER,
   attributes,
   backup,
+  leftHand,
   note,
   repeatNote,
   rest,
@@ -94,9 +95,7 @@ describe('checkUpload refusals, in the brief’s order', () => {
       'a pickup bar',
       scoreXml({
         bars: [
-          note('C', 4, QUARTER, { finger: '1' }) +
-            backup(QUARTER) +
-            note('C', 3, QUARTER, { staff: 2, finger: '5' }),
+          note('C', 4, QUARTER, { finger: '1' }) + backup(QUARTER) + leftHand(QUARTER),
           FINGERED_BAR,
         ],
       }),
@@ -116,8 +115,18 @@ describe('checkUpload refusals, in the brief’s order', () => {
     [
       'a left hand that is short while the right hand is full',
       scoreXml({
+        bars: [twoHands(repeatNote(4, QUARTER), leftHand(36))],
+      }),
+      /Measure 1 is short/,
+    ],
+    [
+      'a forward with no staff, which counts on staff 1 and leaves staff 2 short',
+      scoreXml({
         bars: [
-          twoHands(repeatNote(4, QUARTER), note('C', 3, 36, { staff: 2, finger: '5' })),
+          twoHands(
+            repeatNote(4, QUARTER),
+            leftHand(24) + '<forward><duration>24</duration></forward>',
+          ),
         ],
       }),
       /Measure 1 is short/,
@@ -199,10 +208,7 @@ describe('checkUpload refusals, in the brief’s order', () => {
       /Measure 1 has a note with no finger/,
     ],
   ])('refuses %s', (_name, xml, message) => {
-    const result = check(xml);
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.message).toMatch(message);
+    expect(check(xml)).toEqual({ ok: false, message: expect.stringMatching(message) });
   });
 
   it.each(['0', '6', '3-4'])(
@@ -245,8 +251,7 @@ describe('checkUpload accepts', () => {
 
   it('a bar whose left hand ends with a forward that fills the rest of the bar', () => {
     const leftWithGap =
-      note('C', 3, 24, { staff: 2, finger: '5' }) +
-      '<forward><duration>24</duration><staff>2</staff></forward>';
+      leftHand(24) + '<forward><duration>24</duration><staff>2</staff></forward>';
 
     expect(
       accepted(scoreXml({ bars: [twoHands(repeatNote(4, QUARTER), leftWithGap)] })).title,
@@ -259,13 +264,13 @@ describe('checkUpload accepts', () => {
     );
   });
 
-  it('takes the title from the file name when the file has no title', () => {
+  it('a file with no title, naming it from the file name', () => {
     expect(
       accepted(scoreXml({ title: '', bars: [FINGERED_BAR] }), 'Kotek.musicxml').title,
     ).toBe('Kotek');
   });
 
-  it('a note outside C3 to G5 is accepted, and shows the keyboard warning', () => {
+  it('a note outside C3 to G5, which is outside the computer keyboard’s range', () => {
     const result = accepted(
       scoreXml({ bars: [twoHands(note('C', 2, 48, { finger: '1' }), LEFT_WHOLE)] }),
     );
@@ -282,7 +287,7 @@ describe('checkUpload accepts', () => {
     ).toBe(false);
   });
 
-  it('a note outside even the on-screen preset gets the second warning', () => {
+  it('a note outside even the on-screen preset’s range', () => {
     const result = accepted(
       scoreXml({ bars: [twoHands(note('C', 1, 48, { finger: '1' }), LEFT_WHOLE)] }),
     );
@@ -302,32 +307,28 @@ describe('checkUpload accepts', () => {
     expect(accepted(scoreXml({ bars: [bar] })).title).toBe('Test Tune');
   });
 
+  it('a bar with nothing on staff 2, because only a staff with content must fill the bar', () => {
+    const rightOnly = repeatNote(4, QUARTER);
+
+    expect(
+      accepted(scoreXml({ bars: [FINGERED_BAR, rightOnly, FINGERED_BAR] })).title,
+    ).toBe('Test Tune');
+  });
+
   it.each([
-    [
-      '6/8',
-      attributes(6, 8),
-      twoHands(repeatNote(6, 6), note('C', 3, 36, { staff: 2, finger: '5' }), 36),
-    ],
+    ['6/8', attributes(6, 8), twoHands(repeatNote(6, 6), leftHand(36), 36)],
     ['2/2', attributes(2, 2), FINGERED_BAR],
-    [
-      '3/8',
-      attributes(3, 8),
-      twoHands(repeatNote(3, 6), note('C', 3, 18, { staff: 2, finger: '5' }), 18),
-    ],
+    ['3/8', attributes(3, 8), twoHands(repeatNote(3, 6), leftHand(18), 18)],
     ['sixteenth notes', attributes(4, 4), twoHands(repeatNote(16, 3), LEFT_WHOLE)],
     ['triplet eighths', attributes(4, 4), twoHands(repeatNote(12, 4), LEFT_WHOLE)],
-  ])('accepts %s, marked wait-only rather than refused', (_name, opening, bar) => {
+  ])('%s, marked wait-only rather than refused', (_name, opening, bar) => {
     expect(
       timedPlayable(accepted(scoreXml({ attributes: opening, bars: [bar] })).score),
     ).toBe(false);
   });
 
   it('a mid-piece time change is accepted, and marked wait-only', () => {
-    const threeFour = twoHands(
-      repeatNote(3, QUARTER),
-      note('C', 3, 36, { staff: 2, finger: '5' }),
-      36,
-    );
+    const threeFour = twoHands(repeatNote(3, QUARTER), leftHand(36), 36);
     const result = accepted(
       scoreXml({
         bars: [

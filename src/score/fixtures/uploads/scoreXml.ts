@@ -38,12 +38,19 @@ export function backup(duration: number): string {
 }
 
 /** `count` fingered notes of one duration, all C4 in the right hand. */
-export function repeatNote(count: number, duration: number, finger = '1'): string {
-  return Array.from({ length: count }, () => note('C', 4, duration, { finger })).join('');
+export function repeatNote(count: number, duration: number): string {
+  return Array.from({ length: count }, () =>
+    note('C', 4, duration, { finger: '1' }),
+  ).join('');
+}
+
+/** A fingered C3 on staff 2, the usual left hand; a whole bar in 4/4 by default. */
+export function leftHand(duration = 48): string {
+  return note('C', 3, duration, { staff: 2, finger: '5' });
 }
 
 /** A fingered whole-bar C3 on staff 2 in 4/4, the usual left hand. */
-export const LEFT_WHOLE = note('C', 3, 48, { staff: 2, finger: '5' });
+export const LEFT_WHOLE = leftHand();
 
 /** Right hand on staff 1, then back to the start of the bar for the left hand on staff 2. */
 export function twoHands(right: string, left: string, length = 48): string {

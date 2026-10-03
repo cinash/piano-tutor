@@ -22,12 +22,12 @@ export interface Accepted {
   score: Score;
 }
 
-export interface Refused {
+interface Refused {
   ok: false;
   message: string;
 }
 
-export type UploadCheck = Accepted | Refused;
+type UploadCheck = Accepted | Refused;
 
 const refuse = (message: string): Refused => ({ ok: false, message });
 
@@ -56,10 +56,14 @@ export function checkUpload(
   }
   if (score.events.length === 0) return refuse('This file has no notes.');
 
-  const doc = new DOMParser().parseFromString(xml, 'application/xml');
-  const title = titleOf(doc, fileName);
+  const title = titleOf(score.title, fileName);
   if (title === '') return refuse('This file needs a title.');
-  if (clashes(context.bundledTitles, title)) {
+  if (
+    clashes(
+      context.bundledTitles.map((t) => t.trim()),
+      title,
+    )
+  ) {
     return refuse('A piece with this name is already built in.');
   }
   if (clashes(context.storedTitles, title)) {
@@ -68,7 +72,7 @@ export function checkUpload(
     );
   }
 
-  const notation = notationProblem(doc);
+  const notation = notationProblem(xml);
   if (notation) return refuse(notation);
 
   const unfingered = score.events.find((event) =>
@@ -82,18 +86,18 @@ export function checkUpload(
 }
 
 /** The `<work-title>`, or the file name without its extension when that is absent or blank. */
-function titleOf(doc: Document, fileName: string): string {
-  const fromFile = doc.querySelector('work > work-title')?.textContent?.trim() ?? '';
-  return fromFile || fileName.replace(/\.[^.]*$/, '').trim();
+function titleOf(workTitle: string, fileName: string): string {
+  return workTitle.trim() || fileName.replace(/\.[^.]*$/, '').trim();
 }
 
 function clashes(titles: readonly string[], title: string): boolean {
   const key = title.toLowerCase();
-  return titles.some((t) => t.trim().toLowerCase() === key);
+  return titles.some((t) => t.toLowerCase() === key);
 }
 
 /** The first notation the app does not follow, named by its bar, or undefined when there is none. */
-function notationProblem(doc: Document): string | undefined {
+function notationProblem(xml: string): string | undefined {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
   if (doc.querySelectorAll('score-partwise > part').length > 1) {
     return 'This file has two parts. Only one part is supported.';
   }
@@ -118,8 +122,11 @@ function notationProblem(doc: Document): string | undefined {
 
   const firstDivisions = numberContent(doc.querySelector('measure')!, 'divisions') ?? 1;
   const divisionsChange = Array.from(
-    doc.querySelectorAll('measure:not(:first-of-type) > attributes > divisions'),
-  ).find((divisions) => Number(divisions.textContent) !== firstDivisions);
+    doc.querySelectorAll('measure:not(:first-of-type) > attributes'),
+  ).find(
+    (attributes) =>
+      (numberContent(attributes, 'divisions') ?? firstDivisions) !== firstDivisions,
+  );
   if (divisionsChange) {
     return `Measure ${barOf(divisionsChange)} changes the divisions. They are set once, at the start.`;
   }

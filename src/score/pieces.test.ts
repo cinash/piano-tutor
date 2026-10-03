@@ -38,8 +38,7 @@ describe('PIECES', () => {
     },
   );
 
-  // A piece added that fails this needs timed play extended, leaving out, or offering for
-  // wait-mode only — the decision of whoever adds its line. The rule is in pieceRules.ts.
+  // Whoever adds a piece that fails this decides what to do with it; see timedPlayable.
   it.each(PIECES)('$id is one that timed play can keep time through', ({ score }) => {
     expect(timedPlayable(score)).toBe(true);
   });
