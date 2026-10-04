@@ -170,7 +170,7 @@ function readFinger(noteEl: Element): Finger | undefined {
   return text ? (Number(text) as Finger) : undefined;
 }
 
-function numberContent(el: Element, selector: string): number | undefined {
+export function numberContent(el: Element, selector: string): number | undefined {
   const text = el.querySelector(selector)?.textContent;
   return text ? Number(text) : undefined;
 }

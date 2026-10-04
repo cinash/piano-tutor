@@ -6,6 +6,13 @@ import './StaffView.css';
 /** Where the pane holds the cursor: more of the music ahead of it than behind, as flowkey does. */
 const CURSOR_FRACTION_FROM_LEFT = 1 / 3;
 
+/**
+ * OSMD sums a whole part and a fraction, rounding twice where the parser rounds once, so a
+ * triplet onset can read one unit in the last place below the target it is. Far below the
+ * gap between any two onsets — see DECISIONS.md.
+ */
+const ONSET_TOLERANCE = 1e-9;
+
 export interface StaffViewProps {
   /** The piece's MusicXML. Drawn once per mount: a new piece is a new key — see App.tsx. */
   xml: string;
@@ -69,7 +76,8 @@ export function StaffView({ xml, targetStartTime }: StaffViewProps) {
     cursor.reset();
     while (
       !cursor.iterator.EndReached &&
-      cursor.iterator.CurrentSourceTimestamp.RealValue < targetInWholeNotes
+      cursor.iterator.CurrentSourceTimestamp.RealValue <
+        targetInWholeNotes - ONSET_TOLERANCE
     ) {
       cursor.next();
     }

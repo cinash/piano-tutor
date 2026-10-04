@@ -71,6 +71,19 @@ import { StaffView } from './score/StaffView';
 import { loadPiece, savePiece } from './score/pieceStore';
 import { timeSignatureAt } from './score/measureStartTime';
 import { PIECES, type Piece } from './score/pieces';
+import {
+  COMPUTER_KEYBOARD_HIGH,
+  COMPUTER_KEYBOARD_LOW,
+  hasPitchOutside,
+  timedPlayable,
+} from './score/pieceRules';
+import {
+  checkUpload,
+  loadUploads,
+  newUpload,
+  saveUploads,
+  uploadContext,
+} from './score/uploads';
 import { filterScoreByHand, type HandSelection } from './score/filterScoreByHand';
 
 function isMidiEventArray(value: unknown): value is MidiEvent[] {
@@ -142,8 +155,9 @@ export function App() {
     DEFAULT_KEYBOARD_PRESET,
   );
   const [hands, setHands] = useState<HandSelection>('both');
+  const [uploads, setUploads] = useState(loadUploads);
   // Remembered across a reload, unlike hands, range and speed — see DECISIONS.md.
-  const [piece, setPiece] = useState<Piece>(loadPiece);
+  const [piece, setPiece] = useState(() => loadPiece([...PIECES, ...uploads]));
   // A display choice, and deliberately not engine state: practice must be identical
   // folded and unfolded — see DECISIONS.md.
   const [queueFolded, setQueueFolded] = useState(loadQueueFolded);
@@ -164,9 +178,23 @@ export function App() {
   // cursor follows the clock.
   const [timerFiredAt, setTimerFiredAt] = useState(0);
 
+  const pieces = [...PIECES, ...uploads];
   // The piece as the selected hand plays it. A plain const: nothing depends on the
   // score's identity across renders, and filtering 44 events costs nothing.
   const score = filterScoreByHand(piece.score, hands);
+  // Judged on the whole piece, so hiding one hand's fast notes cannot offer Timed.
+  const waitOnly = !timedPlayable(piece.score);
+  // Only an upload can show it: pieces.test.ts keeps every bundled piece in range.
+  const outsideComputerKeyboard = hasPitchOutside(
+    piece.score,
+    COMPUTER_KEYBOARD_LOW,
+    COMPUTER_KEYBOARD_HIGH,
+  );
+  const outsideOnScreenKeyboard = hasPitchOutside(
+    piece.score,
+    DEFAULT_KEYBOARD_PRESET.low,
+    DEFAULT_KEYBOARD_PRESET.high,
+  );
 
   // Where the demo has reached while one plays, so the cursor follows it; where the music
   // is while a timed clock runs, since the engine may be a note ahead of it; the note the
@@ -239,10 +267,10 @@ export function App() {
     setView(restartPractice);
   }
 
-  function handlePieceChange(event: ChangeEvent<HTMLSelectElement>) {
-    const next = PIECES.find((candidate) => candidate.id === event.target.value);
-    if (!next) return;
+  function choosePiece(next: Piece) {
     setPiece(next);
+    // Not put back on leaving the piece: the mode stays Wait until the child chooses Timed.
+    if (!timedPlayable(next.score)) setMode('wait');
     stopDemo();
     // A fresh start rather than restartPractice, which keeps the loop: a loop is bars of
     // the old piece, which the new one may not have.
@@ -501,6 +529,38 @@ export function App() {
     event.target.value = '';
   }
 
+  // A refusal, or a full store, changes nothing but the alert line.
+  async function uploadPiece(file: File) {
+    const checked = checkUpload(
+      new Uint8Array(await file.arrayBuffer()),
+      file.name,
+      uploadContext(uploads),
+    );
+    if (!checked.ok) {
+      setError(checked.message);
+      return;
+    }
+    const upload = newUpload(checked, uploads);
+    const next = [...uploads, upload];
+    try {
+      saveUploads(next);
+    } catch {
+      setError('Could not save this piece; browser storage is full.');
+      return;
+    }
+    setUploads(next);
+    choosePiece(upload);
+    setError(null);
+  }
+
+  // Cleared after each pick, as Import progress is: Chrome fires no change for the same file
+  // picked again.
+  function handleUploadFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void uploadPiece(file);
+    event.target.value = '';
+  }
+
   useEffect(() => {
     if (!webMidiSupported) return;
 
@@ -623,6 +683,7 @@ export function App() {
                     name="mode"
                     data-testid={`mode-${option.value}`}
                     checked={mode === option.value}
+                    disabled={option.value === 'timed' && waitOnly}
                     onChange={() => handleModeChange(option.value)}
                   />{' '}
                   {option.label}{' '}
@@ -647,14 +708,27 @@ export function App() {
           id="piece-select"
           data-testid="piece-select"
           value={piece.id}
-          onChange={handlePieceChange}
+          onChange={(event) =>
+            choosePiece(pieces.find((candidate) => candidate.id === event.target.value)!)
+          }
           onKeyDown={cancelTypeAhead}
         >
           {PIECES.map((candidate) => (
             <option key={candidate.id} value={candidate.id}>
-              {candidate.score.title}
+              {candidate.title}
             </option>
           ))}
+          {uploads.length > 0 && (
+            <optgroup label="Yours">
+              {uploads.map((upload) => (
+                <option key={upload.id} value={upload.id}>
+                  {timedPlayable(upload.score)
+                    ? upload.title
+                    : `${upload.title} (Wait mode only)`}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
         {import.meta.env.DEV && isConnected && (
           <button type="button" onClick={toggleRecording} data-testid="toggle-recording">
@@ -663,6 +737,25 @@ export function App() {
         )}
       </div>
       {error && <p role="alert">{error}</p>}
+      {/* Lines of their own below the toolbar rows, so neither row's width changes. */}
+      {waitOnly && (
+        <p data-testid="wait-only-note">
+          Timed mode cannot keep time through this piece yet; it plays in Wait mode.
+        </p>
+      )}
+      {outsideComputerKeyboard && (
+        <p data-testid="range-warning">
+          Some notes are outside the computer keyboard&apos;s range (C3–G5); the piano
+          plays them.
+          {outsideOnScreenKeyboard && (
+            <>
+              <br />
+              Some notes are also outside the on-screen keyboard&apos;s default range
+              (C2–B5).
+            </>
+          )}
+        </p>
+      )}
       {/* Keyed, so a new piece is a fresh mount with one score in the pane and no
           cursor left pointing at the old one. */}
       <StaffView key={piece.id} xml={piece.xml} targetStartTime={staffTarget} />
@@ -726,7 +819,7 @@ export function App() {
         handPositions={handPositions(score, positionIndex, positionLoop)}
         nextHandPositions={nextHandPositions(score, positionIndex, positionLoop)}
       />
-      <AttemptHistory records={attempts} />
+      <AttemptHistory records={attempts} pieces={pieces} />
       <div>
         <button
           type="button"
@@ -742,6 +835,14 @@ export function App() {
           accept="application/json"
           data-testid="import-progress-input"
           onChange={handleImportFile}
+        />{' '}
+        <label htmlFor="upload-piece-input">Add a piece (MusicXML)</label>{' '}
+        <input
+          id="upload-piece-input"
+          type="file"
+          accept=".musicxml,.xml,.mxl"
+          data-testid="upload-piece-input"
+          onChange={handleUploadFile}
         />
       </div>
     </div>

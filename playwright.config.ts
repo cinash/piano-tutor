@@ -22,13 +22,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: 'content-security-policy.spec.ts',
+      testIgnore: ['content-security-policy.spec.ts', 'uploads.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
     },
-    // The Content-Security-Policy exists only in the build, so its spec runs against that.
+    // The Content-Security-Policy exists only in the build, so the specs that check it run
+    // against that.
     {
       name: 'built',
-      testMatch: 'content-security-policy.spec.ts',
+      testMatch: ['content-security-policy.spec.ts', 'uploads.spec.ts'],
       use: { ...devices['Desktop Chrome'], baseURL: PREVIEW_URL },
     },
   ],

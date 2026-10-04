@@ -1,0 +1,92 @@
+/**
+ * Builds MusicXML for the upload validator's fixtures. Each test states the one thing it varies,
+ * so a refusal is traceable to the line that causes it. Divisions are 12 per quarter note.
+ */
+
+export const QUARTER = 12;
+
+export function attributes(beats: number, beatType: number, staves = 2): string {
+  return (
+    '<attributes><divisions>12</divisions><key><fifths>0</fifths></key>' +
+    `<time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time>` +
+    `<staves>${staves}</staves></attributes>`
+  );
+}
+
+export function note(
+  step: string,
+  octave: number,
+  duration: number,
+  options: { staff?: number; finger?: string } = {},
+): string {
+  const { staff = 1, finger } = options;
+  const fingering = finger
+    ? `<notations><technical><fingering>${finger}</fingering></technical></notations>`
+    : '';
+  return (
+    `<note><pitch><step>${step}</step><octave>${octave}</octave></pitch>` +
+    `<duration>${duration}</duration><staff>${staff}</staff>${fingering}</note>`
+  );
+}
+
+export function rest(duration: number, staff = 1): string {
+  return `<note><rest/><duration>${duration}</duration><staff>${staff}</staff></note>`;
+}
+
+export function backup(duration: number): string {
+  return `<backup><duration>${duration}</duration></backup>`;
+}
+
+/** `count` fingered notes of one duration, all C4 in the right hand. */
+export function repeatNote(count: number, duration: number): string {
+  return Array.from({ length: count }, () =>
+    note('C', 4, duration, { finger: '1' }),
+  ).join('');
+}
+
+/** A fingered C3 on staff 2, the usual left hand; a whole bar in 4/4 by default. */
+export function leftHand(duration = 48): string {
+  return note('C', 3, duration, { staff: 2, finger: '5' });
+}
+
+/** A fingered whole-bar C3 on staff 2 in 4/4, the usual left hand. */
+export const LEFT_WHOLE = leftHand();
+
+/** Right hand on staff 1, then back to the start of the bar for the left hand on staff 2. */
+export function twoHands(right: string, left: string, length = 48): string {
+  return right + backup(length) + left;
+}
+
+interface ScoreOptions {
+  title?: string;
+  /** Inserted at the start of the first bar. */
+  attributes?: string;
+  /** One string of inner XML per bar. */
+  bars: string[];
+  /** Extra `<part>` elements, for a two-part score. */
+  extraParts?: string;
+}
+
+export function scoreXml({
+  title = 'Test Tune',
+  attributes: opening = attributes(4, 4),
+  bars,
+  extraParts = '',
+}: ScoreOptions): string {
+  const measures = bars
+    .map(
+      (bar, i) => `<measure number="${i + 1}">${i === 0 ? opening : ''}${bar}</measure>`,
+    )
+    .join('');
+  return (
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<score-partwise version="3.1">' +
+    `<work><work-title>${title}</work-title></work>` +
+    `<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>` +
+    `<part id="P1">${measures}</part>${extraParts}` +
+    '</score-partwise>'
+  );
+}
+
+/** Four fingered quarter notes in the right hand, the fingered whole note in the left: one 4/4 bar. */
+export const FINGERED_BAR = twoHands(repeatNote(4, QUARTER), LEFT_WHOLE);

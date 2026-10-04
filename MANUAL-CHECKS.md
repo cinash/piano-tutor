@@ -111,6 +111,20 @@ update it at the end of each step.
     in treble clef with the left hand's G4 on finger 2, as the book prints it,
     and No. 20, which carries a repeat sign the app plays through once. Say whether playing
     it once is acceptable until step 28's files, with their repeats written out, arrive.
+    Then upload one of your own MusicXML files with "Add a piece (MusicXML)", on the origin
+    the child uses: Web MIDI needs a secure one, so `http://localhost:5173` on the host or
+    the https tailnet copy, which runs the build last deployed and needs a redeploy first.
+    Confirm the control is easy to find beside "Import progress", and that the second
+    toolbar row — Restart, Listen, Speed, Mode, Metronome and Piece — looks as it did
+    before. Confirm the staff shows what your notation program showed, with both hands, and
+    that the piece is listed under "Yours". Pick a file the app refuses, then pick the same
+    file again, and confirm the refusal shows the second time too; nothing automated can
+    check this, since only Chrome's own file picker skips a repeated pick. If the file is in
+    6/8 or has sixteenths, confirm it is listed with "(Wait mode only)", that Timed cannot
+    be chosen, and that it plays in Wait mode. If it is in a minor key, confirm the hand
+    positions on the first bar are right. Then play the first bar on the piano and confirm
+    each note and its finger match your file. If the toolbar wraps badly, that is a layout
+    change to make, not a screenshot to re-baseline.
 
 Close the browser tab before using `amidi` or `aplaymidi` on the host, and quit those
 before going back to the browser: a page holding a Web MIDI port locks the ALSA device,

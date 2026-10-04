@@ -1,9 +1,11 @@
 import type { Loop } from '../engine/types';
-import { pieceTitle } from '../score/pieces';
+import { pieceTitle, type Piece } from '../score/pieces';
 import type { AttemptRecord } from './types';
 
 export interface AttemptHistoryProps {
   records: AttemptRecord[];
+  /** The pieces offered, which name the Piece column. */
+  pieces: readonly Piece[];
 }
 
 function formatLoop(loop: Loop | undefined): string {
@@ -20,7 +22,7 @@ function formatAccuracy(record: AttemptRecord): string {
   return `${Math.round((1 - record.wrongNoteCount / record.notesPlayed) * 100)}%`;
 }
 
-export function AttemptHistory({ records }: AttemptHistoryProps) {
+export function AttemptHistory({ records, pieces }: AttemptHistoryProps) {
   if (records.length === 0) {
     return <p data-testid="attempt-history-empty">No attempts yet — play something.</p>;
   }
@@ -45,7 +47,7 @@ export function AttemptHistory({ records }: AttemptHistoryProps) {
         {records.map((record) => (
           <tr key={record.startedAt} data-testid="attempt-history-row">
             <td>{new Date(record.startedAt).toLocaleString()}</td>
-            <td>{pieceTitle(record.piece)}</td>
+            <td>{pieceTitle(record.piece, pieces)}</td>
             <td>{formatMode(record)}</td>
             <td>{formatLoop(record.loop)}</td>
             <td>{record.notesPlayed}</td>

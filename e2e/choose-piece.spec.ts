@@ -1,12 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { staffWidth } from './page';
 import { connectVirtualKeyboard } from './virtualKeyboard';
-
-const staffWidth = (page: Page) =>
-  page
-    .getByTestId('staff')
-    .locator('svg')
-    .evaluate((svg) => svg.getBoundingClientRect().width);
 
 const expectedPitches = (page: Page) =>
   page

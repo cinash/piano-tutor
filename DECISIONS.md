@@ -745,7 +745,16 @@ Measured rather than assumed, and measured again when step 21 replaced the arran
 walking OSMD's cursor from end to end yields 44 onsets, every event's `startTime` matches
 one of them, and OSMD offers none that is not an event. The piece's divisions are 2, so
 every `startTime` is a multiple of a half beat and the comparison is between dyadic
-fractions — exact in floating point, and no tolerance is needed.
+fractions — exact in floating point, and for such onsets no tolerance is needed.
+
+Triplets are not dyadic, and step 30's uploads can carry them. OSMD computes an onset as a
+whole part plus a fraction, which rounds twice where the parser rounds once, so a triplet
+onset can read one unit in the last place below the `startTime` it equals — measured on
+four bars of eighth-note triplets, from the second bar on. The strict comparison then steps
+past it, and the cursor sits one note late. The comparison therefore allows `1e-9` of a
+whole note, far below the gap between any two onsets a score can write;
+`src/score/StaffView.cursor.test.tsx` walks OSMD's own iterator over a triplet piece and
+fails without it. Scoring is unaffected: the engine never reads OSMD's timestamps.
 
 ## The cursor is reset and re-scanned on every move, never tracked
 
@@ -1205,6 +1214,23 @@ each piece on demand, a chunk per piece behind a promise, which would make the p
 loading state in `App` and `StaffView`. That becomes the answer as step 28 grows the list
 toward 109 pieces, and the change is local to `pieces.ts`.
 
+## The owner's own pieces are uploaded in the browser, past the build-time list
+
+Step 30 reverses the entry above for one kind of piece: a MusicXML file the owner uploads
+is offered without a commit, under a "Yours" group after the bundled pieces, in upload
+order (`pieces` in `App`). The reason is privacy. The repository is going
+public, and some of the owner's arrangements are of music still under copyright, so a
+committed file would be a published one. The bundled list is unchanged: a Beyer file still
+reaches the child only by its line in `PIECES`, and an upload never replaces a bundled
+piece or takes its id. The owner's yes is the upload itself, so the checks an upload must
+pass stand where the reviewed line stands for a bundled piece.
+
+Rejected: committing the file and adding a line, for privacy; IndexedDB, which needs an
+async read where `PIECES` and `loadPiece` are synchronous; a directory handle, Chromium
+on desktop only and a permission prompt per session; an upload kept for the session
+only, picked again every day; and a folder the tailnet copy serves, which needs the same
+async loading and does nothing for GitHub Pages.
+
 ## The piece is a dropdown whose letter type-ahead is cancelled
 
 The owner asked for a dropdown, and 23 radio buttons — the way Hands avoids the problem below
@@ -1275,6 +1301,89 @@ offered, looked up through `pieceTitle()` in `pieces.ts`. The hands are recorded
 shown: a column for them is the learn-in-order mode's decision. Recording the input an
 attempt came from — piano, computer keyboard, replay — was offered too, and the owner said
 not now; it can arrive later as an optional field.
+
+## Bundled pieces and uploads share one set of rules, and differ where they should
+
+`src/score/pieceRules.ts` holds what step 22's `pieces.test.ts` asked of every bundled
+piece, extracted so the upload check reads the same rule: `timedPlayable`, the computer
+keyboard's range (`COMPUTER_KEYBOARD_LOW` and `_HIGH`, C3 to G5, since
+`VirtualKeyboardSource` keeps its map private), and `isFingered`, a finger from 1 to 5,
+which `readFinger` does not check. A rule changed there changes for both.
+
+What each does with a rule differs on purpose. A note with no finger refuses either. The
+range is a test failure for a bundled piece and a warning line above the staff for an
+upload, since the piano plays what the computer keyboard cannot. A repeat, a jump or a
+coda refuses an upload, while sixteen bundled Beyer pieces carry a `<repeat>` and are
+played through once; and every bar of an upload must fill its time signature exactly, so
+no pickup, which nothing checks for a bundled piece. The owner fixes their own file; a
+bundled file is fixed by whoever adds it. The timed rule fails a bundled piece's test, but
+marks an upload wait-only rather than refusing it — the owner's choice, since a refused
+file never reaches the child. It is judged on the whole score, not the hand-filtered one,
+and derived on every load rather than stored.
+
+## Uploads are stored as their raw XML, and a record that no longer loads is dropped
+
+The uploads live under one `localStorage` key, `piano-tutor.uploaded-pieces.v1`, as an
+array of `{ id, title, xml }` (`src/score/uploads.ts`). The XML is kept rather than a
+parsed `Score`, so a later parser change re-reads the file instead of freezing the old
+reading. The title is stored because it may come from the file name, which is not kept.
+The record is a persisted format from the first save: a change to it needs a `v2` and a
+reader for `v1`.
+
+`loadUploads()` re-parses each record and keeps what playing needs — it parses, and it has
+a note. A record that fails is dropped with a `console.warn`, and the array is written
+back without it, so storage, the 2 MB total, the title check and the id check all count
+what the list offers. A value under the key that is not a list of records is read as none,
+with a warning, and the next upload overwrites it. The owner's own file is the copy that
+matters and can be uploaded again, so dropping costs little, while a kept record that
+cannot be drawn would be offered and fail. The upload's other checks are not run again at
+start-up: a rule added later, or a bundled piece that later takes the same title, never
+removes a file the upload accepted.
+
+## An upload is capped at 1 MB, and all uploads together at 2 MB
+
+The file cap stops a mistaken pick before it is parsed; the largest bundled piece is 50 KB.
+The total exists because the uploads share the origin's `localStorage` with the attempt
+history, and the history's `setItem` is unguarded: called from an effect with no error
+boundary, a full store would throw there and unmount the app mid-attempt. The cap keeps
+room for the history by refusing an upload instead, with a message that says to download
+progress before clearing the site's data, since clearing it deletes the history too.
+Guarding the history write is a separate change; dropping the cap with it would give
+uploads more room at the cost of that priority. A MuseScore export of 128 notes is about
+53 KB, so 2 MB holds perhaps 15 to 40 pieces, and until removal exists it is a ceiling.
+Whether 2 MB is right is the owner's call once a few real files exist.
+
+## An upload's id is a slug of its title, made once and stored
+
+An upload's id is `upload-` and an ASCII slug of its title — accents dropped, `ł` read as
+`l`, `piece` for a title with no Latin letter or digit — with `-2`, `-3` for a clash. It
+is made at upload and stored in the record, never recomputed, so it names one piece for
+good, as a bundled id does, and goes into the history the same way.
+
+Rejected: a random id, under which the same piece uploaded on two copies — `localhost` and
+the tailnet — would have two ids and so two histories; a slug agrees whenever both copies
+were given the same title, though a `-2` depends on upload order. And a hash of the
+content, which would agree regardless of order, but makes a bare id from another copy read
+`upload-3fa2…` rather than `upload-kotek`, and changes whenever MuseScore re-exports the
+same music with a new `<encoding-date>`.
+
+## An upload is never replaced or removed, and a correction is a new piece
+
+The owner's simplification. Replacing and removing uploads are both later features. A
+file whose title matches a bundled piece or a stored upload, trimmed and ignoring case, is
+refused; a corrected file goes up under a new title, as a new piece with its own id and
+its own history, and the earlier one stays listed beside it. So corrections pile up in
+"Yours", and the child can keep practising a fingering that was since corrected. Joining
+the histories later is an alias map from old id to new, read with the history; no record
+needs rewriting. The start-up check's drop of a record that no longer loads is the only
+removal.
+
+Not yet answered by the owner: whether a re-upload of a piece the start-up check dropped
+gets its old history back. As built it does — the dropped record leaves nothing behind, so
+the same title takes the same id, and the history re-attaches. That is the default, and it
+ships unless the owner says otherwise. Wrong, it hands a different piece sharing a dropped
+title the old history; the alternative, a new id, would start a piece re-uploaded after a
+parser change from nothing.
 
 ## The repository is published on GitHub, with Pages deployed from `main` and the account locked down
 
