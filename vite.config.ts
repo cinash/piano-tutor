@@ -14,6 +14,9 @@ const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 export default defineConfig({
+  // Relative asset URLs, so the same build serves at / (k3s, preview) and at /piano-tutor/
+  // (GitHub Pages).
+  base: './',
   plugins: [
     react(),
     {

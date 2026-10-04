@@ -1384,3 +1384,41 @@ the same title takes the same id, and the history re-attaches. That is the defau
 ships unless the owner says otherwise. Wrong, it hands a different piece sharing a dropped
 title the old history; the alternative, a new id, would start a piece re-uploaded after a
 parser change from nothing.
+
+## The repository is published on GitHub, with Pages deployed from `main` and the account locked down
+
+The repository is public at `cinash/piano-tutor`, and the app is served from GitHub Pages at
+`https://cinash.github.io/piano-tutor/`. It is a showcase, so every push to `main` that passes
+`npm run ci` deploys; there is no release step.
+
+The code is MIT, copyright `cinash` with no full name or email. The music is not all under it:
+Beyer Nos. 8-31 keep the terms in their `<rights>`, `cicha-noc.musicxml` and its parse snapshot
+are the owner's arrangement with no licence granted, and the PDMX files are CC0. `LICENSE` and
+README's "Licence" section list which is which. Every commit on `main` becomes public, so music
+is added only if its terms allow publishing it.
+
+The build uses `base: './'`, so one `dist/` serves at `/` on k3s and in `vite preview` and at
+`/piano-tutor/` on Pages; the CSP spec asserts the script URL is relative.
+
+`.github/workflows/ci.yml` runs `npm run ci` in the dev container's base image, because the
+screenshot baselines were rendered in Debian bookworm and a stock runner would fail them. The
+lockstep check holds that image's tag and digest equal across the dev container, the production
+build and the workflow. Deploying is a second job that only runs `actions/deploy-pages`, so the
+job that runs repository code never holds `pages: write` or `id-token: write`; the default token
+is `contents: read`. Every action is GitHub's own and pinned to a commit SHA, checkout keeps no
+credentials, and nothing runs on `pull_request_target` or uses a secret. One run at a time per
+branch, without cancelling the one in progress, so a queued run superseded by a newer push shows
+as cancelled.
+
+In the repository's settings on GitHub: a ruleset on `main` blocks deletion and force-push with
+no bypass, but requires no pull request or status check, because the owner merges locally and
+pushes `main` directly. Actions are limited to GitHub-owned ones, the default token is read-only
+and cannot approve pull requests, and workflows from forks wait for approval. Dependabot raises
+alerts but opens no pull requests: one merged on GitHub would put GitHub's `main` ahead of the
+local one. Secret scanning, push protection, private vulnerability reporting and CodeQL's default
+setup are on.
+
+The owner pushes with `gh` from the host, with a credential helper given for that one command,
+and logs out after every push. `gh auth setup-git` is never run, because VS Code relays the
+host's git credentials into the dev container, and the container must never reach a GitHub
+token.

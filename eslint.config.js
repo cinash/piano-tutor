@@ -6,7 +6,17 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'playwright-report', 'test-results', 'blob-report'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'blob-report',
+      // Other git worktrees live here; each has its own tsconfig and must not be linted.
+      '.claude/worktrees/**',
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.recommended,
   {
